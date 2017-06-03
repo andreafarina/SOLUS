@@ -86,7 +86,7 @@ else
     fprintf (1,'Calculating Jacobian\n');
     tic;
     J = Jacobian ( mua0, mus0);
-    save([jacdir,jacfile],'J');
+%    save([jacdir,jacfile],'J');
     toc;
 end
 
