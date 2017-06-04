@@ -15,7 +15,7 @@ REGU = 'external';        % 'lcurve', 'gcv', 'external'
 BACKSOLVER = 'tikh';    % 'tikh', 'tsvd', 'simon', 'gmres', 'pcg'
 %% path
 %rdir = ['../results/test/precomputed_jacobians/'];
-jacdir = ['../results/test/precomputed_jacobians/'];
+jacdir = ['D:/Beta/Simulations/Solus/results/test/precomputed_jacobians/'];
 jacfile = 'J';
 %mkdir(rdir);
 %disp(['Intermediate results will be stored in: ' rdir])
