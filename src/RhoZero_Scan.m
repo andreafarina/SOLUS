@@ -31,8 +31,8 @@ verbosity = 0;
 SHOW_MESH = 0;          % 1 to show fluence and projected pattern on the mesh
 filename = 'RhoZero_Scan';% Filename  prefix 
 session = '201612';
-exp_path = ['../data/',session,'/'];
-res_path = ['../results/',session,'/'];
+exp_path = ['D:/Beta/Simulations/Solus/data/',session,'/'];
+res_path = ['D:/Beta/Simulations/Solus/results/',session,'/'];
 exp_file = 'SOLUS_test';
 %==========================================================================
 %%                              OPTIONS 
