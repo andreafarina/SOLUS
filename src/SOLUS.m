@@ -87,6 +87,7 @@ end
 
 %==========================================================================
 
+
 %% ====================== VOLUME DEFINITION ===============================
 %% Background optical properties
 DOT.opt.muaB = P(MUAB).Value;          % mm-1
@@ -261,6 +262,540 @@ set(gca,'zdir','reverse'),axis equal,
 xlim([DOT.grid.x1 DOT.grid.x2]),...
     ylim([DOT.grid.y1 DOT.grid.y2]),...
     zlim([DOT.grid.z1 DOT.grid.z2])
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+% ========================================================================= 
+%%                          INITIALIZATION 
+% =========================================================================
+verbosity = 0;
+%toastCatchErrors();                     % redirect toast library errors
+%toastSetVerbosity(verbosity);
+SHOW_MESH = 0;          % 1 to show fluence and projected pattern on the mesh
+filename = 'SOLUS_test';% Filename  prefix 
+session = '201612';
+exp_path = ['../data/',session,'/'];
+res_path = ['../results/',session,'/'];
+exp_file = 'SOLUS_test';
+%==========================================================================
+%%                              OPTIONS 
+%==========================================================================
+%SET_QM = 1;             % 1: create qvec,mvec. 
+                        % 0: load external qvec,mvec from _DOT file.
+% ----------------------------- FORWARD -----------------------------------
+FORWARD = 1;            % Simulated forward data and save into _Data file
+REF = 1;                % 1: create also the homogeneous data
+% ------------------------- RECONSTRUCTION --------------------------------
+RECONSTRUCTION = 1;     % Enable the reconstruction section.
+% ------------------------- EXPERIMENTAL ----------------------------------
+EXPERIMENTAL = 1;       % Enable experimental options below
+EXP_IRF = 1;            % Use the experimental IRF for forward and reconstruction.
+EXP_DELTA = 'peak';    % Substitute the IRF with delta function on the 
+                        % baricenter ('baric') or peak ('peak') of the IRF.
+                        % 'all' to use the experimental IRF.
+                    
+EXP_DMD = 0;            % Use the experimental registration data for surce and detector
+EXP_DATA = 0;           % Load experimental data and use them for reconstruction
+% -------------------------------------------------------------------------
+DOT.TYPE = 'pointlike';   % 'pointlike','linesources' or 'pattern'
+DOT.TD = 1;             % Time-domain: enable the calculation of TPSF
+% -------------------------------------------------------------------------
+DOT.sigma = 0;%1e-3;%1e-3;       % add gaussian noise to CW data
+% -------------------------------------------------------------------------
+geom = 'semi-inf';      % geometry
+type = 'Born';          % heterogeneous model  
+% =========================================================================
+%%                     Create folder for saving data
+% =========================================================================
+rdir = res_path;
+%['..',filesep,'results',filesep,datestr(clock, 'yyyymmdd'),filesep];
+if ~exist(rdir,'dir')
+    mkdir(rdir)
+end
+%==========================================================================
+%%                          Experimental data
+% Load the structure EXP containing all the data for analyzing experimental
+% data. This structure is created with the routine 'CreateExperiment.m'.
+%==========================================================================
+if (EXPERIMENTAL == 1)
+    load([exp_path,'EXP_',exp_file])
+%     if (EXP_DMD == 1)
+%      %   DOT.DMDpath = [EXP.path.data_folder,EXP.path.day,filesep,...
+%      %       EXP.path.calib_dir,filesep];
+%         DOT.DMDpath = [exp_path,'Calibration',filesep]; 
+%         %DOT.DMDpath = './experimental/data/201510_Calibration/';
+%         DOT.DMDfile = EXP.path.calib_file;
+%     end
+end
+
+%==========================================================================
+
+
+%% ====================== VOLUME DEFINITION ===============================
+%% Background optical properties
+DOT.opt.muaB = P(MUAB).Value;          % mm-1
+DOT.opt.muspB = P(MUSB).Value;             % mm-1
+%vi = 1000;          % (mm3) volume of the inclusion
+DOT.opt.nB = 1.4;
+DOT.opt.nE = 1.;   % external refractive index
+DOT.opt.cs = 0.299/DOT.opt.nB;       % speed of light in medium
+DOT.opt.kap = 1/(3*DOT.opt.muspB);
+DOT.A = A_factor(DOT.opt.nB/DOT.opt.nE); % A factor for boundary conditions
+
+%==========================================================================
+%%                                  SET GRID
+%==========================================================================
+DOT.grid.x1 = P(X1).Value;%0
+DOT.grid.x2 = P(X2).Value;%64
+DOT.grid.dx = P(DX).Value;%2
+
+DOT.grid.y1 = P(Y1).Value;%0
+DOT.grid.y2 = P(Y2).Value;%58           
+DOT.grid.dy = DOT.grid.dx;
+
+DOT.grid.z1 = P(Z1).Value;%0        
+DOT.grid.z2 = P(Z2).Value;%32         
+DOT.grid.dz = DOT.grid.dx;
+
+DOT.grid = setGrid(DOT); 
+
+DOT.opt.Mua = ones(DOT.grid.dim) * DOT.opt.muaB;
+DOT.opt.Musp = ones(DOT.grid.dim) * DOT.opt.muspB;
+%==========================================================================
+%%                      Set Heterogeneities
+%==========================================================================
+%--------------------------- INCLUSION 1 ---------------------------------%
+DOT.opt.hete.type  = 'Mua';
+DOT.opt.hete.geometry = 'Sphere';
+DOT.opt.hete.c     = [P(XP).Value, P(YP).Value, P(ZP).Value];   % down
+% DOT.opt.hete.c     = [35, 25, 16];   % down
+% DOT.opt.hete.d     = (M * [0, 0, -1]')';   % down
+% DOT.opt.hete.l     = 20;
+DOT.opt.hete.sigma = 5;
+DOT.opt.hete.distrib = 'OFF';
+DOT.opt.hete.profile = 'Step';%'Gaussian';
+%DOT.opt.hete.val   = 2. * DOT.opt.muaB;
+DOT.opt.hete.val   = P(MUAP).Value+DOT.opt.muaB;
+[DOT,DOT.opt.hete] = setHete(DOT,DOT.opt.hete);
+%--------------------------- INCLUSION 2 ---------------------------------%
+% DOT.opt.hete2.type  = 'Mua';
+% DOT.opt.hete2.geometry = 'Sphere';
+% DOT.opt.hete2.c     = [40, 20, 5];   % down
+% % DOT.opt.hete.d     = (M * [0, 0, -1]')';   % down
+% % DOT.opt.hete.l     = 20;
+% DOT.opt.hete2.sigma = 3;
+% DOT.opt.hete2.distrib = 'OFF';
+% DOT.opt.hete2.profile = 'Gaussian';%'Gaussian';
+% DOT.opt.hete2.val   = 1.5 * DOT.opt.muaB;
+% [DOT,DOT.opt.hete2] = setHete(DOT,DOT.opt.hete2);
+
+%==========================================================================
+%%                         Radiometry
+%==========================================================================
+%InputParm;
+
+% unitary parameters
+DetAreaUnitary=1; %(mm2) area of the detector unitary (will be adjusted for actual area after)
+SourcePowerUnitary=1; % mW Power of the Unitary Source (will be adjusted for power later on)
+TaqUnitary=1; %s Acquisition Time unitary
+OpticalEfficiency=0.9; % Typical efficiency of the optical path
+LambdaUnitary=800; %Wavelength (nm) (just for calculation of input photons)
+RepUnitary=1E6; % (MHz) Reference Repetition rate Unitary
+dtUnitary=1;  % (ps) Unitary bin for the temporal axis
+Area=4; %mm
+QuantumEfficiency=0.05;
+
+% constants
+h=6.63E-34; % (m2.kg/s) Plank Constant
+c=3E8; % m/s
+mW_2_W=1E-3;
+mm2_2_m2=1E-6;
+nm_2_m=1E-9;
+
+% unitary factor
+phE=h*c/(LambdaUnitary*nm_2_m); % (J) photon energy
+phN=SourcePowerUnitary*mW_2_W*TaqUnitary/phE; % Number of Injected Photons
+ResponsivityUnitary=DetAreaUnitary*OpticalEfficiency; % mm2
+RealFactor=phN*ResponsivityUnitary*dtUnitary; % Note: you need to divide for PI to transform Reflectance into Radiance
+
+% attualize to effective parameters
+RealFactor=RealFactor*Area*QuantumEfficiency*P(DT).Value*P(PW).Value*P(TA).Value;
+%==========================================================================
+%%                         Time domain parameters
+%==========================================================================
+if DOT.TD == 1
+    DOT.time.dt = P(DT).Value;    % time step in picoseconds
+    DOT.time.nstep = floor(P(MT).Value/P(DT).Value)+1;    % number of temporal steps        260
+    DOT.time.noise = 'Poisson';         % 'Poisson','Gaussian','none'
+                                        % if 'Poisson' and sigma>0 a
+                                        % Gaussian noise is added before
+                                        % Poisson noise.
+    DOT.time.sigma = 1e-2;              % variance for gaussian noise
+    DOT.time.self_norm = false;         % true for self-normalized TPSF   
+    DOT.time.TotCounts = P(CR).Value;   % total counts for the maximum-energy
+                                        % TPSF. The other are consequently
+                                        % rescaled
+
+% --------- resample IRF following the parameters in DOT.time -------------
+if ((EXPERIMENTAL == 1) && (EXP_IRF == 1))
+    switch lower(EXP_DELTA)
+        case 'peak'
+            EXP.irf.data = zeros(size(EXP.irf.data));
+            EXP.irf.data(EXP.irf.peak.pos) = 1;
+        case 'baric'
+            EXP.irf.data = zeros(size(EXP.irf.data));
+            EXP.irf.data(EXP.irf.baric.pos) = 1;
+    end
+    % PATCH IRF
+    temp=load('SIPMNew.txt');
+    EXP.irf.data=temp(:,2);
+    EXP.time.axis=temp(:,1);
+    % END PATCH IRF
+    %DOT.time.irf.data = resampleSPC(EXP.irf.data,EXP.time.axis,DOT.time.dt,'norm');
+    DOT.time.irf.data = resampleSPCinterp(EXP.irf.data,EXP.time.axis,DOT.time.dt,'norm');
+    %DOT.time.irf.data = interp1(EXP.time.axis,EXP.irf.data,EXP.time.axis(1):DOT.time.dt:EXP.time.axis(end));
+    [MaxIRF,Chan0]=max(DOT.time.irf.data);
+else
+    DOT.time.irf.data = 0;
+    Chan0=1;
+end
+end
+
+%==========================================================================
+%%  SETTING SOURCES (QVEC), DETECTORS (MVEC) AND THEIR PERMUTATIONS (DMASK)
+%==========================================================================
+% SOLUS SOURCES - DETECTOR POSITIONS
+xs = linspace(-25+6,25-6,4);
+ys = [-5-6-3,5+6+3];
+zs = 0;
+
+xd = linspace(-25+6,25-6,4);
+yd = [-5-6+3,5+6-3];
+zd = 0;
+
+[xxs,yys,zzs] = ndgrid(xs,ys,zs);
+[xxd,yyd,zzd] = ndgrid(xd,yd,zd);
+
+DOT.Source.Pos = [xxs(:),yys(:),zzs(:)];
+DOT.Detector.Pos = [xxd(:),yyd(:),zzd(:)];
+DOT.Source.Ns=size(DOT.Source.Pos,1);
+DOT.Detector.Nd=size(DOT.Detector.Pos,1);
+
+%% Define permutation matrix
+% Source Detector arrangement (1=all; 2=only rhozero; 3=no rhozero)
+% ALL COMBINATIONS
+if P(SD).Value==1, DOT.dmask = logical(ones(DOT.Detector.Nd,DOT.Source.Ns)); end
+% NULL-DISTANCE ONLY
+if P(SD).Value==2, DOT.dmask = logical(eye(DOT.Detector.Nd,DOT.Source.Ns)); end
+% ALL EXCEPT NULL-DISTANCE
+if P(SD).Value==3, DOT.dmask = logical(ones(DOT.Detector.Nd,DOT.Source.Ns) - ...
+    diag(diag(ones(DOT.Detector.Nd,DOT.Source.Ns))));                       end              
+% plot DMASK
+figure, imagesc(DOT.dmask),xlabel('Sources'),ylabel('Meas'),title('Dmask');
+
+%% plot source-detectors and sphere
+figure,plot3(DOT.Source.Pos(:,1),DOT.Source.Pos(:,2),DOT.Source.Pos(:,3),'r*'),grid,
+xlabel('x'),ylabel('y'),zlabel('z'),hold on
+plot3(DOT.opt.hete.c(1),DOT.opt.hete.c(2),DOT.opt.hete.c(3),'bo'),
+[a,b,c]= sphere(100);
+surf(a*DOT.opt.hete.sigma + DOT.opt.hete.c(1), ...
+    b*DOT.opt.hete.sigma + DOT.opt.hete.c(2),...
+    c*DOT.opt.hete.sigma + DOT.opt.hete.c(3))
+set(gca,'zdir','reverse'),axis equal,
+xlim([DOT.grid.x1 DOT.grid.x2]),...
+    ylim([DOT.grid.y1 DOT.grid.y2]),...
+    zlim([DOT.grid.z1 DOT.grid.z2])
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+% ========================================================================= 
+%%                          INITIALIZATION 
+% =========================================================================
+verbosity = 0;
+%toastCatchErrors();                     % redirect toast library errors
+%toastSetVerbosity(verbosity);
+SHOW_MESH = 0;          % 1 to show fluence and projected pattern on the mesh
+filename = 'SOLUS_test';% Filename  prefix 
+session = '201612';
+exp_path = ['../data/',session,'/'];
+res_path = ['../results/',session,'/'];
+exp_file = 'SOLUS_test';
+%==========================================================================
+%%                              OPTIONS 
+%==========================================================================
+%SET_QM = 1;             % 1: create qvec,mvec. 
+                        % 0: load external qvec,mvec from _DOT file.
+% ----------------------------- FORWARD -----------------------------------
+FORWARD = 1;            % Simulated forward data and save into _Data file
+REF = 1;                % 1: create also the homogeneous data
+% ------------------------- RECONSTRUCTION --------------------------------
+RECONSTRUCTION = 1;     % Enable the reconstruction section.
+% ------------------------- EXPERIMENTAL ----------------------------------
+EXPERIMENTAL = 1;       % Enable experimental options below
+EXP_IRF = 1;            % Use the experimental IRF for forward and reconstruction.
+EXP_DELTA = 'peak';    % Substitute the IRF with delta function on the 
+                        % baricenter ('baric') or peak ('peak') of the IRF.
+                        % 'all' to use the experimental IRF.
+                    
+EXP_DMD = 0;            % Use the experimental registration data for surce and detector
+EXP_DATA = 0;           % Load experimental data and use them for reconstruction
+% -------------------------------------------------------------------------
+DOT.TYPE = 'pointlike';   % 'pointlike','linesources' or 'pattern'
+DOT.TD = 1;             % Time-domain: enable the calculation of TPSF
+% -------------------------------------------------------------------------
+DOT.sigma = 0;%1e-3;%1e-3;       % add gaussian noise to CW data
+% -------------------------------------------------------------------------
+geom = 'semi-inf';      % geometry
+type = 'Born';          % heterogeneous model  
+% =========================================================================
+%%                     Create folder for saving data
+% =========================================================================
+rdir = res_path;
+%['..',filesep,'results',filesep,datestr(clock, 'yyyymmdd'),filesep];
+if ~exist(rdir,'dir')
+    mkdir(rdir)
+end
+%==========================================================================
+%%                          Experimental data
+% Load the structure EXP containing all the data for analyzing experimental
+% data. This structure is created with the routine 'CreateExperiment.m'.
+%==========================================================================
+if (EXPERIMENTAL == 1)
+    load([exp_path,'EXP_',exp_file])
+%     if (EXP_DMD == 1)
+%      %   DOT.DMDpath = [EXP.path.data_folder,EXP.path.day,filesep,...
+%      %       EXP.path.calib_dir,filesep];
+%         DOT.DMDpath = [exp_path,'Calibration',filesep]; 
+%         %DOT.DMDpath = './experimental/data/201510_Calibration/';
+%         DOT.DMDfile = EXP.path.calib_file;
+%     end
+end
+
+%==========================================================================
+
+
+%% ====================== VOLUME DEFINITION ===============================
+%% Background optical properties
+DOT.opt.muaB = P(MUAB).Value;          % mm-1
+DOT.opt.muspB = P(MUSB).Value;             % mm-1
+%vi = 1000;          % (mm3) volume of the inclusion
+DOT.opt.nB = 1.4;
+DOT.opt.nE = 1.;   % external refractive index
+DOT.opt.cs = 0.299/DOT.opt.nB;       % speed of light in medium
+DOT.opt.kap = 1/(3*DOT.opt.muspB);
+DOT.A = A_factor(DOT.opt.nB/DOT.opt.nE); % A factor for boundary conditions
+
+%==========================================================================
+%%                                  SET GRID
+%==========================================================================
+DOT.grid.x1 = P(X1).Value;%0
+DOT.grid.x2 = P(X2).Value;%64
+DOT.grid.dx = P(DX).Value;%2
+
+DOT.grid.y1 = P(Y1).Value;%0
+DOT.grid.y2 = P(Y2).Value;%58           
+DOT.grid.dy = DOT.grid.dx;
+
+DOT.grid.z1 = P(Z1).Value;%0        
+DOT.grid.z2 = P(Z2).Value;%32         
+DOT.grid.dz = DOT.grid.dx;
+
+DOT.grid = setGrid(DOT); 
+
+DOT.opt.Mua = ones(DOT.grid.dim) * DOT.opt.muaB;
+DOT.opt.Musp = ones(DOT.grid.dim) * DOT.opt.muspB;
+%==========================================================================
+%%                      Set Heterogeneities
+%==========================================================================
+%--------------------------- INCLUSION 1 ---------------------------------%
+DOT.opt.hete.type  = 'Mua';
+DOT.opt.hete.geometry = 'Sphere';
+DOT.opt.hete.c     = [P(XP).Value, P(YP).Value, P(ZP).Value];   % down
+% DOT.opt.hete.c     = [35, 25, 16];   % down
+% DOT.opt.hete.d     = (M * [0, 0, -1]')';   % down
+% DOT.opt.hete.l     = 20;
+DOT.opt.hete.sigma = 5;
+DOT.opt.hete.distrib = 'OFF';
+DOT.opt.hete.profile = 'Step';%'Gaussian';
+%DOT.opt.hete.val   = 2. * DOT.opt.muaB;
+DOT.opt.hete.val   = P(MUAP).Value+DOT.opt.muaB;
+[DOT,DOT.opt.hete] = setHete(DOT,DOT.opt.hete);
+%--------------------------- INCLUSION 2 ---------------------------------%
+% DOT.opt.hete2.type  = 'Mua';
+% DOT.opt.hete2.geometry = 'Sphere';
+% DOT.opt.hete2.c     = [40, 20, 5];   % down
+% % DOT.opt.hete.d     = (M * [0, 0, -1]')';   % down
+% % DOT.opt.hete.l     = 20;
+% DOT.opt.hete2.sigma = 3;
+% DOT.opt.hete2.distrib = 'OFF';
+% DOT.opt.hete2.profile = 'Gaussian';%'Gaussian';
+% DOT.opt.hete2.val   = 1.5 * DOT.opt.muaB;
+% [DOT,DOT.opt.hete2] = setHete(DOT,DOT.opt.hete2);
+
+%==========================================================================
+%%                         Radiometry
+%==========================================================================
+%InputParm;
+
+% unitary parameters
+DetAreaUnitary=1; %(mm2) area of the detector unitary (will be adjusted for actual area after)
+SourcePowerUnitary=1; % mW Power of the Unitary Source (will be adjusted for power later on)
+TaqUnitary=1; %s Acquisition Time unitary
+OpticalEfficiency=0.9; % Typical efficiency of the optical path
+LambdaUnitary=800; %Wavelength (nm) (just for calculation of input photons)
+RepUnitary=1E6; % (MHz) Reference Repetition rate Unitary
+dtUnitary=1;  % (ps) Unitary bin for the temporal axis
+Area=4; %mm
+QuantumEfficiency=0.05;
+
+% constants
+h=6.63E-34; % (m2.kg/s) Plank Constant
+c=3E8; % m/s
+mW_2_W=1E-3;
+mm2_2_m2=1E-6;
+nm_2_m=1E-9;
+
+% unitary factor
+phE=h*c/(LambdaUnitary*nm_2_m); % (J) photon energy
+phN=SourcePowerUnitary*mW_2_W*TaqUnitary/phE; % Number of Injected Photons
+ResponsivityUnitary=DetAreaUnitary*OpticalEfficiency; % mm2
+RealFactor=phN*ResponsivityUnitary*dtUnitary; % Note: you need to divide for PI to transform Reflectance into Radiance
+
+% attualize to effective parameters
+RealFactor=RealFactor*Area*QuantumEfficiency*P(DT).Value*P(PW).Value*P(TA).Value;
+%==========================================================================
+%%                         Time domain parameters
+%==========================================================================
+if DOT.TD == 1
+    DOT.time.dt = P(DT).Value;    % time step in picoseconds
+    DOT.time.nstep = floor(P(MT).Value/P(DT).Value)+1;    % number of temporal steps        260
+    DOT.time.noise = 'Poisson';         % 'Poisson','Gaussian','none'
+                                        % if 'Poisson' and sigma>0 a
+                                        % Gaussian noise is added before
+                                        % Poisson noise.
+    DOT.time.sigma = 1e-2;              % variance for gaussian noise
+    DOT.time.self_norm = false;         % true for self-normalized TPSF   
+    DOT.time.TotCounts = P(CR).Value;   % total counts for the maximum-energy
+                                        % TPSF. The other are consequently
+                                        % rescaled
+
+% --------- resample IRF following the parameters in DOT.time -------------
+if ((EXPERIMENTAL == 1) && (EXP_IRF == 1))
+    switch lower(EXP_DELTA)
+        case 'peak'
+            EXP.irf.data = zeros(size(EXP.irf.data));
+            EXP.irf.data(EXP.irf.peak.pos) = 1;
+        case 'baric'
+            EXP.irf.data = zeros(size(EXP.irf.data));
+            EXP.irf.data(EXP.irf.baric.pos) = 1;
+    end
+    % PATCH IRF
+    temp=load('SIPMNew.txt');
+    EXP.irf.data=temp(:,2);
+    EXP.time.axis=temp(:,1);
+    % END PATCH IRF
+    %DOT.time.irf.data = resampleSPC(EXP.irf.data,EXP.time.axis,DOT.time.dt,'norm');
+    DOT.time.irf.data = resampleSPCinterp(EXP.irf.data,EXP.time.axis,DOT.time.dt,'norm');
+    %DOT.time.irf.data = interp1(EXP.time.axis,EXP.irf.data,EXP.time.axis(1):DOT.time.dt:EXP.time.axis(end));
+    [MaxIRF,Chan0]=max(DOT.time.irf.data);
+else
+    DOT.time.irf.data = 0;
+    Chan0=1;
+end
+end
+
+%==========================================================================
+%%  SETTING SOURCES (QVEC), DETECTORS (MVEC) AND THEIR PERMUTATIONS (DMASK)
+%==========================================================================
+% SOLUS SOURCES - DETECTOR POSITIONS
+xs = linspace(-25+6,25-6,4);
+ys = [-5-6-3,5+6+3];
+zs = 0;
+
+xd = linspace(-25+6,25-6,4);
+yd = [-5-6+3,5+6-3];
+zd = 0;
+
+[xxs,yys,zzs] = ndgrid(xs,ys,zs);
+[xxd,yyd,zzd] = ndgrid(xd,yd,zd);
+
+DOT.Source.Pos = [xxs(:),yys(:),zzs(:)];
+DOT.Detector.Pos = [xxd(:),yyd(:),zzd(:)];
+DOT.Source.Ns=size(DOT.Source.Pos,1);
+DOT.Detector.Nd=size(DOT.Detector.Pos,1);
+
+%% Define permutation matrix
+% Source Detector arrangement (1=all; 2=only rhozero; 3=no rhozero)
+% ALL COMBINATIONS
+if P(SD).Value==1, DOT.dmask = logical(ones(DOT.Detector.Nd,DOT.Source.Ns)); end
+% NULL-DISTANCE ONLY
+if P(SD).Value==2, DOT.dmask = logical(eye(DOT.Detector.Nd,DOT.Source.Ns)); end
+% ALL EXCEPT NULL-DISTANCE
+if P(SD).Value==3, DOT.dmask = logical(ones(DOT.Detector.Nd,DOT.Source.Ns) - ...
+    diag(diag(ones(DOT.Detector.Nd,DOT.Source.Ns))));                       end              
+% plot DMASK
+figure, imagesc(DOT.dmask),xlabel('Sources'),ylabel('Meas'),title('Dmask');
+
+%% plot source-detectors and sphere
+figure,plot3(DOT.Source.Pos(:,1),DOT.Source.Pos(:,2),DOT.Source.Pos(:,3),'r*'),grid,
+xlabel('x'),ylabel('y'),zlabel('z'),hold on
+plot3(DOT.opt.hete.c(1),DOT.opt.hete.c(2),DOT.opt.hete.c(3),'bo'),
+[a,b,c]= sphere(100);
+surf(a*DOT.opt.hete.sigma + DOT.opt.hete.c(1), ...
+    b*DOT.opt.hete.sigma + DOT.opt.hete.c(2),...
+    c*DOT.opt.hete.sigma + DOT.opt.hete.c(3))
+set(gca,'zdir','reverse'),axis equal,
+xlim([DOT.grid.x1 DOT.grid.x2]),...
+    ylim([DOT.grid.y1 DOT.grid.y2]),...
+    zlim([DOT.grid.z1 DOT.grid.z2])
+
+
+
+
+
 
 %==========================================================================
 % The structure DOT contains all geometrical parameters needed also for 
