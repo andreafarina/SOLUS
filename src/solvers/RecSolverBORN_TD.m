@@ -42,10 +42,33 @@ if numel(irf)>1
     clear z
 end
 proj = WindowTPSF(proj,twin);
+[ntwin,nsd]=size(proj);
 proj = proj(:);
 ref = ref(:);
 data = data(:);
 factor = proj./ref;
+
+%% Plot FIG
+nx=sqrt(nsd);
+figure,
+matref=reshape(ref,ntwin,nsd);
+matdata=reshape(data,ntwin,nsd);
+matproj=reshape(proj,ntwin,nsd);
+figure,semilogy(matref), title('sumref');
+figure,semilogy(matdata), title('sumdata');
+figure,semilogy(matproj), title('sumproj');
+figure,semilogy(matdata./matref), title('ratio ref/data');
+CWref=sum(matref,1); CWref=reshape(CWref,nx,nx);
+CWdata=sum(matdata,1); CWdata=reshape(CWdata,nx,nx);
+figure,
+subplot(1,3,1), imagesc(CWref);
+subplot(1,3,2), imagesc(CWdata);
+subplot(1,3,3), imagesc(CWdata./CWref);
+figure,
+subplot(1,3,1), pcolor(CWref), shading interp;
+subplot(1,3,2), pcolor(CWdata), shading interp;
+subplot(1,3,3), pcolor(CWdata./CWref), shading interp;
+
 
 data = data .* factor;
 ref = ref .* factor;

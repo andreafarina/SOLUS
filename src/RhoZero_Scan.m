@@ -34,6 +34,7 @@ session = '201612';
 exp_path = ['D:/Beta/Simulations/Solus/data/',session,'/'];
 res_path = ['D:/Beta/Simulations/Solus/results/',session,'/'];
 exp_file = 'SOLUS_test';
+exp_file = 'DATA_EXP';
 %==========================================================================
 %%                              OPTIONS 
 %==========================================================================
@@ -52,7 +53,7 @@ EXP_DELTA = 'peak';    % Substitute the IRF with delta function on the
                         % 'all' to use the experimental IRF.
                     
 EXP_DMD = 0;            % Use the experimental registration data for surce and detector
-EXP_DATA = 0;           % Load experimental data and use them for reconstruction
+EXP_DATA = 1;           % Load experimental data and use them for reconstruction
 % -------------------------------------------------------------------------
 DOT.TYPE = 'pointlike';   % 'pointlike','linesources' or 'pattern'
 DOT.TD = 1;             % Time-domain: enable the calculation of TPSF
@@ -138,8 +139,10 @@ DOT.opt.hete.val   = 2. * DOT.opt.muaB;
 %%                         Time domain parameters
 %==========================================================================
 if DOT.TD == 1
-    DOT.time.dt = (50e3/4096/6) * 4;    % time step in picoseconds
-    DOT.time.nstep = 260;               % number of temporal steps
+%    DOT.time.dt = (50e3/4096/6) * 4;    % time step in picoseconds
+%    DOT.time.nstep = 260;               % number of temporal steps
+    DOT.time.dt = (50e3/1024/4);    % time step in picoseconds
+    DOT.time.nstep = 192;               % number of temporal steps
     DOT.time.noise = 'Poisson';         % 'Poisson','Gaussian','none'
                                         % if 'Poisson' and sigma>0 a
                                         % Gaussian noise is added before
@@ -161,9 +164,12 @@ if ((EXPERIMENTAL == 1) && (EXP_IRF == 1))
             EXP.irf.data(EXP.irf.baric.pos) = 1;
     end
     DOT.time.irf.data = resampleSPC(EXP.irf.data,EXP.time.axis,DOT.time.dt,'norm');
+    [MaxIRF,Chan0]=max(DOT.time.irf.data);
+
 else
     DOT.time.irf.data = 0;
 end
+
 end
 
 %==========================================================================
@@ -180,11 +186,11 @@ end
 % DOT.Source.Pos = [xxs(:),yys(:),zzs(:)];
 % DOT.Detector.Pos = [xxs(:),yys(:),zzs(:)];
 
-% non-contact PTB setup 40x40 mm2 scan with 32x32 and s-d 5mm
+% non-contact PTB setup 40x40 mm2 scan with 8x8 and s-d 5mm
 % rhozero
 rhosd = 5;
-DOT.Source.Pos = RasterScan(-20-rhosd/2,20-rhosd/2,-20,20,32,32,0);
-DOT.Detector.Pos = RasterScan(-20+rhosd/2,20+rhosd/2,-20,20,32,32,0);
+DOT.Source.Pos = RasterScan(-20-rhosd/2,20-rhosd/2,-20,20,8,8,0);
+DOT.Detector.Pos = RasterScan(-20+rhosd/2,20+rhosd/2,-20,20,8,8,0);
 DOT.Source.Ns=size(DOT.Source.Pos,1);
 DOT.Detector.Nd=size(DOT.Detector.Pos,1);
 %% Define permutation matrix
@@ -419,8 +425,11 @@ end
 %==========================================================================
 if strcmpi(REC.domain,'td')
       
-  twin = CreateTimeWindows(REC.time.nstep,[10,REC.time.nstep],'even',20);
-  REC.time.twin = twin + 90;
+  %twin = CreateTimeWindows(REC.time.nstep,[10,REC.time.nstep],'even',20);
+  twin = CreateTimeWindows(REC.time.nstep,[1,REC.time.nstep],'even',6);
+  %REC.time.twin = twin + 90;
+  %REC.time.twin = twin + Chan0-1; % Chan0 is IRF peak channel, add -1 since twin starts from 1
+  REC.time.twin = twin + EXP.time.roi(1)-1; % Chan0 is IRF peak channel, add -1 since twin starts from 1
   REC.time.nwin = size(REC.time.twin,1);
 
   % plot roi on the first measruement
@@ -460,7 +469,7 @@ REC.opt.nB = 1.4;
 REC.cm = 0.3/REC.opt.nB;
 %REC.freq = 0;
 % ---------------------- Solver and regularization ------------------------
-REC.solver.tau = 1e-1;            % regularisation parameter
+REC.solver.tau = 1e-2;            % regularisation parameter
 REC.solver.type = 'Born';      % 'born','GN': gauss-newton, 
                                   % 'USprior': Simon's strutural prior
                                   % 'LM': Levenberg-Marquardt,
