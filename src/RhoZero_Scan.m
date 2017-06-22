@@ -31,9 +31,9 @@ verbosity = 0;
 SHOW_MESH = 0;          % 1 to show fluence and projected pattern on the mesh
 filename = 'RhoZero_Scan';% Filename  prefix 
 session = '201612';
-exp_path = ['D:/Beta/Simulations/Solus/data/',session,'/'];
-res_path = ['D:/Beta/Simulations/Solus/results/',session,'/'];
-exp_file = 'SOLUS_test';
+exp_path = ['/Volumes/Work/Simulations/Solus/data/',session,'/'];
+res_path = ['/Volumes/Work/Simulations/Solus/results/',session,'/'];
+%exp_file = 'SOLUS_test';
 exp_file = 'DATA_EXP';
 %==========================================================================
 %%                              OPTIONS 
@@ -53,7 +53,7 @@ EXP_DELTA = 'peak';    % Substitute the IRF with delta function on the
                         % 'all' to use the experimental IRF.
                     
 EXP_DMD = 0;            % Use the experimental registration data for surce and detector
-EXP_DATA = 1;           % Load experimental data and use them for reconstruction
+EXP_DATA = 0;           % Load experimental data and use them for reconstruction
 % -------------------------------------------------------------------------
 DOT.TYPE = 'pointlike';   % 'pointlike','linesources' or 'pattern'
 DOT.TD = 1;             % Time-domain: enable the calculation of TPSF
@@ -96,7 +96,7 @@ DOT.A = A_factor(DOT.opt.nB/DOT.opt.nE); % A factor for boundary conditions
 %==========================================================================
 DOT.grid.x1 = -30;
 DOT.grid.x2 = 30;
-DOT.grid.dx = 5;
+DOT.grid.dx = 2;
 
 DOT.grid.y1 = -30;
 DOT.grid.y2 = 30;           
@@ -115,26 +115,26 @@ DOT.opt.Musp = ones(DOT.grid.dim) * DOT.opt.muspB;
 %==========================================================================
 %--------------------------- INCLUSION 1 ---------------------------------%
 DOT.opt.hete.type  = 'Mua';
-DOT.opt.hete.geometry = 'Sphere';
-DOT.opt.hete.c     = [-10, -8, 10];   % down
-% DOT.opt.hete.d     = (M * [0, 0, -1]')';   % down
-% DOT.opt.hete.l     = 20;
-DOT.opt.hete.sigma = 5;
+DOT.opt.hete.geometry = 'Cylinder';
+DOT.opt.hete.c     = [10, -32, 3];   % down
+DOT.opt.hete.d     = [0, 1, 0];   % down
+DOT.opt.hete.l     = 100;
+DOT.opt.hete.sigma = 1;
 DOT.opt.hete.distrib = 'OFF';
-DOT.opt.hete.profile = 'Step';%'Gaussian';
-DOT.opt.hete.val   = 2. * DOT.opt.muaB;
+DOT.opt.hete.profile = 'Gaussian';%'Gaussian';
+DOT.opt.hete.val   = 2 * DOT.opt.muaB;
 [DOT,DOT.opt.hete] = setHete(DOT,DOT.opt.hete);
-%--------------------------- INCLUSION 2 ---------------------------------%
-% DOT.opt.hete2.type  = 'Mua';
-% DOT.opt.hete2.geometry = 'Sphere';
-% DOT.opt.hete2.c     = [40, 20, 5];   % down
-% % DOT.opt.hete.d     = (M * [0, 0, -1]')';   % down
-% % DOT.opt.hete.l     = 20;
-% DOT.opt.hete2.sigma = 3;
-% DOT.opt.hete2.distrib = 'OFF';
-% DOT.opt.hete2.profile = 'Gaussian';%'Gaussian';
-% DOT.opt.hete2.val   = 1.5 * DOT.opt.muaB;
-% [DOT,DOT.opt.hete2] = setHete(DOT,DOT.opt.hete2);
+%----------------------------- INCLUSION 2 -------------------------------%
+DOT.opt.hete2.type  = 'Mua';
+DOT.opt.hete2.geometry = 'Cylinder';
+DOT.opt.hete2.c     = [-32, 10, 15];  % down
+DOT.opt.hete2.d     = [ 1, 0, 0];   % down
+DOT.opt.hete2.l     = 100;
+DOT.opt.hete2.sigma = 1 ;
+DOT.opt.hete2.distrib = 'OFF';
+DOT.opt.hete2.profile = 'Gaussian';
+DOT.opt.hete2.val   = 2 * DOT.opt.muaB;
+[DOT,DOT.opt.hete2] = setHete(DOT,DOT.opt.hete2);
 %==========================================================================
 %%                         Time domain parameters
 %==========================================================================
@@ -147,7 +147,7 @@ if DOT.TD == 1
                                         % if 'Poisson' and sigma>0 a
                                         % Gaussian noise is added before
                                         % Poisson noise.
-    DOT.time.sigma = 1e-2;              % variance for gaussian noise
+    DOT.time.sigma = 0;%1e-2;              % variance for gaussian noise
     DOT.time.self_norm = false;         % true for self-normalized TPSF   
     DOT.time.TotCounts = 1e6;           % total counts for the maximum-energy
                                         % TPSF. The other are consequently
@@ -208,13 +208,34 @@ DOT.dmask = logical(eye(DOT.Detector.Nd,DOT.Source.Ns));
 figure, imagesc(DOT.dmask),xlabel('Sources'),ylabel('Meas'),title('Dmask');
 
 %% plot source-detectors and sphere
-figure,plot3(DOT.Source.Pos(:,1),DOT.Source.Pos(:,2),DOT.Source.Pos(:,3),'r*'),grid,
+% figure,plot3(DOT.Source.Pos(:,1),DOT.Source.Pos(:,2),DOT.Source.Pos(:,3),'r*'),grid,
+% xlabel('x'),ylabel('y'),zlabel('z'),hold on
+% plot3(DOT.opt.hete.c(1),DOT.opt.hete.c(2),DOT.opt.hete.c(3),'bo'),
+% [a,b,c]= sphere(100);
+% surf(a*DOT.opt.hete.sigma + DOT.opt.hete.c(1), ...
+%     b*DOT.opt.hete.sigma + DOT.opt.hete.c(2),...
+%     c*DOT.opt.hete.sigma + DOT.opt.hete.c(3))
+% set(gca,'zdir','reverse'),axis equal,
+% xlim([DOT.grid.x1 DOT.grid.x2]),...
+%     ylim([DOT.grid.y1 DOT.grid.y2]),...
+%     zlim([DOT.grid.z1 DOT.grid.z2])
+figure(2),
+plot3(DOT.Source.Pos(:,1),DOT.Source.Pos(:,2),DOT.Source.Pos(:,3),'r*'),grid,
 xlabel('x'),ylabel('y'),zlabel('z'),hold on
-plot3(DOT.opt.hete.c(1),DOT.opt.hete.c(2),DOT.opt.hete.c(3),'bo'),
-[a,b,c]= sphere(100);
+% cylinder 1
+[b,c,a]= cylinder(ones(1000,1),1000);
 surf(a*DOT.opt.hete.sigma + DOT.opt.hete.c(1), ...
-    b*DOT.opt.hete.sigma + DOT.opt.hete.c(2),...
+    b*DOT.opt.hete.l + DOT.opt.hete.c(2),...
     c*DOT.opt.hete.sigma + DOT.opt.hete.c(3))
+set(gca,'zdir','reverse'),axis equal,
+xlim([DOT.grid.x1 DOT.grid.x2]),...
+    ylim([DOT.grid.y1 DOT.grid.y2]),...
+    zlim([DOT.grid.z1 DOT.grid.z2])
+% cylinder 2
+[c,a,b]= cylinder(ones(1000,1),1000);
+surf(a*DOT.opt.hete2.l + DOT.opt.hete2.c(1), ...
+    b*DOT.opt.hete2.sigma + DOT.opt.hete2.c(2),...
+    c*DOT.opt.hete2.sigma + DOT.opt.hete2.c(3))
 set(gca,'zdir','reverse'),axis equal,
 xlim([DOT.grid.x1 DOT.grid.x2]),...
     ylim([DOT.grid.y1 DOT.grid.y2]),...
@@ -277,7 +298,20 @@ if DOT.TD == 1
         end
     end
     clear z
-
+    %------ Pre-process simulated data to fit RhoZeroScan format ------
+    if ((EXPERIMENTAL == 1) && (EXP_DATA == 0))
+        Nlambda = 2;
+        Nrep = 10;
+        Tacq = 10;  %sec
+        Nm = size(RefTD,2);
+        counts = ones(1,2) * ...
+            DOT.time.TotCounts / (Nlambda * Nm) * Nrep * Tacq;
+        [m,j] = max(RefCW);
+        [RefTD,Hfact] = PreProcessECBO(RefTD,1,[65,128;193,256],...
+            counts);
+        DataTD = bsxfun(@times,Hfact',DataTD);
+    end
+    %    
     %-------------------- Add noise to TD data ------------------------
     sdTD = ones(size(DataTD));
     if ~strcmpi(DOT.time.noise,'none')
@@ -427,14 +461,14 @@ if strcmpi(REC.domain,'td')
       
   %twin = CreateTimeWindows(REC.time.nstep,[10,REC.time.nstep],'even',20);
   twin = CreateTimeWindows(REC.time.nstep,[1,REC.time.nstep],'even',6);
-  %REC.time.twin = twin + 90;
+  REC.time.twin = twin + 90;
   %REC.time.twin = twin + Chan0-1; % Chan0 is IRF peak channel, add -1 since twin starts from 1
   REC.time.twin = twin + EXP.time.roi(1)-1; % Chan0 is IRF peak channel, add -1 since twin starts from 1
   REC.time.nwin = size(REC.time.twin,1);
 
   % plot roi on the first measruement
   figure(1000);
-  semilogy(DataTD),ylim([max(DataTD(:))/10000 max(DataTD(:))])
+  semilogy(DataTD),ylim([max(DataTD(:))/10000000 max(DataTD(:))])
   for i = 1:REC.time.nwin
     rectangle('Position',[double(REC.time.twin(i,1)),min(DataTD(DataTD(:)>0)),...
         double(REC.time.twin(i,2)-REC.time.twin(i,1)+1),double(max(DataTD(:,1)))]);
@@ -469,7 +503,7 @@ REC.opt.nB = 1.4;
 REC.cm = 0.3/REC.opt.nB;
 %REC.freq = 0;
 % ---------------------- Solver and regularization ------------------------
-REC.solver.tau = 1e-2;            % regularisation parameter
+REC.solver.tau = 1e-1;            % regularisation parameter
 REC.solver.type = 'Born';      % 'born','GN': gauss-newton, 
                                   % 'USprior': Simon's strutural prior
                                   % 'LM': Levenberg-Marquardt,
