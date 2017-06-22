@@ -34,7 +34,7 @@ for i=1:step:N
             subplot(ceil(sqrt(Nsub/1.5)),ceil(1.5*sqrt(Nsub/1.5)),l), 
                      imagesc(Data(:,:,i)',clim),
                      %pcolor(Data(:,:,i)'), shading interp
-                     colorbar;
+                     %colorbar;
               axis image%,axis xy
             
             %end

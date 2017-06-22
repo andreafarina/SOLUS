@@ -34,7 +34,7 @@ session = '201612';
 exp_path = ['D:/Beta/Simulations/Solus/data/',session,'/'];
 res_path = ['D:/Beta/Simulations/Solus/results/',session,'/'];
 exp_file = 'SOLUS_test';
-exp_file = 'DATA_EXP_4x';
+exp_file = 'DATA_EXP_2x';
 %==========================================================================
 %%                              OPTIONS 
 %==========================================================================
@@ -192,11 +192,11 @@ end
 % rhozero
 rhosd = 5;
 % 8x8
-DOT.Source.Pos = RasterScan(-20-rhosd/2,20-rhosd/2,-20,20,8,8,0);
-DOT.Detector.Pos = RasterScan(-20+rhosd/2,20+rhosd/2,-20,20,8,8,0);
+% DOT.Source.Pos = RasterScan(-20-rhosd/2,20-rhosd/2,-20,20,8,8,0);
+% DOT.Detector.Pos = RasterScan(-20+rhosd/2,20+rhosd/2,-20,20,8,8,0);
 % 16x16
-% DOT.Source.Pos = RasterScan(-20-rhosd/2,20-rhosd/2,-20,20,16,16,0);
-% DOT.Detector.Pos = RasterScan(-20+rhosd/2,20+rhosd/2,-20,20,16,16,0);
+DOT.Source.Pos = RasterScan(-20-rhosd/2,20-rhosd/2,-20,20,16,16,0);
+DOT.Detector.Pos = RasterScan(-20+rhosd/2,20+rhosd/2,-20,20,16,16,0);
 
 DOT.Source.Ns=size(DOT.Source.Pos,1);
 DOT.Detector.Nd=size(DOT.Detector.Pos,1);

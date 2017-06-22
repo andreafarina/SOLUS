@@ -6,16 +6,25 @@
 %% CHOICES
 IS_BKG(1)=1;
 IS_BKG(2)=1;
-iL=1;
+iL=2;
+BIN_X=2;
 
 
 
 %% FILES
 PathServer='D:\Beta\';
-PathDataIn='Data\ScanHead\for_polimi_dat\'; % use 'Data\ScanHead\for_polimi_dat_01\' for 1x, 'Data\ScanHead\for_polimi_dat\' for 4x
+if BIN_X==2
+    PathDataIn='Data\ScanHead\for_polimi_dat_1x\'; % use 'Data\ScanHead\for_polimi_dat_1x\' for 1x, 'Data\ScanHead\for_polimi_dat\' for 4x
+else
+    PathDataIn='Data\ScanHead\for_polimi_dat\'; % use 'Data\ScanHead\for_polimi_dat_1x\' for 1x, 'Data\ScanHead\for_polimi_dat\' for 4x
+end    
 PathDataOut='Simulations\Solus\data\201612\';
 FileNameIn='S04_2_DTOFarray_6D_single_binxy_nobs_blocksum.mat';
-FileNameOut='EXP_DATA_EXP_4x.mat';
+if BIN_X==2
+    FileNameOut='EXP_DATA_EXP_2x.mat';
+else
+    FileNameOut='EXP_DATA_EXP_4x.mat';
+end   
 FileNamePeak2='peak_001_2_1.sdt';
 
 %% TIMING

@@ -92,10 +92,17 @@ DataRef=zeros(nt,ny,nx);
 %[ndet1,nt1,ny1,nx1]=size(Rest);
 DataSpc(RoiChan{1},:,:)=squeeze(Act(1,RoiChan{1},:,:));
 DataSpc(chan_shift_det2+RoiChan{2},:,:)=squeeze(Act(1,RoiChan{2},:,:));
-EXP.data.spc=reshape(DataSpc,[nt,nx*ny]);
 DataRef(RoiChan{1},:,:)=squeeze(Rest(1,RoiChan{1},:,:));
 DataRef(chan_shift_det2+RoiChan{2},:,:)=squeeze(Rest(1,RoiChan{2},:,:));
-EXP.data.ref=reshape(DataRef,[nt,nx*ny]);
+
+% BINNING and Rehape
+if BIN_X==2
+    DataSpc=squeeze(sum(reshape(DataSpc,[nt,ny,BIN_X,nx/BIN_X]),3));
+    DataRef=squeeze(sum(reshape(DataRef,[nt,ny,BIN_X,nx/BIN_X]),3));
+end
+EXP.data.spc=reshape(DataSpc,[nt,nx/BIN_X*ny]);
+EXP.data.ref=reshape(DataRef,[nt,nx/BIN_X*ny]);
+EXP.time.roi=[RoiChan{1}(1), RoiChan{2}(end)+chan_shift_det2];
 
 %% SAVE
 save([PathServer,PathDataOut,FileNameOut],'EXP');
