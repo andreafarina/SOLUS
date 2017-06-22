@@ -4,9 +4,8 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %% CHOICES
-IS_BKG(1)=1;
-IS_BKG(2)=1;
-iL=1;
+IS_BKG=1;
+il=1;
 
 
 
@@ -28,13 +27,15 @@ l(1) = 760; % first line in scan
 l(2) = 860;
 
 %% ROI
-BkgChan{1}=[300:400];
-BkgChan{2}=[300:400];
-RoiChan{1}=[30:100];
-RoiChan{2}=[90:160];
+Bkg{1=[300:400];
+Bkg{2)=[300:400];
+Roi{1)=[30:100];
+Roi{2)=[90:160];
 
 %% Time t0
 DTOF_reduced = 301:700;
+Shift_from_peak(1)=0; %ps
+Shift_from_peak(2)=0 %ps
 
 % REGION OF INTEREST
 %EXP.time.roi1 = [1:64,65:128]; %bkg 256:end, good up to 200
@@ -49,7 +50,7 @@ DTOF_reduced = 301:700;
 
 %% ACTIVATION
 rangeAct=20+[20:40,80:100];
-rangeRest=20+[-10:10];
+rangeRef=20+[-10:10];
 
 
 

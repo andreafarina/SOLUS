@@ -95,7 +95,4 @@ DataSpc(chan_shift_det2+RoiChan{2},:,:)=squeeze(Act(1,RoiChan{2},:,:));
 EXP.data.spc=reshape(DataSpc,[nt,nx*ny]);
 DataRef(RoiChan{1},:,:)=squeeze(Rest(1,RoiChan{1},:,:));
 DataRef(chan_shift_det2+RoiChan{2},:,:)=squeeze(Rest(1,RoiChan{2},:,:));
-EXP.data.ref=reshape(DataRef,[nt,nx*ny]);
-
-%% SAVE
-save([PathServer,PathDataOut,FileNameOut],'EXP');
+EXP.data.spc=reshape(DataSpc,[nt,nx*ny]);

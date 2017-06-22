@@ -16,7 +16,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 close all;
-%clear all;
+clear all;
 setPath;
 addpath subroutines solvers
 addpath(genpath('util'))
@@ -34,7 +34,7 @@ session = '201612';
 exp_path = ['D:/Beta/Simulations/Solus/data/',session,'/'];
 res_path = ['D:/Beta/Simulations/Solus/results/',session,'/'];
 exp_file = 'SOLUS_test';
-exp_file = 'DATA_EXP';
+exp_file = 'DATA_EXP_4bin';
 %==========================================================================
 %%                              OPTIONS 
 %==========================================================================
@@ -96,7 +96,7 @@ DOT.A = A_factor(DOT.opt.nB/DOT.opt.nE); % A factor for boundary conditions
 %==========================================================================
 DOT.grid.x1 = -30;
 DOT.grid.x2 = 30;
-DOT.grid.dx = 5;
+DOT.grid.dx = 3;
 
 DOT.grid.y1 = -30;
 DOT.grid.y2 = 30;           
@@ -426,7 +426,7 @@ end
 if strcmpi(REC.domain,'td')
       
   %twin = CreateTimeWindows(REC.time.nstep,[10,REC.time.nstep],'even',20);
-  twin = CreateTimeWindows(REC.time.nstep,[1,REC.time.nstep],'even',6);
+  twin = CreateTimeWindows(REC.time.nstep,[1,REC.time.nstep],'even',3);
   %REC.time.twin = twin + 90;
   %REC.time.twin = twin + Chan0-1; % Chan0 is IRF peak channel, add -1 since twin starts from 1
   REC.time.twin = twin + EXP.time.roi(1)-1; % Chan0 is IRF peak channel, add -1 since twin starts from 1
