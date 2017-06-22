@@ -32,7 +32,8 @@ SHOW_MESH = 0;          % 1 to show fluence and projected pattern on the mesh
 filename = 'RhoZero_Scan';% Filename  prefix 
 session = '201612';
 exp_path = ['/Volumes/Work/Simulations/Solus/data/',session,'/'];
-res_path = ['/Volumes/Work/Simulations/Solus/results/',session,'/'];
+%res_path = ['/Volumes/Work/Simulations/Solus/results/',session,'/'];
+res_path = '../results/201706/';
 %exp_file = 'SOLUS_test';
 exp_file = 'DATA_EXP';
 %==========================================================================
@@ -96,7 +97,7 @@ DOT.A = A_factor(DOT.opt.nB/DOT.opt.nE); % A factor for boundary conditions
 %==========================================================================
 DOT.grid.x1 = -30;
 DOT.grid.x2 = 30;
-DOT.grid.dx = 2;
+DOT.grid.dx = 1;
 
 DOT.grid.y1 = -30;
 DOT.grid.y2 = 30;           
@@ -464,6 +465,7 @@ if strcmpi(REC.domain,'td')
   REC.time.twin = twin + 90;
   %REC.time.twin = twin + Chan0-1; % Chan0 is IRF peak channel, add -1 since twin starts from 1
   REC.time.twin = twin + EXP.time.roi(1)-1; % Chan0 is IRF peak channel, add -1 since twin starts from 1
+  REC.time.twin(3:4,:) = [];
   REC.time.nwin = size(REC.time.twin,1);
 
   % plot roi on the first measruement
@@ -504,7 +506,7 @@ REC.cm = 0.3/REC.opt.nB;
 %REC.freq = 0;
 % ---------------------- Solver and regularization ------------------------
 REC.solver.tau = 1e-1;            % regularisation parameter
-REC.solver.type = 'Born';      % 'born','GN': gauss-newton, 
+REC.solver.type = 'born';      % 'born','GN': gauss-newton, 
                                   % 'USprior': Simon's strutural prior
                                   % 'LM': Levenberg-Marquardt,
                                   % 'l1': L1-based minimization
@@ -525,6 +527,7 @@ if isfield(REC.opt,'Mua')
         REC.grid.z1,REC.grid.z2,REC.grid.dz,1,...
           0,max(REC.opt.Mua(:)));
     suptitle('Mua');
+    save_figure([res_path,'Reference']);
 end
 % ------------------------ Reference musp ---------------------------------
 % if isfield(REC.opt,'Musp')
@@ -608,6 +611,7 @@ figure(304);
 ShowRecResults(REC.grid,reshape(REC.opt.bmua,REC.grid.dim),...
    REC.grid.z1,REC.grid.z2,REC.grid.dz,1,0.00,0.05);
 suptitle('Recon Mua');
+save_figure([res_path,'Reconstruction']);
 % ---------------------------- display musp -------------------------------
 % figure(305);
 % ShowRecResults(REC.grid,reshape(REC.opt.bmusp,REC.grid.dim),...
