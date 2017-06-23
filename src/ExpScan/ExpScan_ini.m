@@ -6,7 +6,7 @@
 %% CHOICES
 IS_BKG(1)=1;
 IS_BKG(2)=1;
-iL=2;
+iL=1;
 BIN_X=2;
 
 

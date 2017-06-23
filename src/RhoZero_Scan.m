@@ -34,7 +34,7 @@ session = '201612';
 exp_path = ['D:/Beta/Simulations/Solus/data/',session,'/'];
 res_path = ['D:/Beta/Simulations/Solus/results/',session,'/'];
 exp_file = 'SOLUS_test';
-exp_file = 'DATA_EXP_4x';
+exp_file = 'DATA_EXP_2x';
 %==========================================================================
 %%                              OPTIONS 
 %==========================================================================
@@ -96,17 +96,18 @@ DOT.A = A_factor(DOT.opt.nB/DOT.opt.nE); % A factor for boundary conditions
 %==========================================================================
 %%                                  SET GRID
 %==========================================================================
-DOT.grid.x1 = -30;
-DOT.grid.x2 = 30;
-DOT.grid.dx = 3;
+DOT.grid.x1 = -20;
+DOT.grid.x2 = 20;
+DOT.grid.dx = 2;
 
-DOT.grid.y1 = -30;
-DOT.grid.y2 = 30;           
+DOT.grid.y1 = -20;
+DOT.grid.y2 = 20;           
 DOT.grid.dy = DOT.grid.dx;
 
 DOT.grid.z1 = 0;        
-DOT.grid.z2 = 30;         
-DOT.grid.dz = DOT.grid.dx;
+DOT.grid.z2 = 24;         
+%DOT.grid.dz = DOT.grid.dx;
+DOT.grid.dz = 4;
 
 DOT.grid = setGrid(DOT); 
 
@@ -192,11 +193,11 @@ end
 % rhozero
 rhosd = 5;
 % 8x8
-DOT.Source.Pos = RasterScan(-20-rhosd/2,20-rhosd/2,-20,20,8,8,0);
-DOT.Detector.Pos = RasterScan(-20+rhosd/2,20+rhosd/2,-20,20,8,8,0);
+% DOT.Source.Pos = RasterScan(-20-rhosd/2,20-rhosd/2,-20,20,8,8,0);
+% DOT.Detector.Pos = RasterScan(-20+rhosd/2,20+rhosd/2,-20,20,8,8,0);
 % 16x16
-% DOT.Source.Pos = RasterScan(-20-rhosd/2,20-rhosd/2,-20,20,16,16,0);
-% DOT.Detector.Pos = RasterScan(-20+rhosd/2,20+rhosd/2,-20,20,16,16,0);
+DOT.Source.Pos = RasterScan(-20-rhosd/2,20-rhosd/2,-20,20,16,16,0);
+DOT.Detector.Pos = RasterScan(-20+rhosd/2,20+rhosd/2,-20,20,16,16,0);
 
 DOT.Source.Ns=size(DOT.Source.Pos,1);
 DOT.Detector.Nd=size(DOT.Detector.Pos,1);
@@ -476,7 +477,7 @@ REC.opt.nB = 1.4;
 REC.cm = 0.3/REC.opt.nB;
 %REC.freq = 0;
 % ---------------------- Solver and regularization ------------------------
-REC.solver.tau = 1e-2;            % regularisation parameter
+REC.solver.tau = 1e-1;            % regularisation parameter
 REC.solver.type = 'Born';      % 'born','GN': gauss-newton, 
                                   % 'USprior': Simon's strutural prior
                                   % 'LM': Levenberg-Marquardt,

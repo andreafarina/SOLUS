@@ -29,6 +29,7 @@ clim = [cmin-eps cmax+eps];
 %FLIP DATA for ECBO
 Data=permute(Data,[2 1 3]);
 Data=flip(Data,2);
+Data=flip(Data,1);
 
 for i=1:step:N
             subplot(ceil(sqrt(Nsub/1.5)),ceil(1.5*sqrt(Nsub/1.5)),l), 
