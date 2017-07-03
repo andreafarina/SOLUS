@@ -594,11 +594,9 @@ tilefigs;
 disp('recon: finished')
 
 %% Extract DYNAMICS
-if ~exist('IS_DYN','var')
-    MuaDot=reshape(REC.opt.bmua,REC.grid.dim);
-    scalp=MuaDot(:,:,1);
-    brain=MuaDot(:,:,4);
-    Dyn(iDyn,1)=mean(scalp(:));
-    Dyn(iDyn,2)=mean(brain(:));
-end
+MuaDot=reshape(REC.opt.bmua,REC.grid.dim);
+scalp=mean(MuaDot(:,:,1)(:));
+brain=mean(MuaDot(:,:,4)(:));
+Dyn(iDyn,:)=mean(MuaDot(:,:,DynLayer));
+
 end

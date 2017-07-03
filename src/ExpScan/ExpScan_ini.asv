@@ -61,8 +61,7 @@ rangeAct=20+[20:40,80:100];
 rangeRest=20+[-10:10];
 
 if exist('IS_DYN','var')
-    rangeAct=1+(iDyn-1)*dT:iDyn*DT;
-end
+    rangeAct=iT:DT20+[20:40,80:100];
 
 
 

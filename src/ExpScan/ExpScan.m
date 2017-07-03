@@ -10,8 +10,10 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %% CLEARING
-close all;
-clear all;
+if ~exist('IS_DYN','var')
+    close all;
+    clear all;
+end
 
 %% INI FILE
 ExpScan_ini;
