@@ -15,7 +15,7 @@ REGU = 'external';        % 'lcurve', 'gcv', 'external'
 BACKSOLVER = 'tikh';    % 'tikh', 'tsvd', 'simon', 'gmres', 'pcg'
 %% path
 %rdir = ['../results/test/precomputed_jacobians/'];
-jacdir = ['/Volumes/Work/Simulations/Solus/results/test/precomputed_jacobians/'];
+jacdir = ['../results/precomputed_jacobians/'];
 jacfile = 'J';
 %mkdir(rdir);
 %disp(['Intermediate results will be stored in: ' rdir])
@@ -109,7 +109,7 @@ else
     fprintf (1,'Calculating Jacobian\n');
     tic;
     J = Jacobian ( mua0, mus0);
-%    save([jacdir,jacfile],'J');
+    save([jacdir,jacfile],'J');
     toc;
 end
 

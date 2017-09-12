@@ -1,4 +1,9 @@
-function clim = ShowRecResults(grid,Data,zmin,zmax,dz,step,cmin,cmax)
+function clim = ShowRecResults(grid,Data,zmin,zmax,dz,step,scale,cmin,cmax)
+% scale:    'adaptive': each slice with his own colorbar, subsequent
+%            arguments will be ignored
+%           'auto':     fixed scale between min(Data) and max(Data)
+%           (default if no argument is provided)
+%           'user':     cmin, cmax defined by the user
 %% preset the subplot grid
 %BB = hMesh.BoundingBox();
 %[bmin bmax] = toastMeshBB(hMesh);
@@ -21,14 +26,19 @@ Nsub = ceil(N./step);
 %%
 %figure;clf;
 l = 1;
-if nargin < 9
+if ((nargin < 7)||strcmpi(scale,'auto'))
   cmin = min(Data(:));
   cmax = max(Data(:));
 end
 clim = [cmin-eps cmax+eps];
 for i=1:step:N
+           % Data(:,:,i) = Data(:,:,i)';
             subplot(ceil(sqrt(Nsub/1.5)),ceil(1.5*sqrt(Nsub/1.5)),l),
-                     imagesc(Data(:,:,i)',clim),
+                    if strcmpi(scale,'adaptive')
+                     imagesc(Data(:,:,i))  
+                    else
+                     imagesc(Data(:,:,i),clim)
+                    end
                      %pcolor(Data(:,:,i)'), shading interp
               axis image%,axis xy
             

@@ -16,7 +16,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 close all;
-%clear all;
+clear all;
 setPath;
 addpath subroutines solvers
 addpath(genpath('util'))
@@ -32,6 +32,8 @@ SHOW_MESH = 0;          % 1 to show fluence and projected pattern on the mesh
 filename = 'RhoZero_Scan';% Filename  prefix 
 session = '201612';
 exp_path = ['/Volumes/Work/Simulations/Solus/data/',session,'/'];
+exp_path = ['../data/',session,'/'];
+
 %res_path = ['/Volumes/Work/Simulations/Solus/results/',session,'/'];
 res_path = '../results/201706/';
 %exp_file = 'SOLUS_test';
@@ -95,16 +97,16 @@ DOT.A = A_factor(DOT.opt.nB/DOT.opt.nE); % A factor for boundary conditions
 %==========================================================================
 %%                                  SET GRID
 %==========================================================================
-DOT.grid.x1 = -30;
-DOT.grid.x2 = 30;
-DOT.grid.dx = 1;
+DOT.grid.x1 = -20;
+DOT.grid.x2 = 20;
+DOT.grid.dx = 2;
 
-DOT.grid.y1 = -30;
-DOT.grid.y2 = 30;           
+DOT.grid.y1 = -20;
+DOT.grid.y2 = 20;           
 DOT.grid.dy = DOT.grid.dx;
 
 DOT.grid.z1 = 0;        
-DOT.grid.z2 = 30;         
+DOT.grid.z2 = 24;         
 DOT.grid.dz = DOT.grid.dx;
 
 DOT.grid = setGrid(DOT); 
@@ -122,7 +124,7 @@ DOT.opt.hete.d     = [0, 1, 0];   % down
 DOT.opt.hete.l     = 100;
 DOT.opt.hete.sigma = 1;
 DOT.opt.hete.distrib = 'OFF';
-DOT.opt.hete.profile = 'Gaussian';%'Gaussian';
+DOT.opt.hete.profile = 'Step';%'Gaussian';
 DOT.opt.hete.val   = 2 * DOT.opt.muaB;
 [DOT,DOT.opt.hete] = setHete(DOT,DOT.opt.hete);
 %----------------------------- INCLUSION 2 -------------------------------%
@@ -133,7 +135,7 @@ DOT.opt.hete2.d     = [ 1, 0, 0];   % down
 DOT.opt.hete2.l     = 100;
 DOT.opt.hete2.sigma = 1 ;
 DOT.opt.hete2.distrib = 'OFF';
-DOT.opt.hete2.profile = 'Gaussian';
+DOT.opt.hete2.profile = 'Step';
 DOT.opt.hete2.val   = 2 * DOT.opt.muaB;
 [DOT,DOT.opt.hete2] = setHete(DOT,DOT.opt.hete2);
 %==========================================================================
@@ -143,14 +145,14 @@ if DOT.TD == 1
 %    DOT.time.dt = (50e3/4096/6) * 4;    % time step in picoseconds
 %    DOT.time.nstep = 260;               % number of temporal steps
     DOT.time.dt = (50e3/1024/4);    % time step in picoseconds
-    DOT.time.nstep = 192;               % number of temporal steps
-    DOT.time.noise = 'Poisson';         % 'Poisson','Gaussian','none'
+    DOT.time.nstep = 192;%354;%192;               % number of temporal steps
+    DOT.time.noise = 'none';         % 'Poisson','Gaussian','none'
                                         % if 'Poisson' and sigma>0 a
                                         % Gaussian noise is added before
                                         % Poisson noise.
     DOT.time.sigma = 0;%1e-2;              % variance for gaussian noise
     DOT.time.self_norm = false;         % true for self-normalized TPSF   
-    DOT.time.TotCounts = 1e6;           % total counts for the maximum-energy
+    DOT.time.TotCounts = 1e20;           % total counts for the maximum-energy
                                         % TPSF. The other are consequently
                                         % rescaled
 
@@ -190,8 +192,8 @@ end
 % non-contact PTB setup 40x40 mm2 scan with 8x8 and s-d 5mm
 % rhozero
 rhosd = 5;
-DOT.Source.Pos = RasterScan(-20-rhosd/2,20-rhosd/2,-20,20,8,8,0);
-DOT.Detector.Pos = RasterScan(-20+rhosd/2,20+rhosd/2,-20,20,8,8,0);
+DOT.Source.Pos = RasterScan(-20-rhosd/2,20-rhosd/2,-20,20,16,16,0);
+DOT.Detector.Pos = RasterScan(-20+rhosd/2,20+rhosd/2,-20,20,16,16,0);
 DOT.Source.Ns=size(DOT.Source.Pos,1);
 DOT.Detector.Nd=size(DOT.Detector.Pos,1);
 %% Define permutation matrix
@@ -300,18 +302,24 @@ if DOT.TD == 1
     end
     clear z
     %------ Pre-process simulated data to fit RhoZeroScan format ------
-    if ((EXPERIMENTAL == 1) && (EXP_DATA == 0))
-        Nlambda = 2;
-        Nrep = 10;
-        Tacq = 10;  %sec
-        Nm = size(RefTD,2);
-        counts = ones(1,2) * ...
-            DOT.time.TotCounts / (Nlambda * Nm) * Nrep * Tacq;
-        [m,j] = max(RefCW);
-        [RefTD,Hfact] = PreProcessECBO(RefTD,1,[65,128;193,256],...
-            counts);
-        DataTD = bsxfun(@times,Hfact',DataTD);
-    end
+%     if ((EXPERIMENTAL == 1) && (EXP_DATA == 0))
+%         Nlambda = 2;
+%         Nrep = 10;
+%         Tacq = 10;  %sec
+%         twin = CreateTimeWindows(DOT.time.nstep,[1,DOT.time.nstep],'even',6);
+%         nwin = size(twin,1);
+%         twin = twin + EXP.time.roi(1)-1; % Chan0 is IRF peak channel, add -1 since twin starts from 1
+%         off = uint16([(0:nwin-1)',(1:nwin)']);
+%         twin = twin - off;
+%         %twin(2,:) = [];
+%         Nm = size(RefTD,2);
+%         counts = ones(1,nwin) * ...
+%             DOT.time.TotCounts / (Nlambda * Nm) * Nrep * Tacq;
+%         [m,j] = max(RefCW);
+%         [RefTD,Hfact] = PreProcessECBO(RefTD,1,twin,...
+%             counts);
+%         DataTD = bsxfun(@times,Hfact',DataTD);
+%     end
     %    
     %-------------------- Add noise to TD data ------------------------
     sdTD = ones(size(DataTD));
@@ -462,7 +470,7 @@ if strcmpi(REC.domain,'td')
       
   %twin = CreateTimeWindows(REC.time.nstep,[10,REC.time.nstep],'even',20);
   twin = CreateTimeWindows(REC.time.nstep,[1,REC.time.nstep],'even',6);
-  REC.time.twin = twin + 90;
+  % REC.time.twin = twin + 90;
   %REC.time.twin = twin + Chan0-1; % Chan0 is IRF peak channel, add -1 since twin starts from 1
   REC.time.twin = twin + EXP.time.roi(1)-1; % Chan0 is IRF peak channel, add -1 since twin starts from 1
   REC.time.twin(3:4,:) = [];
@@ -476,7 +484,7 @@ if strcmpi(REC.domain,'td')
         double(REC.time.twin(i,2)-REC.time.twin(i,1)+1),double(max(DataTD(:,1)))]);
   end
   if exist('RefTD','var')
-      REC.ref =WindowTPSF(RefTD,REC.time.twin);
+      REC.ref = WindowTPSF(RefTD,REC.time.twin);
       clear RefTD
   end
   REC.Data = WindowTPSF(DataTD,REC.time.twin);
@@ -505,7 +513,7 @@ REC.opt.nB = 1.4;
 REC.cm = 0.3/REC.opt.nB;
 %REC.freq = 0;
 % ---------------------- Solver and regularization ------------------------
-REC.solver.tau = 1e-1;            % regularisation parameter
+REC.solver.tau = 1e-10;            % regularisation parameter
 REC.solver.type = 'born';      % 'born','GN': gauss-newton, 
                                   % 'USprior': Simon's strutural prior
                                   % 'LM': Levenberg-Marquardt,
@@ -525,7 +533,7 @@ if isfield(REC.opt,'Mua')
     figure(301);
     ShowRecResults(REC.grid,REC.opt.Mua,...
         REC.grid.z1,REC.grid.z2,REC.grid.dz,1,...
-          0,max(REC.opt.Mua(:)));
+          'auto',0,max(REC.opt.Mua(:)));
     suptitle('Mua');
     save_figure([res_path,'Reference']);
 end
@@ -609,9 +617,9 @@ end
 drawnow;
 figure(304);
 ShowRecResults(REC.grid,reshape(REC.opt.bmua,REC.grid.dim),...
-   REC.grid.z1,REC.grid.z2,REC.grid.dz,1,0.00,0.05);
+   REC.grid.z1,REC.grid.z2,REC.grid.dz,1,'auto',0.00,0.05);
 suptitle('Recon Mua');
-save_figure([res_path,'Reconstruction']);
+save_figure([res_path,'Reconstruction_noise_free_fixed_scale']);
 % ---------------------------- display musp -------------------------------
 % figure(305);
 % ShowRecResults(REC.grid,reshape(REC.opt.bmusp,REC.grid.dim),...
