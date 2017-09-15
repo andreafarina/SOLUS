@@ -33,7 +33,6 @@ verbosity = 0;
 SHOW_MESH = 0;          % 1 to show fluence and projected pattern on the mesh
 filename = 'RhoZero_Scan';% Filename  prefix 
 session = '201612';
-<<<<<<< HEAD
 exp_path = ['/Volumes/Work/Simulations/Solus/data/',session,'/'];
 exp_path = ['../data/',session,'/'];
 
@@ -41,12 +40,12 @@ exp_path = ['../data/',session,'/'];
 res_path = '../results/201706/';
 %exp_file = 'SOLUS_test';
 exp_file = 'DATA_EXP_2x';
-=======
-exp_path = ['D:/Beta/Simulations/Solus/data/',session,'/'];
-res_path = ['D:/Beta/Simulations/Solus/results/',session,'/'];
-exp_file = 'SOLUS_test';
-exp_file = 'DATA_EXP_2x';
->>>>>>> origin/ECBO2
+
+% exp_path = ['D:/Beta/Simulations/Solus/data/',session,'/'];
+% res_path = ['D:/Beta/Simulations/Solus/results/',session,'/'];
+% exp_file = 'SOLUS_test';
+% exp_file = 'DATA_EXP_2x';
+
 %==========================================================================
 %%                              OPTIONS 
 %==========================================================================
@@ -118,12 +117,9 @@ DOT.grid.dy = DOT.grid.dx;
 
 DOT.grid.z1 = 0;        
 DOT.grid.z2 = 24;         
-<<<<<<< HEAD
 DOT.grid.dz = DOT.grid.dx;
-=======
-%DOT.grid.dz = DOT.grid.dx;
-DOT.grid.dz = 4;
->>>>>>> origin/ECBO2
+DOT.grid.dz = DOT.grid.dx;
+%DOT.grid.dz = 4;
 
 DOT.grid = setGrid(DOT); 
 
