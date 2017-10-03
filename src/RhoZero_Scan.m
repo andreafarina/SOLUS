@@ -57,8 +57,8 @@ REF = 1;                % 1: create also the homogeneous data
 % ------------------------- RECONSTRUCTION --------------------------------
 RECONSTRUCTION = 1;     % Enable the reconstruction section.
 % ------------------------- EXPERIMENTAL ----------------------------------
-EXPERIMENTAL = 1;       % Enable experimental options below
-EXP_IRF = 1;            % Use the experimental IRF for forward and reconstruction.
+EXPERIMENTAL = 0;       % Enable experimental options below
+EXP_IRF = 0;            % Use the experimental IRF for forward and reconstruction.
 EXP_DELTA = 'peak';    % Substitute the IRF with delta function on the 
                         % baricenter ('baric') or peak ('peak') of the IRF.
                         % 'all' to use the experimental IRF.
@@ -489,7 +489,7 @@ if strcmpi(REC.domain,'td')
   %twin = CreateTimeWindows(REC.time.nstep,[10,REC.time.nstep],'even',20);
   twin = CreateTimeWindows(REC.time.nstep,[1,REC.time.nstep],'even',NUM_TW);
   %REC.time.twin = twin + 90;
-  REC.time.twin = twin + Chan0-1; % Chan0 is IRF peak channel, add -1 since twin starts from 1
+  REC.time.twin = twin ;%+ Chan0-1; % Chan0 is IRF peak channel, add -1 since twin starts from 1
   %REC.time.twin = twin + EXP.time.roi(1)-1; % Chan0 is IRF peak channel, add -1 since twin starts from 1
   REC.time.nwin = size(REC.time.twin,1);
 
@@ -531,12 +531,12 @@ REC.cm = 0.3/REC.opt.nB;
 %REC.freq = 0;
 % ---------------------- Solver and regularization ------------------------
 REC.solver.tau = 1e-1;            % regularisation parameter
-REC.solver.type = 'Born';      % 'born','GN': gauss-newton, 
+REC.solver.type = 'USprior';      % 'born','GN': gauss-newton, 
                                   % 'USprior': Simon's strutural prior
                                   % 'LM': Levenberg-Marquardt,
                                   % 'l1': L1-based minimization
                                   % 'fit': fitting homogeneous data
-REC.solver.prior = [];   % dictionnary matrix, or []
+REC.solver.prior = REC.opt.Mua;   % dictionnary matrix, or []
 % ---------------------- Set nodes optical properties --------------------- 
 REC.opt.mua = ones(REC.grid.N,1) * REC.opt.mua0;
 REC.opt.musp = ones(REC.grid.N,1) * REC.opt.musp0;

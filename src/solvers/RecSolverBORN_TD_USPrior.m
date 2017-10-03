@@ -5,7 +5,13 @@
 
 function [bmua,bmus] = RecSolverBORN_TD_USPrior(solver,grid,mua0,mus0, n, A,...
     Spos,Dpos,dmask, dt, nstep, twin, self_norm, data, irf, ref, sd, ~)
+%% Jacobain options
+LOAD_JACOBIAN = false;      % Load a precomputed Jacobian
 geom = 'semi-inf';
+%% path
+%rdir = ['../results/test/precomputed_jacobians/'];
+jacdir = ['../results/precomputed_jacobians/'];
+jacfile = 'J';
 % -------------------------------------------------------------------------
 
 bdim = (grid.dim);
@@ -37,20 +43,20 @@ ref = ref(:);
 data = data(:);
 factor = proj./ref;
 
-data = data .* factor;
-ref = ref .* factor;
+%data = data .* factor;
+%ref = ref .* factor;
 %% data scaling
-sd = sd(:).*sqrt(factor);   % Because of the Poisson noise
-%sd = proj(:);
+%sd = sd(:).*factor;%sqrt(factor);   % Because of the Poisson noise
+sd = proj(:);
 %sd = ones(size(proj(:)));
 %% mask for excluding zeros
 mask = ((ref(:).*data(:)) == 0) | ...
     (isnan(ref(:))) | (isnan(data(:)));
 %mask = false(size(mask));
 
-%if ref == 0
-%    ref = proj(:);
-%end
+if ref == 0
+   ref = proj(:);
+end
 
 ref(mask) = [];
 data(mask) = [];
@@ -60,13 +66,23 @@ data(mask) = [];
 x = ones(grid.N,1) * mua0;
 x0 = x;
 p = length(x);
-dphi = (data(:)-ref(:))./sd(~mask);%./ref(:);
+dphi = (data(:)-ref(:))./ref(:);%sd(~mask);%./ref(:);
 %sd = proj(:);
 %dphi = log(data(:)) - log(ref(:));
 %save('dphi','dphi');
 % ---------------------- Construct the Jacobian ---------------------------
-
-J = Jacobian ( mua0, mus0);
+if LOAD_JACOBIAN == true
+    fprintf (1,'Loading Jacobian\n');
+    tic;
+    load([jacdir,jacfile])
+    toc;
+else
+    fprintf (1,'Calculating Jacobian\n');
+    tic;
+    J = Jacobian ( mua0, mus0);
+    save([jacdir,jacfile],'J');
+    toc;
+end
 
 % translate the spatial structure into 2 binary complementary masks
 % if ~isempty(solver.prior)
@@ -96,22 +112,20 @@ J(mask,:) = [];
 
 %% Structured laplacian prior
 siz_prior = size(solver.prior);
-solver.prior(solver.prior == max(solver.prior(:))) = 1.1*min(solver.prior(:)); 
-solver.prior = solver.prior .* (1 + 0.01*randn(size(solver.prior)));
+%solver.prior(solver.prior == max(solver.prior(:))) = 1.1*min(solver.prior(:)); 
+%solver.prior = solver.prior .* (1 + 0.01*randn(size(solver.prior)));
 [L,C3D] = StructuredLaplacianPrior(solver.prior,siz_prior(1),siz_prior(2),siz_prior(3));
 %% Solver
 s = svd(J);
 alpha = solver.tau*s(1)
 %dx = [J;(alpha)*speye(nsol)]\[dphi;zeros(nsol,1)];
 %dx = [J;(alpha)*L]\[dphi;zeros(3*nsol,1)];
-%dx = lsqr([J;alpha*L],[dphi;zeros(3*nsol,1)],1e-6,300);
-dx = lsqr([J;alpha*speye(nsol)],[dphi;zeros(nsol,1)],1e-6,100);
+dx = lsqr([J;alpha*L],[dphi;zeros(3*nsol,1)],1e-6,300);
+%dx = lsqr([J;alpha*speye(nsol)],[dphi;zeros(nsol,1)],1e-6,100);
 %==========================================================================
 %%                        Add update to solution
 %==========================================================================
-if ~isempty(solver.prior)
-%    dx = D * dx;
-end
+
 x = x + dx;
 %logx = logx + dx;
 %x = exp(logx);

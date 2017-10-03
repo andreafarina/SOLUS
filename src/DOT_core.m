@@ -1,24 +1,25 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% RhoZero Scan     %
+% DOT_core     %
 %                                                                       %
-% v1:                                                                   %
+% v2:                                                                   %
 % Simulation and reconstruction using Green's function.                 %
 % Experimental data are not yet implemented.                            %
 % Half-space geometry with fwd and Jacobian for the fluence under PCBC. %
 % CW and time-domain forward and reconstruction.                        %
 % Absorption only reconstruction.                                       %
 % Possibility to load an a-priori dictionary matrix (see row 526).      % 
-% L1 ISTA reconsrtuction is implemented.                                %
+% L1 ISTA reconsrtuction is implemented.
+% Structural priors is implemented
 % Regularization parameter criteria: L-curve, gcv, manual.              %
 % Solver: Tickhonov, Truncated SVD, pcg, gmres                          %
 %                                                                       %
-% A. Farina 02/06/2017                                                  %
+% A. Farina 22/09/2017                                                  %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-if ~exist('IS_DYN','var')
-    close all;
-    clear all;
-end
+
+%clearvars;
+close all;
+
 setPath;
 addpath subroutines solvers
 addpath(genpath('util'))
@@ -27,45 +28,17 @@ spacer = ' ------- ';
 % ========================================================================= 
 %%                          INITIALIZATION 
 % =========================================================================
-verbosity = 0;
-%toastCatchErrors();                     % redirect toast library errors
-%toastSetVerbosity(verbosity);
-SHOW_MESH = 0;          % 1 to show fluence and projected pattern on the mesh
-filename = 'RhoZero_Scan';% Filename  prefix 
-session = '201612';
-exp_path = ['D:/Beta/Simulations/Solus/data/',session,'/'];
-res_path = ['D:/Beta/Simulations/Solus/results/',session,'/'];
-exp_file = 'SOLUS_test';
-exp_file = 'DATA_EXP_2x';
-%==========================================================================
-%%                              OPTIONS 
-%==========================================================================
-%SET_QM = 1;             % 1: create qvec,mvec. 
-                        % 0: load external qvec,mvec from _DOT file.
-% ----------------------------- FORWARD -----------------------------------
-FORWARD = 1;            % Simulated forward data and save into _Data file
-REF = 1;                % 1: create also the homogeneous data
-% ------------------------- RECONSTRUCTION --------------------------------
-RECONSTRUCTION = 1;     % Enable the reconstruction section.
-% ------------------------- EXPERIMENTAL ----------------------------------
-EXPERIMENTAL = 1;       % Enable experimental options below
-EXP_IRF = 1;            % Use the experimental IRF for forward and reconstruction.
-EXP_DELTA = 'peak';    % Substitute the IRF with delta function on the 
-                        % baricenter ('baric') or peak ('peak') of the IRF.
-                        % 'all' to use the experimental IRF.
-                    
-EXP_DMD = 0;            % Use the experimental registration data for surce and detector
-EXP_DATA = 1;           % Load experimental data and use them for reconstruction
-% -------------------------------------------------------------------------
-NUM_TW = 6;             % Number of Time Windows within ROI
-% -------------------------------------------------------------------------
-DOT.TYPE = 'pointlike';   % 'pointlike','linesources' or 'pattern'
-DOT.TD = 1;             % Time-domain: enable the calculation of TPSF
-% -------------------------------------------------------------------------
-DOT.sigma = 0;%1e-3;%1e-3;       % add gaussian noise to CW data
-% -------------------------------------------------------------------------
-geom = 'semi-inf';      % geometry
-type = 'Born';          % heterogeneous model  
+disp('Initializing DOT parameters');
+Init_DOT
+
+disp('Setting paths and filenames');
+SetIO_DOT
+
+if RECONSTRUCTION == 1
+    disp('Setting reconstruction parameters');
+    RecSettings_DOT;
+end
+
 % =========================================================================
 %%                     Create folder for saving data
 % =========================================================================
@@ -74,6 +47,7 @@ rdir = res_path;
 if ~exist(rdir,'dir')
     mkdir(rdir)
 end
+disp(['Results path: ',rdir]);
 %==========================================================================
 %%                          Experimental data
 % Load the structure EXP containing all the data for analyzing experimental
@@ -82,35 +56,15 @@ end
 if (EXPERIMENTAL == 1)
     load([exp_path,'EXP_',exp_file])
 end
+disp(['Experiment file: ',exp_path,'EXP_',exp_file]);
 
-%==========================================================================
-
-%% ====================== VOLUME DEFINITION ===============================
 %% Background optical properties
-DOT.opt.muaB = 0.01;          % mm-1
-DOT.opt.muspB = 1;             % mm-1
-DOT.opt.nB = 1.4;
-DOT.opt.nE = 1.;   % external refractive index
 DOT.opt.cs = 0.299/DOT.opt.nB;       % speed of light in medium
 DOT.opt.kap = 1/(3*DOT.opt.muspB);
 DOT.A = A_factor(DOT.opt.nB/DOT.opt.nE); % A factor for boundary conditions
-
 %==========================================================================
 %%                                  SET GRID
 %==========================================================================
-DOT.grid.x1 = -20;
-DOT.grid.x2 = 20;
-DOT.grid.dx = 2;
-
-DOT.grid.y1 = -20;
-DOT.grid.y2 = 20;           
-DOT.grid.dy = DOT.grid.dx;
-
-DOT.grid.z1 = 0;        
-DOT.grid.z2 = 24;         
-%DOT.grid.dz = DOT.grid.dx;
-DOT.grid.dz = 4;
-
 DOT.grid = setGrid(DOT); 
 
 DOT.opt.Mua = ones(DOT.grid.dim) * DOT.opt.muaB;
@@ -118,46 +72,15 @@ DOT.opt.Musp = ones(DOT.grid.dim) * DOT.opt.muspB;
 %==========================================================================
 %%                      Set Heterogeneities
 %==========================================================================
-%--------------------------- INCLUSION 1 ---------------------------------%
-DOT.opt.hete.type  = 'Mua';
-DOT.opt.hete.geometry = 'Sphere';
-DOT.opt.hete.c     = [-10, -8, 10];   % down
-% DOT.opt.hete.d     = (M * [0, 0, -1]')';   % down
-% DOT.opt.hete.l     = 20;
-DOT.opt.hete.sigma = 5;
-DOT.opt.hete.distrib = 'OFF';
-DOT.opt.hete.profile = 'Step';%'Gaussian';
-DOT.opt.hete.val   = 2. * DOT.opt.muaB;
-[DOT,DOT.opt.hete] = setHete(DOT,DOT.opt.hete);
-%--------------------------- INCLUSION 2 ---------------------------------%
-% DOT.opt.hete2.type  = 'Mua';
-% DOT.opt.hete2.geometry = 'Sphere';
-% DOT.opt.hete2.c     = [40, 20, 5];   % down
-% % DOT.opt.hete.d     = (M * [0, 0, -1]')';   % down
-% % DOT.opt.hete.l     = 20;
-% DOT.opt.hete2.sigma = 3;
-% DOT.opt.hete2.distrib = 'OFF';
-% DOT.opt.hete2.profile = 'Gaussian';%'Gaussian';
-% DOT.opt.hete2.val   = 1.5 * DOT.opt.muaB;
-% [DOT,DOT.opt.hete2] = setHete(DOT,DOT.opt.hete2);
+%--------------------------- INCLUSIONS ---------------------------------%
+for i = 1:NUM_HETE
+    h_string = ['hete',num2str(i)];
+    [DOT,DOT.opt.(h_string)] = setHete(DOT,DOT.opt.(h_string));
+end
 %==========================================================================
 %%                         Time domain parameters
 %==========================================================================
 if DOT.TD == 1
-%    DOT.time.dt = (50e3/4096/6) * 4;    % time step in picoseconds
-%    DOT.time.nstep = 260;               % number of temporal steps
-    DOT.time.dt = (50e3/1024/4);    % time step in picoseconds
-    DOT.time.nstep = 192;               % number of temporal steps
-    DOT.time.noise = 'Poisson';         % 'Poisson','Gaussian','none'
-                                        % if 'Poisson' and sigma>0 a
-                                        % Gaussian noise is added before
-                                        % Poisson noise.
-    DOT.time.sigma = 1e-2;              % variance for gaussian noise
-    DOT.time.self_norm = false;         % true for self-normalized TPSF   
-    DOT.time.TotCounts = 1e6;           % total counts for the maximum-energy
-                                        % TPSF. The other are consequently
-                                        % rescaled
-
 % --------- resample IRF following the parameters in DOT.time -------------
 if ((EXPERIMENTAL == 1) && (EXP_IRF == 1))
     switch lower(EXP_DELTA)
@@ -169,7 +92,12 @@ if ((EXPERIMENTAL == 1) && (EXP_IRF == 1))
             EXP.irf.data(EXP.irf.baric.pos) = 1;
     end
     DOT.time.irf.data = resampleSPC(EXP.irf.data,EXP.time.axis,DOT.time.dt,'norm');
-    [MaxIRF,Chan0]=max(DOT.time.irf.data);
+% ------ setting channel 0 based on the peak and width of the IRF ---------
+    resc_fact = round(DOT.time.dt./EXP.spc.factor);
+    [DOT.time.irf.peak.value,...
+        DOT.time.irf.peak.pos] = max(DOT.time.irf.data);
+    DOT.time.irf.ch0 = round(DOT.time.irf.peak.pos - ...
+                    200./DOT.time.dt);
 
 else
     DOT.time.irf.data = 0;
@@ -180,62 +108,23 @@ end
 %==========================================================================
 %%  SETTING SOURCES (QVEC), DETECTORS (MVEC) AND THEIR PERMUTATIONS (DMASK)
 %==========================================================================
-% SOLUS SOURCES - DETECTOR POSITIONS
-% xs = linspace(5,55,4);
-% ys = [10,30];
-% %ys = linspace(5,50,8);
-% zs = 0;
-% 
-% [xxs,yys,zzs] = ndgrid(xs,ys,zs);
-% 
-% DOT.Source.Pos = [xxs(:),yys(:),zzs(:)];
-% DOT.Detector.Pos = [xxs(:),yys(:),zzs(:)];
+disp('Setting sources(Q) and detectors(M)');
+SetQM_DOT
 
-% non-contact PTB setup 40x40 mm2 scan with 8x8 and s-d 5mm
-% rhozero
-rhosd = 5;
-% 8x8
-% DOT.Source.Pos = RasterScan(-20-rhosd/2,20-rhosd/2,-20,20,8,8,0);
-% DOT.Detector.Pos = RasterScan(-20+rhosd/2,20+rhosd/2,-20,20,8,8,0);
-% 16x16
-DOT.Source.Pos = RasterScan(-20-rhosd/2,20-rhosd/2,-20,20,16,16,0);
-DOT.Detector.Pos = RasterScan(-20+rhosd/2,20+rhosd/2,-20,20,16,16,0);
-
-DOT.Source.Ns=size(DOT.Source.Pos,1);
-DOT.Detector.Nd=size(DOT.Detector.Pos,1);
-%% Define permutation matrix
-% ALL COMBINATIONS: null-distances + all the other combinations
-%DOT.dmask = logical(ones(DOT.Detector.Nd,DOT.Source.Ns));
-
-% NULL-DISTANCE ONLY
-DOT.dmask = logical(eye(DOT.Detector.Nd,DOT.Source.Ns));
-
-% ALL EXCEPT NULL-DISTANCE
-%DOT.dmask = logical(ones(DOT.Detector.Nd,DOT.Source.Ns) - ...
-%    diag(diag(ones(DOT.Detector.Nd,DOT.Source.Ns))));              
 % -------------------------------------------------------------------------
 % plot DMASK
 figure, imagesc(DOT.dmask),xlabel('Sources'),ylabel('Meas'),title('Dmask');
 
-%% plot source-detectors and sphere
-figure,plot3(DOT.Source.Pos(:,1),DOT.Source.Pos(:,2),DOT.Source.Pos(:,3),'r*'),grid,
-xlabel('x'),ylabel('y'),zlabel('z'),hold on
-plot3(DOT.opt.hete.c(1),DOT.opt.hete.c(2),DOT.opt.hete.c(3),'bo'),
-[a,b,c]= sphere(100);
-surf(a*DOT.opt.hete.sigma + DOT.opt.hete.c(1), ...
-    b*DOT.opt.hete.sigma + DOT.opt.hete.c(2),...
-    c*DOT.opt.hete.sigma + DOT.opt.hete.c(3))
-set(gca,'zdir','reverse'),axis equal,
-xlim([DOT.grid.x1 DOT.grid.x2]),...
-    ylim([DOT.grid.y1 DOT.grid.y2]),...
-    zlim([DOT.grid.z1 DOT.grid.z2])
-
+% plot source-detectors and heterogeneities
+PlotHeteQM(DOT,NUM_HETE)
+drawnow;
 %==========================================================================
 % The structure DOT contains all geometrical parameters needed also for 
 % the inverse problem
 %==========================================================================
 %%                             FORWARD PROBLEM
 %==========================================================================
+disp('Forwar model computation');
 if FORWARD == 1
     nmeas = sum(DOT.dmask(:));
     DataCW = ForwardCW(DOT.grid,DOT.Source.Pos, DOT.Detector.Pos, DOT.dmask, ...
@@ -245,9 +134,9 @@ if FORWARD == 1
     if REF == 1
         RefCW  = ForwardCW(DOT.grid,DOT.Source.Pos, DOT.Detector.Pos, DOT.dmask,...
             DOT.opt.muaB, DOT.opt.muspB, DOT.opt.muaB*ones(DOT.grid.dim),...
-                DOT.opt.muspB*ones(DOT.grid.dim), DOT.A, geom, 'homo');
+            DOT.opt.muspB*ones(DOT.grid.dim), DOT.A, geom, 'homo');
         [RefCW,RefsdCW] = AddNoise(RefCW,'gaussian',DOT.sigma);
-       end
+    end
     
 %==========================================================================
 %%                             TD Forward 
@@ -270,48 +159,56 @@ if DOT.TD == 1
     % Convolution with IRF
     % AF: to optimize memory assign directly DataTD
     if ((EXPERIMENTAL == 1) && (EXP_IRF == 1))
-        z = zeros(size(DataTD,1) + size(DOT.time.irf.data,1)-1,nmeas);
-        for i = 1:nmeas
-            z(:,i) = conv(full(DataTD(:,i)),DOT.time.irf.data);
-        end
+        z = convn(full(DataTD),DOT.time.irf.data);
         figure(101);semilogy(z(:,1),'b'),hold,semilogy(DataTD(:,1),'k'),
-        semilogy(DOT.time.irf.data,'r'),ylim([max(DataTD(:))/10000 max(DataTD(:))])
+        semilogy(DOT.time.irf.data,'r'),%ylim([max(DataTD(:))/10000 max(DataTD(:))])
         DataTD = z(1:numel(DOT.time.irf.data),:);
                 
         if REF == 1
-            z = zeros(size(z));
-            for i = 1:nmeas
-                z(:,i) = conv(full(RefTD(:,i)),DOT.time.irf.data);
-            end
+            z = convn(full(RefTD),DOT.time.irf.data);
             RefTD = z(1:numel(DOT.time.irf.data),:);
         end
     end
     clear z
-
+    
+    % ---- Radiometry -------
+    if RADIOMETRY == 1
+        RealFactor = Radiometry(DOT.radiometry);
+    else
+        RealFactor = 1;
+    end
     %-------------------- Add noise to TD data ------------------------
-    sdTD = ones(size(DataTD));
+    sdTD = ones(size(DataTD)); 
     if ~strcmpi(DOT.time.noise,'none')
-        [DataTD,sdTD] = AddNoise(DataTD,'gaussian',DOT.time.sigma);
+        [DataTD,~] = AddNoise(DataTD,'gaussian',DOT.time.sigma);
         if REF == 1
             RefTD = AddNoise(RefTD,'gaussian',DOT.time.sigma);
         end
-   end
+    end
+       
     if strcmpi(DOT.time.noise,'poisson')
+        
         if (REF == 1) %&& (DOT.time.self_norm == 0))
-            [m,j] = max(RefCW);
-            factor = 1./sum(RefTD(:,j)) .* DOT.time.TotCounts;
-            RefTD = RefTD * factor;
-            RefTD = poissrnd(round(full(RefTD)));
-            DataTD = DataTD * factor;
-            DataTD = poissrnd(round(full(DataTD)));
+            [factor,RefTD,sdTD] = CutCounts(1:size(RefTD,1),DOT.time.dt,...
+                RealFactor*RefTD,DOT.time.TotCounts,RADIOMETRY,CUT_COUNTS,...
+                            NumDelays);
+            switch CUT_COUNTS
+                case 0  % 
+                    DataTD = poissrnd(round(...
+                        DataTD * factor * RealFactor));
+                case 1
+                    %idz = find(factor>0, 1, 'last' );
+                    DataTD = poissrnd(round(DataTD * RealFactor .* factor));
+                    %DataTD = bsxfun(@times,DataTD,factor(idz)./factor');
+            end
+        
+            
         else
-            [m,j] = max(DataCW);
-            factor = 1./sum(DataTD(:,j)) .* DOT.time.TotCounts;
-            DataTD = DataTD * factor;
-            DataTD = poissrnd(round(full(DataTD)));
+            [factor,DataTD,sdTD] = CutCounts(1:size(RefTD,1),DOT.time.dt,...
+                RealFactor*DataTD,DOT.time.TotCounts,RADIOMETRY,CUT_COUNTS,...
+                            NumDelays);
         end
     end
-    sdTD = sqrt(DataTD);        
     % self normalized data
     if DOT.time.self_norm == true
         Area = sum(DataTD);
@@ -327,32 +224,33 @@ end
 
   
 end
-% =========================================================================
-%%                            Save forward data
-% =========================================================================
-% rdir = ['..',filesep,'Results',filesep];
-% if ~exist(rdir,'dir')
-%     mkdir(rdir) 
-% end
-% disp(['Results will be stored in: ', rdir,filename,'_'])
-% %-------------------------- Save simulated data ---------------------------
-% if FORWARD == 1
-%     save([rdir,filename,'_', 'Data'],'DataCW','sdCW');
-%     if REF == 1
-%         save([rdir,filename,'_', 'Data'],'RefCW','-append');
-%     end
-%     if DOT.TD == 1
-%         save([rdir,filename,'_', 'Data'],'DataTD','sdTD','-append');
-%         if REF == 1
-%             save([rdir,filename,'_', 'Data'],'RefTD','-append');
-%         end
-%     end
-%     
-% end
-
 %==========================================================================
 t_end_fwd = cputime - t_start;
 disp(['CPU time FWD: ' num2str(t_end_fwd)])
+% =========================================================================
+%%                            Save forward data
+% =========================================================================
+if SAVE_FWD == 1
+    rdir = ['..',filesep,'results',filesep,session,filesep];
+    if ~exist(rdir,'dir')
+        mkdir(rdir)
+    end
+    disp(['Results will be stored in: ', rdir,filename,'_','Data.m'])
+    %-------------------------- Save simulated data ---------------------------
+    if FORWARD == 1
+        save([rdir,filename,'_', 'Data'],'DataCW','sdCW');
+        if REF == 1
+            save([rdir,filename,'_', 'Data'],'RefCW','-append');
+        end
+        if DOT.TD == 1
+            save([rdir,filename,'_', 'Data'],'DataTD','sdTD','-append');
+            if REF == 1
+                save([rdir,filename,'_', 'Data'],'RefTD','-append');
+            end
+        end
+        
+    end
+end
 %==========================================================================
 %%                              END FORWARD
 %==========================================================================
@@ -369,6 +267,9 @@ if ((EXPERIMENTAL == 1) && (EXP_DATA == 1))
      if DOT.TD == 1
   
 % % ----- Resample experimental data to match the time-scale of DOT.time ----
+        z = zeros(DOT.time.nstep,size(EXP.data.spc,2));
+        f = zeros(DOT.time.nstep,size(EXP.data.spc,2));
+        
         for i = 1:size(EXP.data.spc,2)
             z(:,i) = resampleSPC(EXP.data.spc(:,i),EXP.time.axis,DOT.time.dt);
             f(:,i) = resampleSPC(EXP.data.ref(:,i),EXP.time.axis,DOT.time.dt);
@@ -383,7 +284,6 @@ if ((EXPERIMENTAL == 1) && (EXP_DATA == 1))
         %figure;semilogy(f)
         %figure;semilogy(f./z)
 % -------- Save Time-resolved Data,Reference and standard deviation -------
-% AF: to save memory allocate DataTD and RefTD directly on lines 782/783
         DataTD = z;
         RefTD = f;
         sdTD = sqrt(DataTD);    % Poisson
@@ -407,15 +307,26 @@ disp('-------------------------------------------------------------------')
 % load a different mesh, create a different grid but, in this case, Qvec
 % and Mvec need to be regenerated.
 %==========================================================================
-REC = DOT;clear DOT;
-%==========================================================================
-%%                      RECONSTRUCTION DOMAIN: CW or TD
-%==========================================================================
-REC.domain = 'td';          % CW or TD: data type to be inverted
+%REC = DOT;clear DOT;
+for fn = fieldnames(DOT)'
+   if ~isfield(REC,fn{1})
+       REC.(fn{1}) = DOT.(fn{1});
+   else
+       for fn1 = fieldnames(DOT.(fn{1}))'
+           if ~isfield(REC.(fn{1}),(fn1{1}))
+               REC.(fn{1}).(fn1{1}) = DOT.(fn{1}).(fn1{1});
+           end
+       end
+   end
+end
+clear DOT
+
+
 %==========================================================================
 %%                               Load data
 %==========================================================================
-if (EXP_DATA == 0)
+if (EXPERIMENTAL == 0)||(EXP_DATA == 0)
+    load([rdir,filename,'_', 'Data'])
     if REF == 0
         REC.ref = 0;
     else
@@ -435,14 +346,11 @@ end
 %==========================================================================
 if strcmpi(REC.domain,'td')
       
-  %twin = CreateTimeWindows(REC.time.nstep,[10,REC.time.nstep],'even',20);
   twin = CreateTimeWindows(REC.time.nstep,[1,REC.time.nstep],'even',NUM_TW);
-  %REC.time.twin = twin + 90;
-  REC.time.twin = twin + Chan0-1; % Chan0 is IRF peak channel, add -1 since twin starts from 1
-  %REC.time.twin = twin + EXP.time.roi(1)-1; % Chan0 is IRF peak channel, add -1 since twin starts from 1
+  REC.time.twin = twin + REC.time.irf.ch0 - 1;%+ Chan0-1; % Chan0 is IRF peak channel, add -1 since twin starts from 1
   REC.time.nwin = size(REC.time.twin,1);
 
-  % plot roi on the first measruement
+  % plot temporal windows and data
   figure(1000);
   semilogy(DataTD),ylim([max(DataTD(:))/10000 max(DataTD(:))])
   for i = 1:REC.time.nwin
@@ -450,7 +358,7 @@ if strcmpi(REC.domain,'td')
         double(REC.time.twin(i,2)-REC.time.twin(i,1)+1),double(max(DataTD(:,1)))]);
   end
   if exist('RefTD','var')
-      REC.ref =WindowTPSF(RefTD,REC.time.twin);
+      REC.ref = WindowTPSF(RefTD,REC.time.twin);
       clear RefTD
   end
   REC.Data = WindowTPSF(DataTD,REC.time.twin);
@@ -468,29 +376,16 @@ clear DataTD sdTD
 tilefigs;
 end
 
-% =========================================================================
-%%                        Initial parameter estimates 
-% =========================================================================
-% In this section all the parameter for the inverse solver are setted.
-% --------------------------- Optical properties --------------------------
-REC.opt.mua0 = 0.01;    % absorption [mm-1]
-REC.opt.musp0 = 1;    % reduced scattering [mm-1]
-REC.opt.nB = 1.4;
-REC.cm = 0.3/REC.opt.nB;
-%REC.freq = 0;
-% ---------------------- Solver and regularization ------------------------
-REC.solver.tau = 1e-1;            % regularisation parameter
-REC.solver.type = 'Born';      % 'born','GN': gauss-newton, 
-                                  % 'USprior': Simon's strutural prior
-                                  % 'LM': Levenberg-Marquardt,
-                                  % 'l1': L1-based minimization
-                                  % 'fit': fitting homogeneous data
-REC.solver.prior = [];   % dictionnary matrix, or []
+% % =========================================================================
+% %%                        Initial parameter estimates 
+% % =========================================================================
 % ---------------------- Set nodes optical properties --------------------- 
 REC.opt.mua = ones(REC.grid.N,1) * REC.opt.mua0;
 REC.opt.musp = ones(REC.grid.N,1) * REC.opt.musp0;
 REC.opt.n = ones(REC.grid.N,1) * REC.opt.nB;
 REC.opt.kap = 1./(3*(REC.opt.musp));
+REC.cm = 0.299/REC.opt.nB;
+
 %==========================================================================
 %%              PLOT REFERENCE VALUES IF PRESENT              
 %==========================================================================        
@@ -499,7 +394,7 @@ if isfield(REC.opt,'Mua')
     figure(301);
     ShowRecResults(REC.grid,REC.opt.Mua,...
         REC.grid.z1,REC.grid.z2,REC.grid.dz,1,...
-          0,max(REC.opt.Mua(:)));
+          'auto',0,max(REC.opt.Mua(:)));
     suptitle('Mua');
 end
 % ------------------------ Reference musp ---------------------------------
@@ -548,6 +443,8 @@ switch lower(REC.domain)
                     REC.time.irf.data,REC.ref,REC.sd,0);
 %% @Simon: US prior inversion
             case 'usprior'
+                REC.solver.prior = REC.opt.Mua;   % dictionnary matrix, or []
+
                 [REC.opt.bmua,REC.opt.bmusp] = RecSolverBORN_TD_USPrior(REC.solver,...
                     REC.grid,...
                     REC.opt.mua0,REC.opt.musp0,REC.opt.nB,REC.A,...
@@ -567,6 +464,7 @@ switch lower(REC.domain)
             case 'cg'
             
             case 'l1'
+                REC.solver.prior = REC.opt.Mua;
                 [REC.opt.bmua,REC.opt.bmusp] = RecSolverL1_TD(REC.solver,...
                     REC.grid,...
                     REC.opt.mua0,REC.opt.musp0,REC.opt.nB,REC.A,...
@@ -582,7 +480,7 @@ end
 drawnow;
 figure(304);
 ShowRecResults(REC.grid,reshape(REC.opt.bmua,REC.grid.dim),...
-   REC.grid.z1,REC.grid.z2,REC.grid.dz,1,0.00,0.05);
+   REC.grid.z1,REC.grid.z2,REC.grid.dz,1,'auto',0.00,0.05);
 suptitle('Recon Mua');
 % ---------------------------- display musp -------------------------------
 % figure(305);
@@ -592,11 +490,10 @@ suptitle('Recon Mua');
 drawnow;
 tilefigs;
 disp('recon: finished')
-
-%% Extract DYNAMICS
-MuaDot=reshape(REC.opt.bmua,REC.grid.dim);
-scalp=mean(MuaDot(:,:,1)(:));
-brain=mean(MuaDot(:,:,4)(:));
-Dyn(iDyn,:)=mean(MuaDot(:,:,DynLayer));
-
+% =========================================================================
+%%                            Save reconstruction 
+% =========================================================================
+disp(['Reconstruction will be stored in: ', rdir,filename,'_', 'REC.m']);
+save([rdir,filename,'_', 'REC'],'REC')
+clearvars REC
 end

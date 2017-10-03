@@ -9,7 +9,9 @@ function twin = CreateTimeWindows(nstep,roi,kind,param)
 % 'even' --> evenly spaced time windows in roi
 %        param --> number of windows
 % 'integral'   --> integral of all the curve in the roi
-
+%
+% A. Farina - CNR-IFN  - Dip di Fisica - Politecnico di Milano 27/09/17
+ 
 
 %% consistency check
 %if ((roi(1) > nstep) || (roi(2) > nstep) || (roi(1) * roi(2) <0) || (roi(1)>roi(2)))
@@ -26,11 +28,13 @@ switch lower(kind)
         nt_win = round(diff(roi)/param);
         a = roi(1):nt_win:roi(2);
         b = a + (nt_win-1);
-        a = a(a<=roi(2));
-        b = b(b<=roi(2));
-        minl = min(length(a),length(b));
-        a = a(1:minl);
-        b = b(1:minl);
+        %a = a(a<=roi(2));
+        a = min(a,roi(2));
+        %b = b(b<=roi(2));
+        b = min(b,roi(2));
+        %minl = min(length(a),length(b));
+        %a = a(1:minl);
+        %b = b(1:minl);
     case 'integral'
         a = roi(1);
         b = roi(2);

@@ -10,7 +10,7 @@ function [bmua,bmus] = RecSolverBORN_TD(solver,grid,mua0,mus0, n, A,...
 LOAD_JACOBIAN = false;      % Load a precomputed Jacobian
 geom = 'semi-inf';
 %% REGULARIZATION PARAMETER CRITERION
-NORMDIFF = 'ref';   % 'ref', 'sd'
+NORMDIFF = 'sd';   % 'ref', 'sd'
 REGU = 'external';        % 'lcurve', 'gcv', 'external'
 BACKSOLVER = 'tikh';    % 'tikh', 'tsvd', 'simon', 'gmres', 'pcg'
 %% path
@@ -49,31 +49,31 @@ data = data(:);
 factor = proj./ref;
 
 %% Plot FIG
-nx=sqrt(nsd);
-figure,
-matref=reshape(ref,ntwin,nsd);
-matdata=reshape(data,ntwin,nsd);
-matproj=reshape(proj,ntwin,nsd);
-figure,semilogy(matref), title('sumref');
-figure,semilogy(matdata), title('sumdata');
-figure,semilogy(matproj), title('sumproj');
-figure,semilogy(matdata./matref), title('ratio ref/data');
-CWref=sum(matref,1); CWref=reshape(CWref,nx,nx);
-CWdata=sum(matdata,1); CWdata=reshape(CWdata,nx,nx);
-figure,
-subplot(1,3,1), imagesc(CWref);
-subplot(1,3,2), imagesc(CWdata);
-subplot(1,3,3), imagesc(CWdata./CWref);
-figure,
-subplot(1,3,1), pcolor(CWref), shading interp;
-subplot(1,3,2), pcolor(CWdata), shading interp;
-subplot(1,3,3), pcolor(CWdata./CWref), shading interp;
+% nx=sqrt(nsd);
+% figure,
+% matref=reshape(ref,ntwin,nsd);
+% matdata=reshape(data,ntwin,nsd);
+% matproj=reshape(proj,ntwin,nsd);
+% figure,semilogy(matref), title('sumref');
+% figure,semilogy(matdata), title('sumdata');
+% figure,semilogy(matproj), title('sumproj');
+% figure,semilogy(matdata./matref), title('ratio ref/data');
+% CWref=sum(matref,1); CWref=reshape(CWref,nx,nx);
+% CWdata=sum(matdata,1); CWdata=reshape(CWdata,nx,nx);
+% figure,
+% subplot(1,3,1), imagesc(CWref);
+% subplot(1,3,2), imagesc(CWdata);
+% subplot(1,3,3), imagesc(CWdata./CWref);
+% figure,
+% subplot(1,3,1), pcolor(CWref), shading interp;
+% subplot(1,3,2), pcolor(CWdata), shading interp;
+% subplot(1,3,3), pcolor(CWdata./CWref), shading interp;
 
 
 data = data .* factor;
 ref = ref .* factor;
 %% data scaling
-sd = sd(:).*sqrt(factor);
+sd = sd(:).*(factor);
 %sd = proj(:);
 %sd = ones(size(proj(:)));
 %% mask for excluding zeros
