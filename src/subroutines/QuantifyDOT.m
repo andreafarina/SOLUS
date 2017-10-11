@@ -35,7 +35,7 @@ nzm = sqrt((X-Xrec).^2+(Y-Yrec).^2+(Z-Zrec).^2)<radius_max;
 V(nzm) = 1;
 %V = 1;
 dmua_rec3d = dmua_rec3d.*V;
-if ~exist(mxm,'var')
+if ~exist('mxm','var')
     mxm = max(dmua_rec3d(:));
 end
 %% Gaussian 3d estimation
