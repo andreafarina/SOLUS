@@ -7,22 +7,13 @@
 function [bmua,bmus] = RecSolverBORN_TD(solver,grid,mua0,mus0, n, A,...
     Spos,Dpos,dmask, dt, nstep, twin, self_norm, data, irf, ref, sd, ~)
 %% Jacobain options
-LOAD_JACOBIAN = false;      % Load a precomputed Jacobian
+LOAD_JACOBIAN = solver.prejacobian.load;      % Load a precomputed Jacobian
 geom = 'semi-inf';
 %% REGULARIZATION PARAMETER CRITERION
 NORMDIFF = 'sd';   % 'ref', 'sd'
-REGU = 'external';        % 'lcurve', 'gcv', 'external'
-BACKSOLVER = 'tikh';    % 'tikh', 'tsvd', 'simon', 'gmres', 'pcg'
-%% path
-%rdir = ['../results/test/precomputed_jacobians/'];
-jacdir = ['../results/precomputed_jacobians/'];
-jacfile = 'J';
-%mkdir(rdir);
-%disp(['Intermediate results will be stored in: ' rdir])
-%save([rdir 'REC'], '-v7.3','REC'); %save REC structure which describes the experiment
+REGU = 'external'; % 'lcurve', 'gcv', 'external'
+BACKSOLVER = 'tikh'; % 'tikh', 'tsvd', 'discrep','simon', 'gmres', 'pcg', 'lsqr'
 % -------------------------------------------------------------------------
-
-bdim = (grid.dim);
 nQM = sum(dmask(:));
 nwin = size(twin,1);
 Jacobian = @(mua, mus) JacobianTD (grid, Spos, Dpos, dmask, mua, mus, n, A, ...
@@ -32,17 +23,17 @@ Jacobian = @(mua, mus) JacobianTD (grid, Spos, Dpos, dmask, mua, mus, n, A, ...
                 [],[], A, dt, nstep, self_norm,...
                 geom, 'homo');
 if numel(irf)>1
-    for i = 1:nQM
-        z(:,i) = conv(proj(:,i),irf);
-    end
-    proj = z(1:numel(irf),:);
+    z = convn(proj,irf);
+    nmax = max(nstep,numel(irf));
+    proj = z(1:nmax,:);
+    clear nmax
     if self_norm == true
         proj = proj * spdiags(1./sum(proj)',0,nQM,nQM);
     end
     clear z
 end
 proj = WindowTPSF(proj,twin);
-[ntwin,nsd]=size(proj);
+
 proj = proj(:);
 ref = ref(:);
 data = data(:);
@@ -74,7 +65,7 @@ data = data .* factor;
 ref = ref .* factor;
 %% data scaling
 sd = sd(:).*(factor);
-%sd = proj(:);
+%sd = proj(:);%ref(:);%proj(:);
 %sd = ones(size(proj(:)));
 %% mask for excluding zeros
 mask = ((ref(:).*data(:)) == 0) | ...
@@ -82,7 +73,7 @@ mask = ((ref(:).*data(:)) == 0) | ...
 %mask = false(size(mask));
 
 
-if ref == 0
+if ref == 0 %#ok<BDSCI>
     ref = proj(:);
 end
 
@@ -92,8 +83,7 @@ data(mask) = [];
 %sd(mask) = [];
 % solution vector
 x = ones(grid.N,1) * mua0; 
-x0 = x;
-p = length(x);
+
 if strcmpi(NORMDIFF,'sd'), dphi = (data(:)-ref(:))./sd(~mask); end
 if strcmpi(NORMDIFF,'ref'), dphi = (data(:)-ref(:))./ref(:); end
 %dphi = log(data(:)) - log(ref(:));
@@ -103,13 +93,14 @@ if strcmpi(NORMDIFF,'ref'), dphi = (data(:)-ref(:))./ref(:); end
 if LOAD_JACOBIAN == true
     fprintf (1,'Loading Jacobian\n');
     tic;
-    load([jacdir,jacfile])
+    %load([jacdir,jacfile])
+    load(solver.prejacobian.path);
     toc;
 else
-    fprintf (1,'Calculating Jacobian\n');
+    %fprintf (1,'Calculating Jacobian\n');
     tic;
     J = Jacobian ( mua0, mus0);
-    save([jacdir,jacfile],'J');
+    save(solver.prejacobian.path,'J');
     toc;
 end
 
@@ -137,7 +128,7 @@ nsol = size(J,2);
 %     end
 % ------- to solve only for mua uncomment the following sentence ----------
 %J(:,nsol+(1:nsol)) = 0;
-proj(mask) = [];
+%proj(mask) = [];
 J(mask,:) = [];
 
 %% Solver 
@@ -156,18 +147,22 @@ if ~exist('alpha','var')
     elseif strcmpi(REGU,'gcv')
         alpha = gcv(U,s,dphi);%,BACKSOLVER)
     end
-    disp(['alpha=' num2str(alpha)]);
+    
 end
-
+disp(['alpha = ' num2str(alpha)]);
 switch lower(BACKSOLVER)
     case 'tikh'
         disp('Tikhonov');
         
-        [dx,rho] = tikhonov(U,s,V,dphi,alpha);
+        [dx,~] = tikhonov(U,s,V,dphi,alpha);
     case 'tsvd'
         disp('TSVD');
         
-        [dx,rho] = tsvd(U,s,V,dphi,alpha);
+        [dx,~] = tsvd(U,s,V,dphi,alpha);
+    case 'discrep'
+        disc_value = norm(sd(~mask))*10;
+        disp(['Discrepancy principle with value=' num2str(disc_value)]);
+            dx = discrep(U,s,V,dphi,disc_value);
     case 'simon'
         disp('Simon');
         tic;
@@ -201,8 +196,17 @@ switch lower(BACKSOLVER)
             disp(['alpha=' num2str(alpha)]);
         end
         %dx = pcg(J'*J + alpha*speye(nsol),J'*dphi,1e-6,100);   
-        dx = pcg(@(x)JTJH(x, J, speye(nsol),alpha),J'*dphi,1e-6,100);   
-        
+        dx = pcg(@(x)JTJH(x, J, speye(nsol),alpha),J'*dphi,1e-6,1000);   
+    case 'lsqr'
+        disp('lsqr');
+        tic;
+        if strcmpi(REGU,'external')
+            lambda = sum(sum(J.^2));
+            alpha = alpha * lambda;
+            disp(['alpha=' num2str(alpha)]);
+        end
+        dx = lsqr([J;alpha*speye(nsol)],[dphi;zeros(nsol,1)],1e-6,100);
+
         toc;
 
 %dx = J' * ((J*J' + alpha*eye(length(data)))\dphi);
@@ -220,28 +224,7 @@ x = x + dx;
 bmua = x;
 bmus = ones(size(bmua)) * mus0;
 
-%% display the reconstructions
-% figure(304);
-% %figure('Position',get(0,'ScreenSize'));
-% ShowRecResults(grid,reshape(bmua,bdim),grid.z1,grid.z2,grid.dz,1,...
-%     min(bmua),max(bmua));
-% suptitle('Recon Mua');
-% %export_fig '../Results/20151111/rec_mua_1incl.pdf' -transparent
-% 
-% figure(305);
-% %figure('Position',get(0,'ScreenSize'));
-% ShowRecResults(grid,reshape(bmus,bdim),grid.z1,grid.z2,grid.dz,1,...
-%     min(bmus),max(bmus));
-% suptitle('Recon Mus');
-% %export_fig '../Results/20151111/rec_mus_1incl.pdf' -transparent
-% drawnow;
-% tilefigs;
-% %pause
-% x = x0;
-% %save([rdir 'sol'], 'xiter');
-% %save([rdir 'err_pattern'],'erri');
 end
-
 
 
 

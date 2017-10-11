@@ -9,17 +9,14 @@ function [factor,y,std] = CutCounts(ch,dt,data,MaxCount,radiometry,...
 %   factor is calculated and all curves are rescaled. In this case
 %   radiometry, NumDelay are not effective.
 % modality = 1
-%   gated mode: the highest power TPSF is identified.  The total temporal 
-%   window is divided in NumDelay regions and the count-rate for every delay
-%   (without-closing) are normalized to MaxCount. 
-%   If radiometry = 1, the input curve is expected to be in counts unit and, 
-%   in case late delays provide less counts than MaxCount, the factor for 
-%   that delay is set to 1.
-% modality = 2
-%   non-gated mode:
-% modality = 3
-%   evenly-distributed over all gates
-%
+%   gated mode: A Time-gated measurement is simulated.
+%   Measurements on each dealay are rescaled accordingly 
+%   to MaxCount. In particular, if:
+%        radiometry==1, the count-rate for each delay is cut to 
+%             MaxCount if photons are available, otherwise no;
+%        radiometry==0, the count-rate for each delay is cut to 
+%             MaxCounts in any case. 
+% 
 %   CutCounts(time,data,MaxCount):--> modalty = 0
 % 
 % A. Farina - CNR-IFN  - Dip di Fisica - Politecnico di Milano 27/09/17
@@ -30,9 +27,13 @@ function [factor,y,std] = CutCounts(ch,dt,data,MaxCount,radiometry,...
 t = ch * dt;
 
 verbosity = 1;
+%% remodulate MaxCounts accordingly to the number of delays
+if modality == 1
+    MaxCount = MaxCount/NumDelay;
+end
 %% identify the highest power TPSF
-[m,j] = max(sum(data,1));
-yref = data(:,j);
+[m,~] = max(sum(data,1));
+%yref = data(:,j);
 if verbosity == 1
     figure(1),subplot(2,2,1),semilogy(t,data),
 end
@@ -52,6 +53,10 @@ switch modality
         std = sqrt(y);
     case 1 % gated
         twin = CreateTimeWindows(numel(t),[ch(1),ch(end)],'even',NumDelay);
+        if NumDelay == 1
+            twin = [ch(1),ch(end)];
+        end
+               
         factor = zeros(size(data));
         for i = 1:NumDelay
             idx = (twin(i,1):twin(i,2));
@@ -65,8 +70,13 @@ switch modality
                 disp('CutCounts: area=0 error');
                 break
             end
-            factor(idx,:) = repmat(min(area,MaxCount)./area,...
-                                [numel(idx) 1]);
+            if radiometry == 1
+                factor(idx,:) = repmat(min(area,MaxCount)./area,...
+                    [numel(idx) 1]);
+            else
+                factor(idx,:) = repmat((MaxCount)./area,...
+                    [numel(idx) 1]);
+            end
         end 
         % manage zero elements
         %idz = find(factor>0, 1, 'last' );

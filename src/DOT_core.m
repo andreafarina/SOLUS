@@ -8,8 +8,8 @@
 % CW and time-domain forward and reconstruction.                        %
 % Absorption only reconstruction.                                       %
 % Possibility to load an a-priori dictionary matrix (see row 526).      % 
-% L1 ISTA reconsrtuction is implemented.
-% Structural priors is implemented
+% L1 ISTA reconstruction is implemented.
+% Structural priors regularization is implemented
 % Regularization parameter criteria: L-curve, gcv, manual.              %
 % Solver: Tickhonov, Truncated SVD, pcg, gmres                          %
 %                                                                       %
@@ -28,6 +28,7 @@ spacer = ' ------- ';
 % ========================================================================= 
 %%                          INITIALIZATION 
 % =========================================================================
+frontpage;
 disp('Initializing DOT parameters');
 Init_DOT
 
@@ -93,11 +94,11 @@ if ((EXPERIMENTAL == 1) && (EXP_IRF == 1))
     end
     DOT.time.irf.data = resampleSPC(EXP.irf.data,EXP.time.axis,DOT.time.dt,'norm');
 % ------ setting channel 0 based on the peak and width of the IRF ---------
-    resc_fact = round(DOT.time.dt./EXP.spc.factor);
+    %resc_fact = round(DOT.time.dt./EXP.spc.factor);
     [DOT.time.irf.peak.value,...
         DOT.time.irf.peak.pos] = max(DOT.time.irf.data);
     DOT.time.irf.ch0 = round(DOT.time.irf.peak.pos - ...
-                    200./DOT.time.dt);
+                    500./DOT.time.dt);
 
 else
     DOT.time.irf.data = 0;
@@ -124,7 +125,7 @@ drawnow;
 %==========================================================================
 %%                             FORWARD PROBLEM
 %==========================================================================
-disp('Forwar model computation');
+%disp('Forwar model computation');
 if FORWARD == 1
     nmeas = sum(DOT.dmask(:));
     DataCW = ForwardCW(DOT.grid,DOT.Source.Pos, DOT.Detector.Pos, DOT.dmask, ...
@@ -162,12 +163,14 @@ if DOT.TD == 1
         z = convn(full(DataTD),DOT.time.irf.data);
         figure(101);semilogy(z(:,1),'b'),hold,semilogy(DataTD(:,1),'k'),
         semilogy(DOT.time.irf.data,'r'),%ylim([max(DataTD(:))/10000 max(DataTD(:))])
-        DataTD = z(1:numel(DOT.time.irf.data),:);
+        nmax = max(DOT.time.nstep,numel(DOT.time.irf.data));
+        DataTD = z(1:nmax,:);
                 
         if REF == 1
             z = convn(full(RefTD),DOT.time.irf.data);
-            RefTD = z(1:numel(DOT.time.irf.data),:);
+            RefTD = z(1:nmax,:);
         end
+        clear nmax
     end
     clear z
     
@@ -345,9 +348,9 @@ end
 %%                      Create time windows for TD 
 %==========================================================================
 if strcmpi(REC.domain,'td')
-      
-  twin = CreateTimeWindows(REC.time.nstep,[1,REC.time.nstep],'even',NUM_TW);
-  REC.time.twin = twin + REC.time.irf.ch0 - 1;%+ Chan0-1; % Chan0 is IRF peak channel, add -1 since twin starts from 1
+  nmax = max(REC.time.nstep,numel(REC.time.irf.data));   
+  twin = CreateTimeWindows(REC.time.nstep,[REC.time.irf.ch0 - 1,nmax],'even',NUM_TW);
+  REC.time.twin = twin;% + REC.time.irf.ch0 - 1;%+ Chan0-1; % Chan0 is IRF peak channel, add -1 since twin starts from 1
   REC.time.nwin = size(REC.time.twin,1);
 
   % plot temporal windows and data
@@ -357,6 +360,7 @@ if strcmpi(REC.domain,'td')
     rectangle('Position',[double(REC.time.twin(i,1)),min(DataTD(DataTD(:)>0)),...
         double(REC.time.twin(i,2)-REC.time.twin(i,1)+1),double(max(DataTD(:,1)))]);
   end
+  drawnow;
   if exist('RefTD','var')
       REC.ref = WindowTPSF(RefTD,REC.time.twin);
       clear RefTD
@@ -435,6 +439,9 @@ switch lower(REC.domain)
             case 'gn'
                 
             case 'born'
+                if ~isempty(REC.solver.prior)
+                    REC.solver.prior = REC.opt.Mua;
+                end
                 [REC.opt.bmua,REC.opt.bmusp] = RecSolverBORN_TD(REC.solver,...
                     REC.grid,...
                     REC.opt.mua0,REC.opt.musp0,REC.opt.nB,REC.A,...
@@ -454,17 +461,20 @@ switch lower(REC.domain)
                     REC.time.irf.data,REC.ref,REC.sd,0);
 %%                
             case 'fit'
-%                 [REC.opt.bmua,REC.opt.bmusp] = FitMuaMus_TD(REC.solver,REC.mesh.hMesh,...
-%                     REC.grid.hBasis,REC.opt.notroi,...
-%                     REC.opt.mua0,REC.opt.musp0,REC.opt.nB,...
-%                     REC.Q,REC.M,REC.dmask,REC.time.dt,REC.time.nstep,...
-%                     REC.time.twin,REC.time.self_norm, REC.ref,REC.sd,...
-%                     REC.time.irf.data,1);
+                [REC.opt.bmua,REC.opt.bmusp] = FitMuaMus_TD(REC.solver,...
+                    REC.grid,...
+                    REC.opt.mua0,REC.opt.musp0,REC.opt.nB,REC.A,...
+                    REC.Source.Pos,REC.Detector.Pos,REC.dmask,...
+                    REC.time.dt,REC.time.nstep,REC.time.twin,...
+                    REC.time.self_norm,REC.Data,...
+                    REC.time.irf.data,REC.ref,REC.sd,1);
                 
             case 'cg'
             
             case 'l1'
-                REC.solver.prior = REC.opt.Mua;
+                if ~isempty(REC.solver.prior)
+                    REC.solver.prior = REC.opt.Mua;
+                end
                 [REC.opt.bmua,REC.opt.bmusp] = RecSolverL1_TD(REC.solver,...
                     REC.grid,...
                     REC.opt.mua0,REC.opt.musp0,REC.opt.nB,REC.A,...
@@ -491,9 +501,17 @@ drawnow;
 tilefigs;
 disp('recon: finished')
 % =========================================================================
+%%                            Quantify DOT 
+% =========================================================================
+if ~strcmpi(REC.solver.type,'fit')
+    Q = QuantifyDOT(REC,~EXP_DATA);
+end
+% =========================================================================
 %%                            Save reconstruction 
 % =========================================================================
-disp(['Reconstruction will be stored in: ', rdir,filename,'_', 'REC.m']);
-save([rdir,filename,'_', 'REC'],'REC')
+if ~strcmpi(REC.solver.type,'fit')
+    disp(['Reconstruction will be stored in: ', rdir,filename,'_', 'REC.m']);
+    save([rdir,filename,'_', 'REC'],'REC','Q')
+end
 clearvars REC
 end

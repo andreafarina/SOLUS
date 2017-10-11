@@ -6,15 +6,9 @@
 function [bmua,bmus] = RecSolverBORN_TD_USPrior(solver,grid,mua0,mus0, n, A,...
     Spos,Dpos,dmask, dt, nstep, twin, self_norm, data, irf, ref, sd, ~)
 %% Jacobain options
-LOAD_JACOBIAN = false;      % Load a precomputed Jacobian
+LOAD_JACOBIAN = solver.prejacobian.load;      % Load a precomputed Jacobian
 geom = 'semi-inf';
-%% path
-%rdir = ['../results/test/precomputed_jacobians/'];
-jacdir = ['../results/precomputed_jacobians/'];
-jacfile = 'J';
 % -------------------------------------------------------------------------
-
-bdim = (grid.dim);
 nQM = sum(dmask(:));
 nwin = size(twin,1);
 Jacobian = @(mua, mus) JacobianTD (grid, Spos, Dpos, dmask, mua, mus, n, A, ...
@@ -27,10 +21,10 @@ Jacobian = @(mua, mus) JacobianTD (grid, Spos, Dpos, dmask, mua, mus, n, A, ...
 
 % Convolution with IRF
 if numel(irf)>1
-    for i = 1:nQM
-        z(:,i) = conv(proj(:,i),irf);
-    end
-    proj = z(1:numel(irf),:);
+    z = convn(proj,irf);
+    nmax = max(nstep,numel(irf));
+    proj = z(1:nmax,:);
+    clear nmax
     if self_norm == true
         proj = proj * spdiags(1./sum(proj)',0,nQM,nQM);
     end
@@ -43,18 +37,19 @@ ref = ref(:);
 data = data(:);
 factor = proj./ref;
 
-%data = data .* factor;
-%ref = ref .* factor;
+data = data .* factor;
+ref = ref .* factor;
 %% data scaling
-%sd = sd(:).*factor;%sqrt(factor);   % Because of the Poisson noise
-sd = proj(:);
+sd = sd(:).*factor;%sqrt(factor);   % Because of the Poisson noise
+%sd = proj(:);
 %sd = ones(size(proj(:)));
-%% mask for excluding zeros
+%% mask for excluding zeros,nan,inf
 mask = ((ref(:).*data(:)) == 0) | ...
-    (isnan(ref(:))) | (isnan(data(:)));
+    (isnan(ref(:))) | (isnan(data(:))) | ...
+    (isinf(data(:))) | (isinf(ref(:)));
 %mask = false(size(mask));
 
-if ref == 0
+if ref == 0 %#ok<*BDSCI>
    ref = proj(:);
 end
 
@@ -64,9 +59,8 @@ data(mask) = [];
 %sd(mask) = [];
 % solution vector
 x = ones(grid.N,1) * mua0;
-x0 = x;
-p = length(x);
-dphi = (data(:)-ref(:))./ref(:);%sd(~mask);%./ref(:);
+
+dphi = (data(:)-ref(:))./sd(~mask);%./ref(:);
 %sd = proj(:);
 %dphi = log(data(:)) - log(ref(:));
 %save('dphi','dphi');
@@ -74,13 +68,14 @@ dphi = (data(:)-ref(:))./ref(:);%sd(~mask);%./ref(:);
 if LOAD_JACOBIAN == true
     fprintf (1,'Loading Jacobian\n');
     tic;
-    load([jacdir,jacfile])
+    %load([jacdir,jacfile])
+    load(solver.prejacobian.path);
     toc;
 else
-    fprintf (1,'Calculating Jacobian\n');
+    %fprintf (1,'Calculating Jacobian\n');
     tic;
     J = Jacobian ( mua0, mus0);
-    save([jacdir,jacfile],'J');
+    save(solver.prejacobian.path,'J');
     toc;
 end
 
@@ -106,21 +101,21 @@ nsol = size(J,2);
 %     for i = 1:p
 %         J(:,i) = J(:,i) * x(i);
 %     end
-proj(mask) = [];
+%proj(mask) = [];
 J(mask,:) = [];
 
 
 %% Structured laplacian prior
 siz_prior = size(solver.prior);
-%solver.prior(solver.prior == max(solver.prior(:))) = 1.1*min(solver.prior(:)); 
-%solver.prior = solver.prior .* (1 + 0.01*randn(size(solver.prior)));
-[L,C3D] = StructuredLaplacianPrior(solver.prior,siz_prior(1),siz_prior(2),siz_prior(3));
+solver.prior(solver.prior == max(solver.prior(:))) = 1.1*min(solver.prior(:)); 
+solver.prior = solver.prior .* (1 + 0.01*randn(size(solver.prior)));
+[L,~] = StructuredLaplacianPrior(solver.prior,siz_prior(1),siz_prior(2),siz_prior(3));
 %% Solver
 s = svd(J);
-alpha = solver.tau*s(1)
+alpha = solver.tau*s(1) %#ok<NOPRT>
 %dx = [J;(alpha)*speye(nsol)]\[dphi;zeros(nsol,1)];
 %dx = [J;(alpha)*L]\[dphi;zeros(3*nsol,1)];
-dx = lsqr([J;alpha*L],[dphi;zeros(3*nsol,1)],1e-6,300);
+dx = lsqr([J;alpha*L],[dphi;zeros(3*nsol,1)],1e-6,1000);
 %dx = lsqr([J;alpha*speye(nsol)],[dphi;zeros(nsol,1)],1e-6,100);
 %==========================================================================
 %%                        Add update to solution

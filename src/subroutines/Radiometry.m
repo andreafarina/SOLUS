@@ -5,13 +5,14 @@ function RealFactor = Radiometry(radiometry)
 %
 % lambda:   reference wavelength
 % power:    injected power (mW)
-% acqtime:  acquisition time (s)
+% acqtime:  total acquisition time (s)
 % area:     detector area (mm2)
 % opteff:   optical efficiency
 % qeff:     quantum efficiency
 %
 % RealFactor: is the multiplication factor for converting 
 %             TPSF units to photon-counts unit
+
 % unitary parameters
 DetAreaUnitary = 1; %(mm2) area of the detector unitary (will be adjusted for actual area after)
 SourcePowerUnitary = 1; % mW Power of the Unitary Source (will be adjusted for power later on)

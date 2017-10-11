@@ -9,6 +9,8 @@ Nopt = sum(dmask(:));
 phi = zeros(nstep,Nopt);
 t = (1:nstep) * dt;
 t = t';
+disp(['calculating Forward(',type,', ',geom,')']);
+
 switch lower(type)
     case 'homo'
         switch lower(geom)
@@ -18,6 +20,8 @@ switch lower(type)
                 row_off = 0;
                 for i = 1:Ns
                     ind_d = find(dmask(:,i));
+                    %textprogressbar(i/Ns*100);
+                    %pause(0.01);
                     for j=1:numel(ind_d)
                         m = ind_d(j);
                         phi(row_off + (1:nstep)) = SemiInfinite_TR(t, Spos(i,:),...
@@ -52,6 +56,8 @@ switch lower(type)
                 row_off = 0;
                 for i = 1:Ns
                     ind_d = find(dmask(:,i));
+                    %textprogressbar(i/Ns*100);
+                    %pause(0.01);
                     for j=1:numel(ind_d)
                         m = ind_d(j);
                         phi(row_off + (1:nstep)) = SemiInfinite_TR(t, Spos(i,:), Dpos(m,:),muaB,muspB,v,A) + ... 
@@ -67,6 +73,12 @@ switch lower(type)
 end
 if nargout > 1        
     Area = sum(phi);
+end
+if self_norm == true
+    Area = sum(phi);
+    phi = bsxfun(@times,phi,1./Area);
+end
+%textprogressbar('done');
 end
 
 

@@ -2,7 +2,7 @@
 %%  SETTING SOURCES (QVEC), DETECTORS (MVEC) AND THEIR PERMUTATIONS (DMASK)
 %==========================================================================
 % SOLUS SOURCES - DETECTOR POSITIONS
-xs = linspace(5,55,4);
+xs = linspace(5,35,4);
 ys = [10,30];
 %ys = linspace(5,50,8);
 zs = 0;

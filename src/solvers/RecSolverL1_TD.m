@@ -7,7 +7,7 @@
 function [bmua,bmus] = RecSolverL1_TD(solver,grid,mua0,mus0, n, A,...
     Spos,Dpos,dmask, dt, nstep, twin, self_norm, data, irf, ref, sd, ~)
 %% Jacobain options
-LOAD_JACOBIAN = false;      % Load a precomputed Jacobian
+LOAD_JACOBIAN = solver.prejacobian.load;      % Load a precomputed Jacobian
 geom = 'semi-inf';
 %% SOLVER PARAMETER CRITERION
 SOLVER = 'ISTA';
@@ -28,11 +28,8 @@ ISTA_FLAGS.Iterates = true;
 
 %% path
 %rdir = ['../results/test/precomputed_jacobians/'];
-jacdir = ['../results/test/precomputed_jacobians/'];
+jacdir = ['../results/precomputed_jacobians/'];
 jacfile = 'J';
-%mkdir(rdir);
-%disp(['Intermediate results will be stored in: ' rdir])
-%save([rdir 'REC'], '-v7.3','REC'); %save REC structure which describes the experiment
 % -------------------------------------------------------------------------
 
 bdim = (grid.dim);
@@ -48,7 +45,9 @@ if numel(irf)>1
     for i = 1:nQM
         z(:,i) = conv(proj(:,i),irf);
     end
-    proj = z(1:numel(irf),:);
+    nmax = max(nstep,numel(irf));
+    proj = z(1:nmax,:);
+    clear nmax
     if self_norm == true
         proj = proj * spdiags(1./sum(proj)',0,nQM,nQM);
     end
@@ -63,7 +62,7 @@ factor = proj./ref;
 data = data .* factor;
 ref = ref .* factor;
 %% data scaling
-sd = sd(:).*sqrt(factor);
+sd = sd(:).*factor;
 %sd = proj(:);
 %sd = ones(size(proj(:)));
 %% mask for excluding zeros
@@ -93,15 +92,17 @@ dphi = (data(:)-ref(:))./sd(~mask);%./ref(:);
 if LOAD_JACOBIAN == true
     fprintf (1,'Loading Jacobian\n');
     tic;
-    load([jacdir,jacfile])
+    %load([jacdir,jacfile])
+    load(solver.prejacobian.path);
     toc;
 else
-    fprintf (1,'Calculating Jacobian\n');
+    %fprintf (1,'Calculating Jacobian\n');
     tic;
     J = Jacobian ( mua0, mus0);
-%    save([jacdir,jacfile],'J');
+    save(solver.prejacobian.path,'J');
     toc;
 end
+
 
 if ~isempty(solver.prior)
     d1 = (solver.prior(:) > 0 )&(solver.prior(:)==min(solver.prior(:)));

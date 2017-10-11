@@ -20,6 +20,7 @@ clear x y z
 if irf == 0
     irf = 1;
 end
+disp(['calculating Jacobian (',geom,')']);
 switch lower(geom)
     case 'infinite'
         
@@ -27,6 +28,8 @@ switch lower(geom)
         row_off = 0;
         for i = 1:Ns
             ind_d = find(dmask(:,i));
+            %textprogressbar(i/Ns*100);
+            %pause(0.01);
             for j=1:numel(ind_d)
                 m = ind_d(j);
                 J(row_off + (1:nwin),:) = WindowTPSF(...
@@ -39,6 +42,7 @@ switch lower(geom)
         
     case 'slab'
 end
+%textprogressbar('done');
 end
 
 

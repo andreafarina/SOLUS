@@ -1,0 +1,261 @@
+%==========================================================================
+% This function contains a solver for fitting optical properties of
+% homogeneous phantom using routines in Matlab Optimization Toolbox
+%
+% Andrea Farina 10/15
+%==========================================================================
+
+function [bmua,bmus] = FitMuaMus_TD(~,grid,mua0,mus0, n, A,...
+    Spos,Dpos,dmask, dt, nstep, twin, self_norm, data, irf, ref, sd,verbosity)
+geom = 'semi-inf';
+self_norm = true;
+mua0 = 0.05;
+mus0 = 20;
+
+nQM = sum(dmask(:));
+nwin = size(twin,1);
+Jacobian = @(mua, mus) JacobianTD (grid, Spos, Dpos, dmask, mua, mus, n, A, ...
+    dt, nstep, twin, irf, geom);
+%% Inverse solver
+[proj, Aproj] = ForwardTD(grid,Spos, Dpos, dmask, mua0, mus0, n, ...
+                [],[], A, dt, nstep, self_norm,...
+                geom, 'homo');
+if numel(irf)>1
+    z = convn(proj,irf);
+    nmax = max(nstep,numel(irf));
+    proj = z(1:nmax,:);
+    clear nmax
+    
+    if self_norm == true
+        proj = proj * spdiags(1./sum(proj)',0,nQM,nQM);
+    end
+    clear z
+end
+if self_norm == true
+        data = data * spdiags(1./sum(data)',0,nQM,nQM);
+        ref = ref * spdiags(1./sum(ref)',0,nQM,nQM);
+    end
+proj = WindowTPSF(proj,twin);
+proj = proj(:);
+data = data(:);
+ref = ref(:);
+%factor = proj./ref;
+
+%data = data .* factor;
+%ref = ref .* factor;
+%% data scaling
+%sd = sd(:).*(factor);
+%% mask for excluding zeros
+mask = ((ref(:).*data(:)) == 0) | ...
+    (isnan(ref(:))) | (isnan(data(:)));
+%mask = false(size(mask));
+
+
+if ref == 0
+    ref = proj(:);
+end
+
+ref(mask) = []; %#ok<NASGU>
+data(mask) = [];
+proj(mask) = [];
+figure;semilogy([proj,data]),legend('proj','data')
+sd = sqrt(data);%%ones(size(proj));%proj(:);
+data = data./sd;
+
+
+%% solution vector
+x = [mua0;mus0;0];     % [mua0,mus0,t0]
+
+
+%% Setup optimization for lsqcurvefit
+opts = optimoptions('lsqcurvefit',...
+    'Jacobian','off',...
+    ...'Algorithm','levenberg-marquardt',...
+    'DerivativeCheck','off',...
+    'MaxIter',100,'Display','iter-detailed','FinDiffRelStep',[1e-3,1e-2,2]);%,'TolFun',1e-10,'TolX',1e-10)
+%% Setup optimization for lsqnonlin
+% opts = optimoptions('lsqnonlin',...
+%     'Jacobian','off',...
+%     ...'Algorithm','levenberg-marquardt',...
+%     'DerivativeCheck','off',...
+%     'MaxIter',20,'Display','iter-detailed')
+%% Setup optimization for fminunc
+%opts = optimoptions('fminunc','GradObj','on','Algorithm','quasi-newton','MaxIter',2,...
+%   'Display','iter')
+% opts = optimoptions('fminunc',...
+%     'Algorithm','quasi-newton',...
+%     'Display','iter-detailed',...
+%      'GradObj','off',...
+%     'MaxIter',20)
+
+
+%% Solve
+%x = fminunc(@objective,x0,opts);
+%x = fminsearch(@objective,x0);
+x0 = x;
+ x = lsqcurvefit(@forward,x0,[],data,[],[],opts);
+%x = lsqnonlin(@objective2,x0,[],[],opts);
+
+%% Map parameters back to mesh
+
+bmua = x(1)*ones(grid.N,1);
+bmus = x(2)*ones(grid.N,1);
+
+
+%% display fit result
+display(['mua = ',num2str(bmua(1))]);
+display(['musp = ',num2str(bmus(1))]);
+display(['t0 = ',num2str(x(3))]);
+
+
+%% Callback function for objective evaluation
+    function [p,g] = objective(x,~)
+        verbosity = 1;
+        xx = [x(1)*ones(nsol,1);x(2)*ones(nsol,1)];
+        [mua,mus] = toastDotXToMuaMus(hBasis,xx,refind);
+        mua(notroi) = mua0;
+        mus(notroi) = mus0;
+        %mua(mua<0) = 1e-4;
+        %mus(mus<0) = 0.2;
+%         for j = 1:length(mua) % ensure positivity
+%             mua(j) = max(1e-4,mua(j));
+%             mus(j) = max(0.2,mus(j));
+%         end
+%         
+        [proj,Aproj] = ProjectFieldTD(hMesh,qvec,mvec,dmask,...
+            mua,mus,conc,tau,n,dt,nstep, 0,self_norm,'diff',0);
+        if numel(irf)>1
+            for i = 1:nQM
+                z(:,i) = conv(full(proj(:,i)),irf);
+            end
+            nmax = max(nstep,numel(irf));
+            proj = z(1:nmax,:);
+            clear nmax
+            if self_norm == true
+                proj = proj * spdiags(1./sum(proj)',0,nQM,nQM);
+            end
+            clear z
+        end
+        
+        proj = WindowTPSF(proj,twin);
+        proj = proj(:);
+        
+        %proj = privProject (hMesh, hBasis, x, ref, freq, qvec, mvec);
+        [p, p_data, p_prior] = privObjective (proj, data, sd);
+        if verbosity > 0
+            fprintf (1, '    [LH: %f, PR: %f]\n', p_data, p_prior);
+        end
+        nwin = size(twin,1);
+        if nargout>1
+            JJ = Jacobian (mua, mus, qvec, mvec);
+            
+            % Normalized measruements
+            if self_norm == true
+                for i=1:nQM
+                    sJ = sum(JJ((1:nwin)+(i-1)*nwin,:));
+                    sJ = repmat(sJ,nwin,1);
+                    sJ = spdiags(proj((1:nwin)+(i-1)*nwin),0,nwin,nwin) * sJ;
+                    JJ((1:nwin)+(i-1)*nwin,:) = (JJ((1:nwin)+(i-1)*nwin,:) - sJ)./Aproj(i);
+                end
+            end
+            J(:,1) = sum(JJ(:,1:nsol),2);
+            J(:,2) = sum(JJ(:,nsol + (1:nsol)),2);
+            g = - 2 * J' * ((data-proj)./sd);
+        end
+    end
+%% Callback function for objective evaluation
+    function [p,J] = objective2(x,~)
+        xx = [x(1)*ones(nsol,1);x(2)*ones(nsol,1)];
+        [mua,mus] = toastDotXToMuaMus(hBasis,xx,refind);
+        mua(notroi) = mua0;
+        mus(notroi) = mus0;
+        %mua(mua<0) = 1e-4;
+        %mus(mus<0) = 0.2;
+%         for j = 1:length(mua) % ensure positivity
+%             mua(j) = max(1e-4,mua(j));
+%             mus(j) = max(0.2,mus(j));
+%         end
+%         
+        [proj,Aproj] = ProjectFieldTD(hMesh,qvec,mvec,dmask,...
+            mua,mus,conc,tau,n,dt,nstep, 0,self_norm,'diff',0);
+        if numel(irf)>1
+            for i = 1:nQM
+                z(:,i) = conv(full(proj(:,i)),irf);
+            end
+            proj = z(1:nstep,:);
+            if self_norm == true
+                proj = proj * spdiags(1./sum(proj)',0,nQM,nQM);
+            end
+            clear z
+        end
+        proj = WindowTPSF(proj,twin);
+        proj = proj(:);
+        
+        p = (data - proj)./sd;
+        
+        nwin = size(twin,1);
+        if nargout>1
+            JJ = Jacobian (mua, mus, qvec, mvec);
+            JJ = spdiags(1./sd,0,nQM*nwin,nQM*nwin) * JJ;
+            % Normalized measruements
+            if self_norm == true
+                for i=1:nQM
+                    sJ = sum(JJ((1:nwin)+(i-1)*nwin,:));
+                    sJ = repmat(sJ,nwin,1);
+                    sJ = spdiags(proj((1:nwin)+(i-1)*nwin),0,nwin,nwin) * sJ;
+                    JJ((1:nwin)+(i-1)*nwin,:) = (JJ((1:nwin)+(i-1)*nwin,:) - sJ)./Aproj(i);
+                end
+            end
+            J(:,1) = - sum(JJ(:,1:nsol),2);
+            J(:,2) = - sum(JJ(:,nsol + (1:nsol)),2);
+       end
+    end
+%% Callback function for forward problem
+function [proj,J] = forward(x,~)
+    %xx = [x(1)*ones(nsol,1);x(2)*ones(nsol,1)];
+    t0 = x(3);
+    [proj, Aproj] = ForwardTD(grid,Spos, Dpos, dmask, x(1), x(2), n, ...
+                [],[], A, dt, nstep, self_norm,...
+                geom, 'homo');
+   % [~,proj] = Contini1997(0,(1:nstep)*dt/1000,20,mua(1),mus(1),1,n(1),'slab','Dmus',200);
+   % proj = proj';%./sum(proj);
+    if numel(irf)>1
+        z = convn(proj,irf);
+        nmax = max(nstep,numel(irf));
+        proj = z(1:nmax,:);
+        clear nmax
+        if self_norm == true
+            proj = proj * spdiags(1./sum(proj)',0,nQM,nQM);
+        end
+        clear z
+    end
+    proj = circshift(proj,round(t0/dt));
+    proj = WindowTPSF(proj,twin);
+    proj(mask) = [];
+    proj = proj(:)./sd;
+    
+% plot forward
+    t = (1:numel(data)) * dt;
+    figure(1000);
+    semilogy(t,proj,'-',t,data,'.'),ylim([1e-3 1])
+    drawnow;
+    nwin = size(twin,1);
+    if nargout>1
+        JJ = Jacobian (mua, mus, qvec, mvec);
+        %save('J1','JJ');
+        njac = size(JJ,2)/2;
+        % Normalized measruements
+        if self_norm == true
+            for i=1:nQM
+                sJ = sum(JJ((1:nwin)+(i-1)*nwin,:));
+                sJ = repmat(sJ,nwin,1);
+                sJ = spdiags(proj((1:nwin)+(i-1)*nwin),0,nwin,nwin) * sJ;
+                JJ((1:nwin)+(i-1)*nwin,:) = (JJ((1:nwin)+(i-1)*nwin,:) - sJ)./Aproj(i);
+            end
+        end
+        J(:,1) = sum(JJ(:,1:njac),2);% * 0.3;
+        J(:,2) = sum(JJ(:,njac + (1:njac)),2);% * 0.3;
+       % J = spdiags(1./proj,0,nQM*nwin,nQM*nwin) * J;
+    end
+end
+end

@@ -16,7 +16,7 @@ EXP_DELTA = 'all';      % Substitute the IRF with delta function on the
 EXP_DATA = 0;           % Load experimental data and use them for 
                         % reconstruction
 % -------------------------------------------------------------------------
-DOT.TYPE = 'pointlike'; % 'pointlike','linesources' or 'pattern'
+%DOT.TYPE = 'pointlike'; % 'pointlike','linesources' or 'pattern'
 DOT.TD = 1;             % Time-domain: enable the calculation of TPSF
 % -------------------------------------------------------------------------
 DOT.sigma = 0;          % add gaussian noise to CW data
@@ -57,34 +57,34 @@ NUM_HETE = 1;
 DOT.opt.hete1.type  = 'Mua';
 DOT.opt.hete1.geometry = 'Sphere';
 DOT.opt.hete1.c     = [35, 25, 16];   % down
-% DOT.opt.hete.d     = (M * [0, 0, -1]')';   % down
-% DOT.opt.hete.l     = 20;
+% DOT.opt.hete1.d     = (M * [0, 0, -1]')';   % down
+% DOT.opt.hete1.l     = 20;
 DOT.opt.hete1.sigma = 5;
 DOT.opt.hete1.distrib = 'OFF';
 DOT.opt.hete1.profile = 'Gaussian';%'Step';%'Gaussian';
-DOT.opt.hete1.val   = 2 * DOT.opt.muaB;
+DOT.opt.hete1.val   = 5 * DOT.opt.muaB;
 %--------------------------- INCLUSION 2 ---------------------------------%
 % DOT.opt.hete2.type  = 'Mua';
 % DOT.opt.hete2.geometry = 'Sphere';
-% DOT.opt.hete2.c     = [40, 20, 5];   % down
+% DOT.opt.hete2.c     = [5, 20, 5];   % down
 % DOT.opt.hete2.d     = [ 1, 0, 0];   % down
 % % DOT.opt.hete.d     = (M * [0, 0, -1]')';   % down
 % % DOT.opt.hete.l     = 20;
-% DOT.opt.hete2.sigma = 3;
+% DOT.opt.hete2.sigma = 5;
 % DOT.opt.hete2.distrib = 'OFF';
 % DOT.opt.hete2.profile = 'Gaussian';%'Gaussian';
-% DOT.opt.hete2.val   = 10 * DOT.opt.muaB;
+% DOT.opt.hete2.val   = 2 * DOT.opt.muaB;
 
 %==========================================================================
 %%                         Time domain parameters
 %==========================================================================
 DOT.time.dt = (50e3/1024/4);        % time step in picoseconds
-DOT.time.nstep = 192;               % number of temporal steps
+DOT.time.nstep = 400;               % number of temporal steps
 DOT.time.noise = 'Poisson';         % 'Poisson','Gaussian','none'
                                     % if 'Poisson' and sigma>0 a
                                     % Gaussian noise is added before
                                     % Poisson noise.
-DOT.time.sigma = 1e-2;              % variance for gaussian noise
+DOT.time.sigma = 1e-3;              % variance for gaussian noise
 DOT.time.self_norm = false;         % true for self-normalized TPSF
 DOT.time.TotCounts = 1e6;           % total counts for the maximum-energy
                                     % TPSF. The other are consequently
@@ -92,22 +92,31 @@ DOT.time.TotCounts = 1e6;           % total counts for the maximum-energy
 %==========================================================================
 %%                         Radiometry
 %==========================================================================
-DOT.radiometry.power = 1e-3;    % (mW) laser input power %AAA
+DOT.radiometry.power = 1;    % (mW) laser input power %AAA
 DOT.radiometry.timebin = ...
     DOT.time.dt;                % (ps) width of the time bin
 DOT.radiometry.acqtime = 1;     % (s) acquisition time %AAA
 DOT.radiometry.opteff = 0.9;    % Typical efficiency of the optical path
 DOT.radiometry.lambda = 800;    % Wavelength (nm) 
                                 % (just for calculation of input photons)
-DOT.radiometry.area = 4;        % mm
+DOT.radiometry.area = 4;        % mm^2
 DOT.radiometry.qeff = 0.05;     % Quantum efficiency
 %==========================================================================
-%%              Type of Cutting for statistics
+%%                   Cutting of counts
 %==========================================================================
-% Cutting of counts (1=gated; 2=no gated; 3=each gate=countrate/numgate)
-%CutCounts = 1; % all gated
-CUT_COUNTS = 0;         % 0:non-gated, 1:gated
-NumDelays = 5; % number of delays
-NumGates = 10; % number of gates
+% CUT_COUNTS = 0 --> The count-rate is fixed accordingly to the higher
+%                    power measurement. The other are consequently
+%                    rescaled. RADIOMETRY in this case has no effect.
+% CUT_COUNTS = 1 --> A Time-gated measurement is simulated.
+%                    Measurements on each dealay are rescaled accordingly 
+%                    to DOT.time.TotCounts. In particular, if:
+%                    RADIOMETRY==1, the count-rate for each delay is cut to 
+%                         DOT.time.TotCounts if photons are available, 
+%                         otherwise no;
+%                   RADIOMETRY==0, the count-rate for each delay is cut to 
+%                         DOT.time.TotCounts in any case.  
+CUT_COUNTS = 1;         
+NumDelays = 1;      % number of delays
+
 
 
