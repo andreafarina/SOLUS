@@ -15,7 +15,7 @@ REC.opt.musp0 = 1;      % reduced scattering [mm-1]
 REC.opt.nB = 1.4;
 % ---------------------- Solver and regularization ------------------------
 REC.solver.tau = 1e-2;            % regularisation parameter
-REC.solver.type = 'usprior';         % 'born','GN': gauss-newton, 
+REC.solver.type = 'born';         % 'born','GN': gauss-newton, 
                                   % 'USprior': Simon's strutural prior
                                   % 'LM': Levenberg-Marquardt,
                                   % 'l1': L1-based minimization

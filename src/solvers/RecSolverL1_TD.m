@@ -99,6 +99,10 @@ else
     %fprintf (1,'Calculating Jacobian\n');
     tic;
     J = Jacobian ( mua0, mus0);
+    [jpath,jname,jext] = fileparts(solver.prejacobian.path);
+    if ~exist(jpath,'dir')
+        mkdir(jpath)
+    end
     save(solver.prejacobian.path,'J');
     toc;
 end
