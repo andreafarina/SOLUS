@@ -39,6 +39,10 @@ if RECONSTRUCTION == 1
     disp('Setting reconstruction parameters');
     RecSettings_DOT;
 end
+% ========================================================================= 
+%%               OVERRIDE param using P values (multiSIM) 
+% =========================================================================
+Override_MultiSim
 
 % =========================================================================
 %%                     Create folder for saving data
@@ -506,6 +510,7 @@ disp('recon: finished')
 if ~strcmpi(REC.solver.type,'fit')
     Q = QuantifyDOT(REC,~EXP_DATA);
 end
+Quantification_MultiSim
 % =========================================================================
 %%                            Save reconstruction 
 % =========================================================================

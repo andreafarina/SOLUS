@@ -117,6 +117,3 @@ DOT.radiometry.qeff = 0.05;     % Quantum efficiency
 %                         DOT.time.TotCounts in any case.  
 CUT_COUNTS = 1;         
 NumDelays = 1;      % number of delays
-
-
-
