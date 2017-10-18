@@ -56,7 +56,7 @@ NUM_HETE = 1;
 %--------------------------- INCLUSION 1 ---------------------------------%
 DOT.opt.hete1.type  = 'Mua';
 DOT.opt.hete1.geometry = 'Sphere';
-DOT.opt.hete1.c     = [35, 25, 16];   % down
+DOT.opt.hete1.c     = [25, 20, 0];   % down
 % DOT.opt.hete1.d     = (M * [0, 0, -1]')';   % down
 % DOT.opt.hete1.l     = 20;
 DOT.opt.hete1.sigma = 5;

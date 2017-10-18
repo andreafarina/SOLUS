@@ -1,6 +1,5 @@
 function [phi, Area] = ForwardTD(grid,Spos, Dpos, dmask, muaB, muspB, n, ...
     Mua, Musp, A, dt, nstep, self_norm, geom, type)
-
 v = 0.2999/n;
 
 Ns = size(Spos,1);
@@ -58,15 +57,15 @@ switch lower(type)
                     ind_d = find(dmask(:,i));
                     %textprogressbar(i/Ns*100);
                     %pause(0.01);
-                    for j=1:numel(ind_d)
-                        m = ind_d(j);
+                    for jj=1:numel(ind_d)
+                        m = ind_d(jj);
                         phi(row_off + (1:nstep)) = SemiInfinite_TR(t, Spos(i,:), Dpos(m,:),muaB,muspB,v,A) + ... 
                         J_Semi_Inf_PCBC_TR_3D(t, muaB,muspB,v,A,Spos(i,:),Dpos(m,:),XX,YY,ZZ,...
                             grid.dV) * (Mua(:) - muaB);
                         row_off = row_off + nstep;
                     end
                 end
-                
+                                
             case 'slab'
         end
 
