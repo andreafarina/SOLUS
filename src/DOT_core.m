@@ -148,18 +148,23 @@ if FORWARD == 1
 %==========================================================================
 if DOT.TD == 1
     DOT.time.time = (1:DOT.time.nstep) * DOT.time.dt;
-    
+    if LOAD_FWD_TEO == 0
     DataTD = ForwardTD(DOT.grid,DOT.Source.Pos, DOT.Detector.Pos, DOT.dmask,...
         DOT.opt.muaB, DOT.opt.muspB,DOT.opt.nB, DOT.opt.Mua,...
                 DOT.opt.Musp, DOT.A, DOT.time.dt,...
                 length(DOT.time.time), DOT.time.self_norm, geom, 'born');
+            save([rdir,filename,'_', 'FwdTeo'],'DataTD');
         if REF == 1
             RefTD = ForwardTD(DOT.grid,DOT.Source.Pos, DOT.Detector.Pos, DOT.dmask,...
                 DOT.opt.muaB, DOT.opt.muspB,DOT.opt.nB, ...
                 DOT.opt.muaB*ones(DOT.grid.dim),DOT.opt.muspB*ones(DOT.grid.dim), ...
                 DOT.A, DOT.time.dt,length(DOT.time.time), DOT.time.self_norm,...
                 geom, 'homo');
+            save([rdir,filename,'_', 'FwdTeo'],'RefTD','-append');
         end
+    else
+        load([rdir,filename,'_', 'FwdTeo']);
+    end
       
     % Convolution with IRF
     % AF: to optimize memory assign directly DataTD
