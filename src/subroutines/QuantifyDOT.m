@@ -139,9 +139,9 @@ av=max(dmua_rec3d(:));
 disp(['Max ',num2str(av)]);
 disp(['CNR ',num2str(av./sigma)]);
 
-av=max(V(:).*dmua_rec3d(:));
-disp(['Max in region ',num2str(av)]);
-disp(['CNR in region ',num2str(av./sigma)]);
+% av=max(V(:).*dmua_rec3d(:));
+% disp(['Max in region ',num2str(av)]);
+% disp(['CNR in region ',num2str(av./sigma)]);
 % 
 % 
 % %% Quantitation
@@ -181,9 +181,10 @@ if ref_true == 1
     
     Q.max.true = max(dmua_true3d(:));
     
-    Q.max.error = Q.max.true - mxm;
+    Q.max.error = mxm -Q.max.true;
     Q.max.rel_error = Q.max.error./Q.max.true;
     Q.volume.true = TOT_VOL_TRUE;
     
-    Q.volume.rel_error = (TOT_VOL_TRUE - TOT_VOL_REC)./TOT_VOL_TRUE;
+    Q.volume.rel_error = (TOT_VOL_REC - TOT_VOL_TRUE)./TOT_VOL_TRUE;
+    disp(['Relative volume error = ',num2str(Q.volume.rel_error)]);
 end
