@@ -76,6 +76,27 @@ if exist('isComingFromInterface','var')
     else
         warning('Parameter P(LJ).Value not in override. Default value will be used');
     end
+    
+    % Load Jacobian
+    if exist('LF','var')
+        if iL == 1
+            LOAD_FWD_TEO = false;
+            BuffIncPos = DOT.opt.hete1.c;
+            BuffIncVal = DOT.opt.hete1.val;
+            BuffIncSigma = DOT.opt.hete1.sigma;
+        else
+            if (all(BuffIncPos == DOT.opt.hete1.c) && BuffIncVal == DOT.opt.hete1.val && BuffIncSigma == DOT.opt.hete1.sigma)==false
+                BuffIncPos = DOT.opt.hete1.c;
+                BuffIncVal = DOT.opt.hete1.val;
+                BuffIncSigma = DOT.opt.hete1.sigma;
+                LOAD_FWD_TEO = false;
+            else
+                LOAD_FWD_TEO = eval('P(LF).Value');
+            end
+        end
+    else
+        warning('Parameter P(LF).Value not in override. Default value will be used');
+    end
     %if exist('LJ','var'), REC.solver.loadjacobian = eval('P(LJ).Value'); else, warning('Parameter P(LJ).Value not in override. Default value will be used'); end
     warning('on','backtrace');
 end
