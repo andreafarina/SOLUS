@@ -28,7 +28,7 @@ RADIOMETRY = 1;         % apply radiometric inputs to simulated data
 % -------------------------------------------------------------------------
 SAVE_FWD = 1;           % Save forward data (possibly with noise) 
                         % in a _Data.m file
-LOAD_FWD_TEO = 1;       % if 0: save the raw TPSF(un-noisy) in a _FwdTeo.m file.
+LOAD_FWD_TEO = 0;       % if 0: save the raw TPSF(un-noisy) in a _FwdTeo.m file.
                         % if 1: load the raw TPSF for speed up
 % ========================================================================= 
 %% ====================== VOLUME DEFINITION ===============================
@@ -58,7 +58,7 @@ NUM_HETE = 1;
 %--------------------------- INCLUSION 1 ---------------------------------%
 DOT.opt.hete1.type  = 'Mua';
 DOT.opt.hete1.geometry = 'Sphere';
-DOT.opt.hete1.c     = [25, 20, 0];   % down
+DOT.opt.hete1.c     = [35, 25, 16];   % down
 % DOT.opt.hete1.d     = (M * [0, 0, -1]')';   % down
 % DOT.opt.hete1.l     = 20;
 DOT.opt.hete1.sigma = 5;
@@ -97,7 +97,7 @@ DOT.time.TotCounts = 1e6;           % total counts for the maximum-energy
 DOT.radiometry.power = 1;    % (mW) laser input power %AAA
 DOT.radiometry.timebin = ...
     DOT.time.dt;                % (ps) width of the time bin
-DOT.radiometry.acqtime = 1;     % (s) acquisition time %AAA
+DOT.radiometry.acqtime = 0.1;     % (s) acquisition time %AAA
 DOT.radiometry.opteff = 0.9;    % Typical efficiency of the optical path
 DOT.radiometry.lambda = 800;    % Wavelength (nm) 
                                 % (just for calculation of input photons)

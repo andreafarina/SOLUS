@@ -112,7 +112,7 @@ J(mask,:) = [];
 %% Structured laplacian prior
 siz_prior = size(solver.prior);
 solver.prior(solver.prior == max(solver.prior(:))) = 1.1*min(solver.prior(:)); 
-solver.prior = solver.prior .* (1 + 0.01*randn(size(solver.prior)));
+%solver.prior = solver.prior .* (1 + 0.01*randn(size(solver.prior)));
 [L,~] = StructuredLaplacianPrior(solver.prior,siz_prior(1),siz_prior(2),siz_prior(3));
 %% Solver
 s = svd(J);

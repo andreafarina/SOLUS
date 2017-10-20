@@ -184,7 +184,7 @@ if ref_true == 1
     Q.max.error = mxm -Q.max.true;
     Q.max.rel_error = Q.max.error./Q.max.true;
     Q.volume.true = TOT_VOL_TRUE;
-    
+    disp(['Relative dmua error = ',num2str(Q.max.rel_error)]);
     Q.volume.rel_error = (TOT_VOL_REC - TOT_VOL_TRUE)./TOT_VOL_TRUE;
     disp(['Relative volume error = ',num2str(Q.volume.rel_error)]);
 end
