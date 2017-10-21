@@ -3,7 +3,7 @@ if exist('isComingFromInterface','var')
     % Inverse problem: parameters for the inverse solver
     if exist('TW','var'), NUM_TW = eval('P(TW).Value'); else, warning('Parameter P(TW).Value not in override. Default value will be used'); end
     if exist('MUA0','var'), REC.opt.mua0 = eval('P(MUA0).Value'); else, warning('Parameter P(MUA0).Value not in override. Default value will be used'); end
-    if exist('MUS0.Value','var'), REC.opt.musp0 = eval('P(MUS0).Value'); else, warning('Parameter P(MUS0).Value not in override. Default value will be used'); end
+    if exist('MUS0','var'), REC.opt.musp0 = eval('P(MUS0).Value'); else, warning('Parameter P(MUS0).Value not in override. Default value will be used'); end
     if exist('NB','var'), REC.opt.nB = eval('P(NB).Value'); else, warning('Parameter P(NB).Value not in override. Default value will be used'); end
     
     % Regularization Parameters
@@ -33,7 +33,7 @@ if exist('isComingFromInterface','var')
     
     % Inclusion 1
     if exist('XP','var'), DOT.opt.hete1.c = eval('[P(XP).Value, P(YP).Value, P(ZP).Value]'); else, warning('Parameter P(XP).Value not in override. Default value will be used'); end           % down
-    if exist('MUAP','var'), DOT.opt.hete1.val = eval('P(MUAP).Value')+DOT.opt.muaB; else, warning('Parameter P(MUAP).Value not in override. Default value will be used'); end
+    if exist('MUAP','var'), DOT.opt.hete1.val = eval('P(MUAP).Value'); else, warning('Parameter P(MUAP).Value not in override. Default value will be used'); end
     if exist('SIG','var'), DOT.opt.hete1.sigma = eval('P(SIG).Value'); else, warning('Parameter P(SIG).Value not in override. Default value will be used'); end
     
     % time domain parameters
@@ -60,17 +60,21 @@ if exist('isComingFromInterface','var')
     
     % Load Jacobian
     if exist('LJ','var')
-        if iL == 1
+        if eval('P(LJ).Value') == 0
             REC.solver.prejacobian.load = false;
-            BuffMuaB = REC.opt.mua0;
-            BuffMusB = REC.opt.musp0;
         else
-            if (BuffMuaB == REC.opt.mua0 && BuffMusB == REC.opt.musp0)==false
-                BuffMuaB = REC.opt.mua0;
-                BuffMusB = REC.opt.musp0;
+            if iL == 1
                 REC.solver.prejacobian.load = false;
+                BuffOverride.MuaB = REC.opt.mua0;
+                BuffOverride.MusB = REC.opt.musp0;
             else
-                REC.solver.prejacobian.load = eval('P(LJ).Value');
+                if (BuffOverride.MuaB == REC.opt.mua0 && BuffOverride.MusB == REC.opt.musp0)==false
+                    BuffOverride.MuaB = REC.opt.mua0;
+                    BuffOverride.MusB = REC.opt.musp0;
+                    REC.solver.prejacobian.load = false;
+                else
+                    REC.solver.prejacobian.load = true;
+                end
             end
         end
     else
@@ -79,19 +83,23 @@ if exist('isComingFromInterface','var')
     
     % Load Jacobian
     if exist('LF','var')
-        if iL == 1
+        if eval('P(LF).Value') == 0
             LOAD_FWD_TEO = false;
-            BuffIncPos = DOT.opt.hete1.c;
-            BuffIncVal = DOT.opt.hete1.val;
-            BuffIncSigma = DOT.opt.hete1.sigma;
         else
-            if (all(BuffIncPos == DOT.opt.hete1.c) && BuffIncVal == DOT.opt.hete1.val && BuffIncSigma == DOT.opt.hete1.sigma)==false
-                BuffIncPos = DOT.opt.hete1.c;
-                BuffIncVal = DOT.opt.hete1.val;
-                BuffIncSigma = DOT.opt.hete1.sigma;
+            if iL == 1
                 LOAD_FWD_TEO = false;
+                BuffOverride.IncPos = DOT.opt.hete1.c;
+                BuffOverride.IncVal = DOT.opt.hete1.val;
+                BuffOverride.IncSigma = DOT.opt.hete1.sigma;
             else
-                LOAD_FWD_TEO = eval('P(LF).Value');
+                if (all(BuffOverride.IncPos == DOT.opt.hete1.c) && BuffOverride.IncVal == DOT.opt.hete1.val && BuffOverride.IncSigma == DOT.opt.hete1.sigma)==false
+                    BuffOverride.IncPos = DOT.opt.hete1.c;
+                    BuffOverride.IncVal = DOT.opt.hete1.val;
+                    BuffOverride.IncSigma = DOT.opt.hete1.sigma;
+                    LOAD_FWD_TEO = false;
+                else
+                    LOAD_FWD_TEO = true;
+                end
             end
         end
     else

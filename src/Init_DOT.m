@@ -97,7 +97,7 @@ DOT.time.TotCounts = 1e6;           % total counts for the maximum-energy
 DOT.radiometry.power = 1;    % (mW) laser input power %AAA
 DOT.radiometry.timebin = ...
     DOT.time.dt;                % (ps) width of the time bin
-DOT.radiometry.acqtime = 1;     % (s) acquisition time %AAA
+DOT.radiometry.acqtime = 0.1;     % (s) acquisition time %AAA
 DOT.radiometry.opteff = 0.9;    % Typical efficiency of the optical path
 DOT.radiometry.lambda = 800;    % Wavelength (nm) 
                                 % (just for calculation of input photons)
