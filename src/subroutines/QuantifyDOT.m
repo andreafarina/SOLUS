@@ -12,6 +12,8 @@ dz = REC.grid.dz;
 [X,Y,Z] = ndgrid(x,y,z);
 %% subtract background
 dmua_rec3d = reshape(REC.opt.bmua-REC.opt.muaB,REC.grid.dim); 
+%dmua_rec3d = reshape(REC.opt.bmua,REC.grid.dim); 
+
 %% Prepare Mask for gaussian fit
 radius_max = 20; %max radius of region of interest;
 if ref_true == 0
@@ -39,13 +41,13 @@ if ~exist('mxm','var')
     mxm = max(dmua_rec3d(:));
 end
 %% Gaussian 3d estimation
-[COM_REC,COV_REC,TOT_VOL_REC] = Gaussian3D(x,y,z,dx,dy,dz,dmua_rec3d);
+[COM_REC,COV_REC,TOT_VOL_REC] = Gaussian3D(x,y,z,dx,dy,dz,dmua_rec3d,V);
 
 %% compare with reference
 if ref_true == 1
     dmua_true3d = REC.opt.Mua-REC.opt.muaB; %% subtract background
     dmua_true3d = dmua_true3d.*V;
-    [COM_TRUE,COV_TRUE,TOT_VOL_TRUE] = Gaussian3D(x,y,z,dx,dy,dz,dmua_true3d);
+    [COM_TRUE,COV_TRUE,TOT_VOL_TRUE] = Gaussian3D(x,y,z,dx,dy,dz,dmua_true3d,V);
 end
 
 %% Print report 
@@ -180,11 +182,12 @@ if ref_true == 1
     Q.COV.true = COV_TRUE;
     
     Q.max.true = max(dmua_true3d(:));
-    
     Q.max.error = mxm -Q.max.true;
     Q.max.rel_error = Q.max.error./Q.max.true;
-    Q.volume.true = TOT_VOL_TRUE;
     
+    disp(['Relative max error = ',num2str(Q.max.rel_error)]);
+    
+    Q.volume.true = TOT_VOL_TRUE;
     Q.volume.rel_error = (TOT_VOL_REC - TOT_VOL_TRUE)./TOT_VOL_TRUE;
     disp(['Relative volume error = ',num2str(Q.volume.rel_error)]);
 end

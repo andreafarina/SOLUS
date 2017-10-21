@@ -28,7 +28,7 @@ RADIOMETRY = 1;         % apply radiometric inputs to simulated data
 % -------------------------------------------------------------------------
 SAVE_FWD = 1;           % Save forward data (possibly with noise) 
                         % in a _Data.m file
-LOAD_FWD_TEO = 1;       % if 0: save the raw TPSF(un-noisy) in a _FwdTeo.m file.
+LOAD_FWD_TEO = 0;       % if 0: save the raw TPSF(un-noisy) in a _FwdTeo.m file.
                         % if 1: load the raw TPSF for speed up
 % ========================================================================= 
 %% ====================== VOLUME DEFINITION ===============================
@@ -58,7 +58,7 @@ NUM_HETE = 1;
 %--------------------------- INCLUSION 1 ---------------------------------%
 DOT.opt.hete1.type  = 'Mua';
 DOT.opt.hete1.geometry = 'Sphere';
-DOT.opt.hete1.c     = [25, 20, 0];   % down
+DOT.opt.hete1.c     = [30, 25, 15];   % down
 % DOT.opt.hete1.d     = (M * [0, 0, -1]')';   % down
 % DOT.opt.hete1.l     = 20;
 DOT.opt.hete1.sigma = 5;
