@@ -28,4 +28,8 @@ switch upper(hete.geometry)
     case 'CYLINDER'
     disp('+++ Cylinder')
     [DOT, hete] = cylinder3D(DOT, hete);
+    
+    case 'USIMAGE'
+    disp('+++ Distance Transform');
+    [DOT, hete] = priormask3D(DOT, hete);
 end

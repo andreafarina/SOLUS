@@ -57,14 +57,16 @@ DOT.grid.dz = DOT.grid.dx;
 NUM_HETE = 1;
 %--------------------------- INCLUSION 1 ---------------------------------%
 DOT.opt.hete1.type  = 'Mua';
-DOT.opt.hete1.geometry = 'Sphere';
+DOT.opt.hete1.geometry = 'sphere';
 DOT.opt.hete1.c     = [30, 25, 15];   % down
-% DOT.opt.hete1.d     = (M * [0, 0, -1]')';   % down
+% DOT.opt.hete1.d     = [0, 0, -1];   % down
 % DOT.opt.hete1.l     = 20;
 DOT.opt.hete1.sigma = 5;
 DOT.opt.hete1.distrib = 'OFF';
 DOT.opt.hete1.profile = 'Gaussian';%'Step';%'Gaussian';
 DOT.opt.hete1.val   = 5 * DOT.opt.muaB;
+DOT.opt.hete1.path ='../3DMasks/Mask3D_Mask_malignant_4.mat' ;   % down
+
 %--------------------------- INCLUSION 2 ---------------------------------%
 % DOT.opt.hete2.type  = 'Mua';
 % DOT.opt.hete2.geometry = 'Sphere';
