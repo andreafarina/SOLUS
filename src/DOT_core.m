@@ -20,9 +20,9 @@
 %clearvars;
 close all;
 
-setPath;
-addpath subroutines solvers
-addpath(genpath('util'))
+% setPath;
+% addpath subroutines solvers
+% addpath(genpath('util'))
 t_start = cputime;
 spacer = ' ------- ';
 % ========================================================================= 
@@ -30,13 +30,21 @@ spacer = ' ------- ';
 % =========================================================================
 frontpage;
 disp('Initializing DOT parameters');
-Init_DOT
-
-disp('Setting paths and filenames');
-SetIO_DOT
-
+%run(fullfile(folder,'Init_DOT.m'));
+Init_DOT;
+%disp('Setting paths and filenames');
+%run(fullfile(folder,'SetIO_DOT.m'));
+SetIO_DOT;
+%==========================================================================
+%%  SETTING SOURCES (QVEC), DETECTORS (MVEC) AND THEIR PERMUTATIONS (DMASK)
+%==========================================================================
+disp('Setting sources(Q) and detectors(M)');
+%run(fullfile(folder,'SetQM_DOT.m'));
+SetQM_DOT;
+%%
 if RECONSTRUCTION == 1
     disp('Setting reconstruction parameters');
+    %run(fullfile(folder,'RecSettings_DOT.m'));
     RecSettings_DOT;
 end
 % ========================================================================= 
@@ -60,6 +68,13 @@ disp(['Results path: ',rdir]);
 %==========================================================================
 if (EXPERIMENTAL == 1)
     load([exp_path,'EXP_',exp_file])
+    % Select measurements by dmask
+    if (EXP_DATA == 1)
+        if (size(EXP.data.spc,2)>sum(DOT.dmask))
+            EXP.data.spc = EXP.data.spc(:,DOT.dmask);
+            EXP.data.ref = EXP.data.ref(:,DOT.dmask);
+        end
+    end
 end
 disp(['Experiment file: ',exp_path,'EXP_',exp_file]);
 
@@ -110,18 +125,13 @@ end
 
 end
 
-%==========================================================================
-%%  SETTING SOURCES (QVEC), DETECTORS (MVEC) AND THEIR PERMUTATIONS (DMASK)
-%==========================================================================
-disp('Setting sources(Q) and detectors(M)');
-SetQM_DOT
 
 % -------------------------------------------------------------------------
 % plot DMASK
 figure, imagesc(DOT.dmask),xlabel('Sources'),ylabel('Meas'),title('Dmask');
 
 % plot source-detectors and heterogeneities
-PlotHeteQM(DOT,NUM_HETE)
+PlotHeteQM(DOT,DOT.opt.Mua,DOT.opt.muaB)
 drawnow;
 %==========================================================================
 % The structure DOT contains all geometrical parameters needed also for 
@@ -243,7 +253,7 @@ disp(['CPU time FWD: ' num2str(t_end_fwd)])
 %%                            Save forward data
 % =========================================================================
 if SAVE_FWD == 1
-    rdir = ['..',filesep,'results',filesep,session,filesep];
+    %rdir = ['..',filesep,'results',filesep,session,filesep];
     if ~exist(rdir,'dir')
         mkdir(rdir)
     end
@@ -274,13 +284,11 @@ end
 % curves is calculated.
 %==========================================================================
 if ((EXPERIMENTAL == 1) && (EXP_DATA == 1))
-    nview = numel(EXP.views);
-    nqm = size(EXP.data.spc,2)./nview;
      if DOT.TD == 1
   
 % % ----- Resample experimental data to match the time-scale of DOT.time ----
-        z = zeros(DOT.time.nstep,size(EXP.data.spc,2));
-        f = zeros(DOT.time.nstep,size(EXP.data.spc,2));
+%        z = zeros(DOT.time.nstep,size(EXP.data.spc,2));
+%        f = zeros(DOT.time.nstep,size(EXP.data.spc,2));
         
         for i = 1:size(EXP.data.spc,2)
             z(:,i) = resampleSPC(EXP.data.spc(:,i),EXP.time.axis,DOT.time.dt);
@@ -357,11 +365,28 @@ end
 %%                      Create time windows for TD 
 %==========================================================================
 if strcmpi(REC.domain,'td')
-  nmax = max(REC.time.nstep,numel(REC.time.irf.data));   
-  twin = CreateTimeWindows(REC.time.nstep,[REC.time.irf.ch0 - 1,nmax],'even',NUM_TW);
+%     if NUM_TW > 0
+%         nmax = max(REC.time.nstep,numel(REC.time.irf.data));   
+%         twin = CreateTimeWindows(REC.time.nstep,[REC.time.irf.ch0 - 1,nmax],'even',NUM_TW);
+%     else
+%         twin = CreateTimeWindows(REC.time.nstep,REC.time.roi,'even',diff(REC.time.roi)+1);
+%     end
+% select ROI dinamically if not defined in RecSettings_DOT.m
+    if ~isfield(REC.time,'roi')
+      figure(999);
+      semilogy(DataTD),hold on
+      semilogy(REC.time.irf.data/max(REC.time.irf.data)*max(DataTD(:)),'g'),
+      ylim([max(DataTD(:))/10000 max(DataTD(:))]),legend('irf'),
+      title('select ROI')
+      [x,y] = ginput(2);
+      REC.time.roi = round(x);
+      REC.solver.prejacobian.load = false;
+    end
+      twin = CreateTimeWindows(REC.time.nstep,REC.time.roi,'even',NUM_TW);
+  
   REC.time.twin = twin;% + REC.time.irf.ch0 - 1;%+ Chan0-1; % Chan0 is IRF peak channel, add -1 since twin starts from 1
   REC.time.nwin = size(REC.time.twin,1);
-
+  
   % plot temporal windows and data
   figure(1000);
   semilogy(DataTD),ylim([max(DataTD(:))/10000 max(DataTD(:))])
@@ -509,6 +534,8 @@ suptitle('Recon Mua');
 drawnow;
 tilefigs;
 disp('recon: finished')
+PlotHeteQM(REC,reshape(REC.opt.bmua,REC.grid.dim),REC.opt.mua0);
+drawnow;
 % =========================================================================
 %%                            Quantify DOT 
 % =========================================================================
