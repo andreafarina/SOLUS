@@ -9,8 +9,8 @@ function [bmua,bmus] = FitMuaMus_TD(~,grid,mua0,mus0, n, A,...
     Spos,Dpos,dmask, dt, nstep, twin, self_norm, data, irf, ref, sd,verbosity)
 geom = 'semi-inf';
 self_norm = true;
-mua0 = 0.05;
-mus0 = 20;
+mua0 = 0.01;
+mus0 = 1.0;
 
 nQM = sum(dmask(:));
 nwin = size(twin,1);
@@ -36,6 +36,9 @@ if self_norm == true
         ref = ref * spdiags(1./sum(ref)',0,nQM,nQM);
     end
 proj = WindowTPSF(proj,twin);
+if self_norm == true
+        proj = proj * spdiags(1./sum(proj)',0,nQM,nQM);
+end
 proj = proj(:);
 data = data(:);
 ref = ref(:);
@@ -58,9 +61,10 @@ end
 ref(mask) = []; %#ok<NASGU>
 data(mask) = [];
 proj(mask) = [];
-figure;semilogy([proj,data]),legend('proj','data')
-sd = sqrt(data);%%ones(size(proj));%proj(:);
-data = data./sd;
+figure(1002);semilogy([proj,data]),legend('proj','ref')
+sd = sqrt(ref);%%ones(size(proj));%proj(:);
+%sd = ones(size(data));
+data = ref./sd;
 
 
 %% solution vector
@@ -231,12 +235,15 @@ function [proj,J] = forward(x,~)
     end
     proj = circshift(proj,round(t0/dt));
     proj = WindowTPSF(proj,twin);
+    if self_norm == true
+        proj = proj * spdiags(1./sum(proj)',0,nQM,nQM);
+    end
     proj(mask) = [];
     proj = proj(:)./sd;
     
 % plot forward
     t = (1:numel(data)) * dt;
-    figure(1000);
+    figure(1003);
     semilogy(t,proj,'-',t,data,'.'),ylim([1e-3 1])
     drawnow;
     nwin = size(twin,1);

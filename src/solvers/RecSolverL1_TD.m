@@ -177,6 +177,12 @@ if strcmpi(SOLVER,'ista')
 %         perrista(k) = norm(c(:,k),1);        
 %     end
 dx = xista;
+%     disp('--------------  solved using ISTA AF --------------');
+%     %lambda = solver.tau;
+%     %alpha = max(svd(J));
+%     [dx,J] = ista(dphi,J,lambda,alpha,NISTAit);
+
+
 end
 %% now FISTA (faster?)
 if strcmpi(SOLVER,'fista')

@@ -18,7 +18,7 @@ dmua_rec3d = reshape(REC.opt.bmua-REC.opt.muaB,REC.grid.dim);
 radius_max = 20; %max radius of region of interest;
 if ref_true == 0
     temp = dmua_rec3d;
-    temp(:,:,1:10) = 0;
+    %temp(:,:,1:10) = 0;
     [mxm,mind] = max(temp(:));
 %mind = find(dmua_rec3d == mxm);
 [Xrec,Yrec,Zrec] = ind2sub(size(dmua_rec3d),mind);

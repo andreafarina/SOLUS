@@ -35,12 +35,16 @@ for i=1:step:N
            % Data(:,:,i) = Data(:,:,i)';
             subplot(ceil(sqrt(Nsub/1.5)),ceil(1.5*sqrt(Nsub/1.5)),l),
                     if strcmpi(scale,'adaptive')
-                     imagesc(Data(:,:,i))  
+                     imagesc(x,y,Data(:,:,i)')
+                     set(gca,'ydir','normal'),
+                     xlabel('x(mm)'),ylabel('y(mm)')
                     else
-                     imagesc(Data(:,:,i),clim)
+                     imagesc(x,y,Data(:,:,i)',clim)
+                     set(gca,'ydir','normal'),
+                     xlabel('x(mm)'),ylabel('y(mm)')
                     end
                      %pcolor(Data(:,:,i)'), shading interp
-              axis image%,axis xy
+              %axis image%,axis xy
             
             %end
             %title(['mu_a at z = ' num2str(REC.grid.z(i))]);axis square;colorbar

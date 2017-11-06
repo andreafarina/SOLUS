@@ -21,6 +21,7 @@ if irf == 0
     irf = 1;
 end
 disp(['calculating Jacobian (',geom,')']);
+%textprogressbar('progress: ');
 switch lower(geom)
     case 'infinite'
         
@@ -29,7 +30,7 @@ switch lower(geom)
         for i = 1:Ns
             ind_d = find(dmask(:,i));
             %textprogressbar(i/Ns*100);
-            %pause(0.01);
+            pause(0.01);
             for j=1:numel(ind_d)
                 m = ind_d(j);
                 J(row_off + (1:nwin),:) = WindowTPSF(...
