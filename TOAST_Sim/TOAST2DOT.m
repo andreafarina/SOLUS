@@ -30,5 +30,5 @@ for file = {d.name}
     DataCW = DataCW(dmask(:));
     
     strfile = char(file);
-    save([strfile(1:end-4),'_singl_FwdTeo'],'RefTD','DataTD','RefCW','DataCW','test');
+    save([strfile(1:end-4),'_FwdTeo'],'RefTD','DataTD','RefCW','DataCW','test');
 end
