@@ -131,7 +131,7 @@ end
 figure, imagesc(DOT.dmask),xlabel('Sources'),ylabel('Meas'),title('Dmask');
 
 % plot source-detectors and heterogeneities
-PlotHeteQM(DOT,DOT.opt.Mua,DOT.opt.muaB)
+figure,PlotHeteQM(DOT,DOT.opt.Mua,DOT.opt.muaB)
 drawnow;
 %==========================================================================
 % The structure DOT contains all geometrical parameters needed also for 
@@ -381,6 +381,7 @@ if strcmpi(REC.domain,'td')
       [x,y] = ginput(2);
       REC.time.roi = round(x);
       REC.solver.prejacobian.load = false;
+      disp(['Used ROI: ',num2str(REC.time.roi')]);
     end
       twin = CreateTimeWindows(REC.time.nstep,REC.time.roi,'even',NUM_TW);
   
@@ -388,8 +389,9 @@ if strcmpi(REC.domain,'td')
   REC.time.nwin = size(REC.time.twin,1);
   
   % plot temporal windows and data
-  figure(1000);
-  semilogy(DataTD),ylim([max(DataTD(:))/10000 max(DataTD(:))])
+  figure(1000),set(gcf,'Position',get(0,'ScreenSize'));
+  semilogy(DataTD),ylim([max(DataTD(:))/10000 max(DataTD(:))]),
+  xlabel('time (ps)'),ylabel('counts')
   for i = 1:REC.time.nwin
     rectangle('Position',[double(REC.time.twin(i,1)),min(DataTD(DataTD(:)>0)),...
         double(REC.time.twin(i,2)-REC.time.twin(i,1)+1),double(max(DataTD(:,1)))]);
@@ -534,7 +536,7 @@ suptitle('Recon Mua');
 drawnow;
 tilefigs;
 disp('recon: finished')
-PlotHeteQM(REC,reshape(REC.opt.bmua,REC.grid.dim),REC.opt.mua0);
+figure,PlotHeteQM(REC,reshape(REC.opt.bmua,REC.grid.dim),REC.opt.mua0);
 drawnow;
 % =========================================================================
 %%                            Quantify DOT 

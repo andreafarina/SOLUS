@@ -1,2 +1,0 @@
-1 - corrected number of max elements in file resampleIRF
-2 - Added Chan0 instead of 90 in calc twin

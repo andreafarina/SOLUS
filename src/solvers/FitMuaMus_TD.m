@@ -63,12 +63,12 @@ data(mask) = [];
 proj(mask) = [];
 figure(1002);semilogy([proj,data]),legend('proj','ref')
 sd = sqrt(ref);%%ones(size(proj));%proj(:);
-%sd = ones(size(data));
+sd = ones(size(data));
 data = ref./sd;
 
 
 %% solution vector
-x = [mua0;mus0;0];     % [mua0,mus0,t0]
+x = [mua0;mus0;-0];     % [mua0,mus0,t0]
 
 
 %% Setup optimization for lsqcurvefit

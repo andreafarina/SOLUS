@@ -3,16 +3,16 @@ function PlotHeteQM(DOT,data,bkg)
 
 
 %% plot sources
-figure,plot3(DOT.Source.Pos(:,1),DOT.Source.Pos(:,2),DOT.Source.Pos(:,3),'r*'),grid,
+plot3(DOT.Source.Pos(:,1),DOT.Source.Pos(:,2),DOT.Source.Pos(:,3),'r*','MarkerSize',20),grid,
 xlabel('x'),ylabel('y'),zlabel('z'),hold on
 %% plot detectors
-plot3(DOT.Detector.Pos(:,1),DOT.Detector.Pos(:,2),DOT.Detector.Pos(:,3),'bx'),
-xlabel('x'),ylabel('y'),zlabel('z')
+plot3(DOT.Detector.Pos(:,1),DOT.Detector.Pos(:,2),DOT.Detector.Pos(:,3),'bx','MarkerSize',20),
+xlabel('x(mm)'),ylabel('y(mm)'),zlabel('z(mm)')
 
 %% plot heterogeneities
 data = data - bkg;
 [x,y,z] = ind2sub(size(data),find(data>1/2*max(data(:))));
-plot3(DOT.grid.x(x), DOT.grid.y(y), DOT.grid.z(z), 'k.');
+plot3(DOT.grid.x(x), DOT.grid.y(y), DOT.grid.z(z), 'k.','MarkerSize',15);
 set(gca,'zdir','reverse'),axis equal,
 xlim([DOT.grid.x1 DOT.grid.x2]),...
     ylim([DOT.grid.y1 DOT.grid.y2]),...

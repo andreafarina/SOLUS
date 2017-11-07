@@ -1,0 +1,2 @@
+clearvars;
+DOT_core
