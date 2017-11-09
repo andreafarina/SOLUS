@@ -11,6 +11,7 @@ space_off = space - repmat(mu,[size(space,1),1]);
 G = @(A,b,mu,cov_matrix)(b+(exp(-1/2*sum((space_off)/(cov_matrix).*(space_off),2))*...
     1./(sqrt((2*pi)^3*det(cov_matrix)))*A));
 %%
+%p(2) = 0;
 y = G(p(1),p(2),mu,cov_matrix);
 y = reshape(y,size_space);
 end
