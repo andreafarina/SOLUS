@@ -9,6 +9,7 @@ z = REC.grid.z;
 dx = REC.grid.dx;
 dy = REC.grid.dy;
 dz = REC.grid.dz;
+dV = dx*dy*dz;
 [X,Y,Z] = ndgrid(x,y,z);
 %% subtract background
 dmua_rec3d = reshape(REC.opt.bmua-REC.opt.muaB,REC.grid.dim); 
@@ -35,7 +36,7 @@ end
 V = zeros(size(dmua_rec3d));
 nzm = sqrt((X-Xrec).^2+(Y-Yrec).^2+(Z-Zrec).^2)<radius_max;
 V(nzm) = 1;
-%V = 1;
+%V = ones(size(dmua_rec3d));
 dmua_rec3d = dmua_rec3d.*V;
 if ~exist('mxm','var')
     mxm = max(dmua_rec3d(:));
@@ -141,19 +142,19 @@ av=max(dmua_rec3d(:));
 disp(['Max ',num2str(av)]);
 disp(['CNR ',num2str(av./sigma)]);
 
-% av=max(V(:).*dmua_rec3d(:));
-% disp(['Max in region ',num2str(av)]);
-% disp(['CNR in region ',num2str(av./sigma)]);
-% 
-% 
-% %% Quantitation
-%  factor=REC.opt.hete1.sigma^3/(REC.grid.dx*REC.grid.dy*REC.grid.dz)*(4/3*pi);
-%  DmuaVolTrue=sum(dmua_true3d(:))/factor;
-%  DmuaVolRec=sum(dmua_rec3d(:))/factor;
-%  disp(['DmuaVolTrue ',num2str(DmuaVolTrue)]);
-%  disp(['DmuaVolRec ',num2str(DmuaVolRec)]);
-%  disp(['error ',num2str(DmuaVolRec/DmuaVolTrue-1)]);
-% %F(relMUAP).Value(iL)=(DmuaVolRec-DmuaVolTrue)/DmuaVolTrue;
+av=max(V(:).*dmua_rec3d(:));
+disp(['Max in region ',num2str(av)]);
+disp(['CNR in region ',num2str(av./sigma)]);
+
+
+%% Quantitation
+ factor=REC.opt.hete1.sigma^3/(REC.grid.dx*REC.grid.dy*REC.grid.dz)*(4/3*pi);
+ DmuaVolTrue=sum(dmua_true3d(:)*dV);%/factor;
+ DmuaVolRec=sum(dmua_rec3d(:)*dV);%/factor;
+ %disp(['DmuaVolTrue ',num2str(DmuaVolTrue)]);
+ %disp(['DmuaVolRec ',num2str(DmuaVolRec)]);
+ %disp(['error ',num2str(DmuaVolRec/DmuaVolTrue-1)]);
+%F(relMUAP).Value(iL)=(DmuaVolRec-DmuaVolTrue)/DmuaVolTrue;
 %% prepare mask for CNR (calculated as Arridge, Ducros..)
 W = zeros(size(dmua_rec3d));
 W(temp>mxm/2) = 1;
@@ -172,7 +173,8 @@ CNR2 =(muROI - muBack)./...
 Q.COM.rec = COM_REC;
 Q.COV.rec = COV_REC;
 Q.max.rec = mxm;
-Q.volume.rec = TOT_VOL_REC;
+Q.volumeG.rec = TOT_VOL_REC;
+Q.volume.rec = DmuaVolRec;
 Q.cnr = max(dmua_rec3d(:))./std(dmua_rec3d(:));
 Q.cnr2 = CNR2;
 disp(['CNR2 = ',num2str(CNR2)]);
@@ -187,7 +189,12 @@ if ref_true == 1
     
     disp(['Relative max error = ',num2str(Q.max.rel_error)]);
     
-    Q.volume.true = TOT_VOL_TRUE;
-    Q.volume.rel_error = (TOT_VOL_REC - TOT_VOL_TRUE)./TOT_VOL_TRUE;
+    Q.volumeG.true = TOT_VOL_TRUE;
+    Q.volume.true = DmuaVolTrue;
+    Q.volumeG.rel_error = (TOT_VOL_REC - TOT_VOL_TRUE)./TOT_VOL_TRUE;
+    disp(['Relative volume (gaussian fit) error = ',num2str(Q.volumeG.rel_error)]);
+    Q.volume.rel_error = (DmuaVolRec-DmuaVolTrue)/DmuaVolTrue;
     disp(['Relative volume error = ',num2str(Q.volume.rel_error)]);
+    
+    
 end
