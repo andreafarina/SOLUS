@@ -28,7 +28,7 @@ RADIOMETRY = 1;         % apply radiometric inputs to simulated data
 % -------------------------------------------------------------------------
 SAVE_FWD = 1;           % Save forward data (possibly with noise) 
                         % in a _Data.m file
-LOAD_FWD_TEO = 0;       % if 0: save the raw TPSF(un-noisy) in a _FwdTeo.m file.
+LOAD_FWD_TEO = 1;       % if 0: save the raw TPSF(un-noisy) in a _FwdTeo.m file.
                         % if 1: load the raw TPSF for speed up
 % ========================================================================= 
 %% ====================== VOLUME DEFINITION ===============================
@@ -40,12 +40,12 @@ DOT.opt.nE = 1.;        % external refractive index
 %==========================================================================
 %%                                  SET GRID
 %==========================================================================
-DOT.grid.x1 = 0;
-DOT.grid.x2 = 64;
+DOT.grid.x1 = -32;
+DOT.grid.x2 = 32;
 DOT.grid.dx = 2;
 
-DOT.grid.y1 = 0;
-DOT.grid.y2 = 58;           
+DOT.grid.y1 = -29;
+DOT.grid.y2 = 29;           
 DOT.grid.dy = DOT.grid.dx;
 
 DOT.grid.z1 = 0;        
@@ -58,7 +58,7 @@ NUM_HETE = 1;
 %--------------------------- INCLUSION 1 ---------------------------------%
 DOT.opt.hete1.type  = 'Mua';
 DOT.opt.hete1.geometry = 'sphere';
-DOT.opt.hete1.c     = [30, 25, 20];   % down
+DOT.opt.hete1.c     = [10, 5, 10];   % down
 % DOT.opt.hete1.d     = [0, 0, -1];   % down
 % DOT.opt.hete1.l     = 20;
 DOT.opt.hete1.sigma = 5;
@@ -90,7 +90,7 @@ DOT.time.noise = 'Poisson';         % 'Poisson','Gaussian','none'
                                     % Poisson noise.
 DOT.time.sigma = 1e-3;              % variance for gaussian noise
 DOT.time.self_norm = false;         % true for self-normalized TPSF
-DOT.time.TotCounts = 1e6;           % total counts for the maximum-energy
+DOT.time.TotCounts = 1e20;           % total counts for the maximum-energy
                                     % TPSF. The other are consequently
                                     % rescaled
 %==========================================================================
@@ -120,4 +120,4 @@ DOT.radiometry.qeff = 0.05;     % Quantum efficiency
 %                   RADIOMETRY==0, the count-rate for each delay is cut to 
 %                         DOT.time.TotCounts in any case.  
 CUT_COUNTS = 1;         
-NumDelays = 10;      % number of delays
+NumDelays = 1;      % number of delays
