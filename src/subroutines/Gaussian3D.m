@@ -5,7 +5,7 @@ function [mu,cov_matrix,area] = Gaussian3D(x,y,z,dx,dy,dz,data,V)
 % a 3-fold variate gaussian distribution.
 % size(data) = [numel(x),numel(y),numel(z)];
 % =========================================================================
-debug = 1;
+debug = 0;
 %% check dimensions consistency
 size_space = [numel(x),numel(y),numel(z)];
 if sum(size_space-size(data))~=0
