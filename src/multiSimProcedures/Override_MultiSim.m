@@ -55,8 +55,41 @@ if exist('isComingFromInterface','var')
     
     % Type of Cutting for statistics
     if exist('CUT','var'), CUT_COUNTS = eval('P(CUT).Value'); else, warning('Parameter P(CUT).Value not in override. Default value will be used'); end % 0 non gated, 1 gated
-    if exist('ND','var'), NumDelays = eval('P(ND).Value'); else, warning('Parameter P(ND).Value not in override. Default value will be used'); end % number of delays
-    %if exist('NG','var'), NumGates = eval('P(NG).Value'); else, warning('Parameter P(NG).Value not in override. Default value will be used'); end % number of gates
+    if exist('ND','var')
+        NumDelays = eval('P(ND).Value');
+        if iL == 1
+            BuffOverride.Roi=REC.time.roi;
+            BuffOverride.ND=NumDelays;
+            if isfield(REC.time,'roi')
+                button = questdlg({['Present ROI: ',num2str(REC.time.roi)],'Accept?'});
+                if strcmpi(button,'no')
+                    REC.time=rmfield(REC.time,'roi');
+                end
+            end
+            if HIDE_FIG == 1
+                HideFig(false);
+            end
+        else
+            if (BuffOverride.ND == NumDelays)==false
+                 if isfield(REC.time,'roi'), REC.time=rmfield(REC.time,'roi'); end
+                 BuffOverride.ND = NumDelays;
+                 if HIDE_FIG == 1
+                    HideFig(false);
+                 end
+            else
+                nREC = REC;
+                load([res_path,filename,'_', 'REC'],'REC')
+                nREC.time.roi = REC.time.roi;
+                clearvars REC; REC = nREC; clearvars sREC
+                if HIDE_FIG == 1
+                    HideFig(true);
+                end
+                    
+            end
+        end
+    else
+        warning('Parameter P(ND).Value not in override. Default value will be used');
+    end % number of delays
     
     % Load Jacobian
     if exist('LJ','var')

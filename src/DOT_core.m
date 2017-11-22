@@ -18,11 +18,13 @@
 
 
 %clearvars;
-if ~any(strcmpi(fullfile(fileparts(fileparts([mfilename('fullpath'),'.m'])),'src'),regexp(path, pathsep, 'split')))
+if ~any(strcmpi(fileparts([mfilename('fullpath') '.m']),regexp(path, pathsep, 'split')))
     cd('../')
     run('DOT_install.m')
     cd('./example')
 end
+cd(fileparts([mfilename('fullpath') '.m']))
+cd('../example')
 
     
 close all;
