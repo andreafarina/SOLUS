@@ -44,12 +44,12 @@ DOT.opt.nE = 1.;        % external refractive index
 %==========================================================================
 %%                                  SET GRID
 %==========================================================================
-DOT.grid.x1 = 0;
-DOT.grid.x2 = 64;
+DOT.grid.x1 = -32;
+DOT.grid.x2 = 32;
 DOT.grid.dx = 2;
 
-DOT.grid.y1 = 0;
-DOT.grid.y2 = 58;           
+DOT.grid.y1 = -29;
+DOT.grid.y2 = 29;           
 DOT.grid.dy = DOT.grid.dx;
 
 DOT.grid.z1 = 0;        
@@ -62,7 +62,7 @@ NUM_HETE = 1;
 %--------------------------- INCLUSION 1 ---------------------------------%
 DOT.opt.hete1.type  = 'Mua';
 DOT.opt.hete1.geometry = 'sphere';
-DOT.opt.hete1.c     = [40, 15, 15];   % down
+DOT.opt.hete1.c     = [5, 10, 15];   % down
 % DOT.opt.hete1.d     = [0, 0, -1];   % down
 % DOT.opt.hete1.l     = 20;
 DOT.opt.hete1.sigma = 5;

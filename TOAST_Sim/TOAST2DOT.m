@@ -23,12 +23,12 @@ for file = {d.name}
     RefCW = squeeze(sum(RefTD));
     DataCW = squeeze(sum(DataTD));
     figure,imagesc(reshape((DataCW-RefCW),[Nm,Nq]));
-    pause(0.1)
+    pause(1)
     RefTD = RefTD(:,dmask(:));
     DataTD = DataTD(:,dmask(:));
     RefCW = RefCW(dmask(:));
     DataCW = DataCW(dmask(:));
     
     strfile = char(file);
-    save([strfile(1:end-4),'_FwdTeo'],'RefTD','DataTD','RefCW','DataCW','test');
+    %save([strfile(1:end-4),'_FwdTeo'],'RefTD','DataTD','RefCW','DataCW','test');
 end

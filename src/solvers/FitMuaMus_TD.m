@@ -11,6 +11,7 @@ geom = 'semi-inf';
 self_norm = true;
 mua0 = 0.01;
 mus0 = 1.0;
+data2 = ref;%data;%ref;%data;%ref;
 
 nQM = sum(dmask(:));
 nwin = size(twin,1);
@@ -63,7 +64,7 @@ data(mask) = [];
 proj(mask) = [];
 figure(1002);semilogy([proj,data]),legend('proj','ref')
 sd = sqrt(ref);%%ones(size(proj));%proj(:);
-sd = ones(size(data));
+%sd = ones(size(data));
 data = ref./sd;
 
 
@@ -110,7 +111,24 @@ bmus = x(2)*ones(grid.N,1);
 display(['mua = ',num2str(bmua(1))]);
 display(['musp = ',num2str(bmus(1))]);
 display(['t0 = ',num2str(x(3))]);
-
+%% extract the amplitude area
+self_norm = 0;
+mask = true(nwin*nQM,1);
+[proj_fit, Aproj_fit] = ForwardTD(grid,Spos, Dpos, dmask, x(1), x(2), n, ...
+                [],[], A, dt, nstep, self_norm,...
+                geom, 'homo');
+proj_fit = circshift(proj_fit,round(x(3)/dt));
+if numel(irf)>1
+    z = convn(proj_fit,irf);
+    nmax = max(nstep,numel(irf));
+    proj_fit = z(1:nmax,:);
+    clear nmax
+end
+proj_fit = WindowTPSF(proj_fit,twin);
+Aproj_fit = sum(proj_fit);
+A_data = sum(data2);
+factor = Aproj_fit./A_data;
+save('factor_ref.mat','factor');
 
 %% Callback function for objective evaluation
     function [p,g] = objective(x,~)

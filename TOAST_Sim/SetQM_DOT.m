@@ -35,6 +35,6 @@ DOT.Detector.Nd=size(DOT.Detector.Pos,1);
 DOT.dmask = logical(ones(DOT.Detector.Nd,DOT.Source.Ns) - ...
     diag(diag(ones(DOT.Detector.Nd,DOT.Source.Ns))));  
 % SELECT A MEASUREMENT
-% DOT.dmask = false(DOT.Detector.Nd,DOT.Source.Ns); 
-% DOT.dmask(1,6) = true;
+%  DOT.dmask = false(DOT.Detector.Nd,DOT.Source.Ns); 
+%  DOT.dmask(1,6) = true;
 % -------------------------------------------------------------------------

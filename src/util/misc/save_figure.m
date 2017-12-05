@@ -6,5 +6,5 @@ hold off;
 saveas(gcf,FName,'fig')
 %export_fig test -eps -pdf -jpg
 %export_fig(FName,'-painters','-eps','-pdf','-jpg');
-export_fig(FName,'-painters','-pdf','-jpg','-png');
+export_fig(FName,'-painters','-jpg');
 end
