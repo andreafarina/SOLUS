@@ -390,12 +390,15 @@ if strcmpi(REC.domain,'td')
   
   % plot temporal windows and data
   figure(1000),set(gcf,'Position',get(0,'ScreenSize'));
-  semilogy(DataTD),ylim([max(DataTD(:))/10000 max(DataTD(:))]),
-  xlabel('time (ps)'),ylabel('counts')
+  dt = REC.time.dt;
+  t = (1:size(DataTD,1))*dt;
+  semilogy(t,DataTD),ylim([max(DataTD(:))./1e3 max(DataTD(:))]),
+  xlabel('time (ps)'),ylabel('counts'),set(gca,'FontSize',20);
   for i = 1:REC.time.nwin
-    rectangle('Position',[double(REC.time.twin(i,1)),min(DataTD(DataTD(:)>0)),...
-        double(REC.time.twin(i,2)-REC.time.twin(i,1)+1),double(max(DataTD(:,1)))]);
+    rectangle('Position',[double(dt*REC.time.twin(i,1)),min(DataTD(DataTD(:)>0)),...
+        double(dt*REC.time.twin(i,2)-dt*REC.time.twin(i,1)+1),double(max(DataTD(:,1)))]);
   end
+  %save_figure('time_ROI');
   drawnow;
   if exist('RefTD','var')
       REC.ref = WindowTPSF(RefTD,REC.time.twin);
@@ -538,6 +541,11 @@ tilefigs;
 disp('recon: finished')
 figure,PlotHeteQM(REC,reshape(REC.opt.bmua,REC.grid.dim),REC.opt.mua0);
 drawnow;
+%% Save reconstruction
+if ~strcmpi(REC.solver.type,'fit')
+    disp(['Reconstruction will be stored in: ', rdir,filename,'_', 'REC.m']);
+    save([rdir,filename,'_', 'REC'],'REC');
+end
 % =========================================================================
 %%                            Quantify DOT 
 % =========================================================================
@@ -546,11 +554,11 @@ if ~strcmpi(REC.solver.type,'fit')
 end
 Quantification_MultiSim
 % =========================================================================
-%%                            Save reconstruction 
+%%                            Save quantification 
 % =========================================================================
 if ~strcmpi(REC.solver.type,'fit')
-    disp(['Reconstruction will be stored in: ', rdir,filename,'_', 'REC.m']);
-    save([rdir,filename,'_', 'REC'],'REC','Q')
+    disp(['Quantification will be stored in: ', rdir,filename,'_', 'REC.m']);
+    save([rdir,filename,'_', 'REC'],'Q','-append')
 end
 clearvars REC
 end

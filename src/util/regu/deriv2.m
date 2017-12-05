@@ -6,7 +6,7 @@ function [A,b,x] = deriv2(n,example)
 % This is a mildly ill-posed problem.  It is a discretization of a
 % first kind Fredholm integral equation whose kernel K is the
 % Green's function for the second derivative:
-%    K(s,t) = | s(t-1)  ,  s <  t .
+%    K(s,t) = | s(t-1derive)  ,  s <  t .
 %             | t(s-1)  ,  s >= t
 % Both integration intervals are [0,1], and as right-hand side g
 % and correspond solution f one can choose between the following:

@@ -149,7 +149,9 @@ disp(['CNR in region ',num2str(av./sigma)]);
 
 %% Quantitation
  factor=REC.opt.hete1.sigma^3/(REC.grid.dx*REC.grid.dy*REC.grid.dz)*(4/3*pi);
+if ref_true == 1
  DmuaVolTrue=sum(dmua_true3d(:)*dV);%/factor;
+end
  DmuaVolRec=sum(dmua_rec3d(:)*dV);%/factor;
  %disp(['DmuaVolTrue ',num2str(DmuaVolTrue)]);
  %disp(['DmuaVolRec ',num2str(DmuaVolRec)]);
@@ -195,6 +197,7 @@ if ref_true == 1
     disp(['Relative volume (gaussian fit) error = ',num2str(Q.volumeG.rel_error)]);
     Q.volume.rel_error = (DmuaVolRec-DmuaVolTrue)/DmuaVolTrue;
     disp(['Relative volume error = ',num2str(Q.volume.rel_error)]);
-    
+    Q.total.rel_error = norm(dmua_true3d(:)-dmua_rec3d(:))./norm(REC.opt.bmua+dmua_true3d(:));
+    disp(['Integral relative error = ',num2str(Q.total.rel_error)]);
     
 end

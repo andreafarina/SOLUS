@@ -5,7 +5,7 @@ function [mu,cov_matrix,area] = Gaussian3D(x,y,z,dx,dy,dz,data,V)
 % a 3-fold variate gaussian distribution.
 % size(data) = [numel(x),numel(y),numel(z)];
 % =========================================================================
-debug = 1;
+debug = 0;
 %% check dimensions consistency
 size_space = [numel(x),numel(y),numel(z)];
 if sum(size_space-size(data))~=0
@@ -72,13 +72,14 @@ opts = optimoptions('lsqcurvefit',...
 if debug == 1
     Gfit = Gaussian(p,space);
     % slice on the inclusion
+    iyslice = find(y == round(mu(2)));
     for i = 1:numel(z)
-        data_slice = squeeze(data(:,round(mu(2)./dy),i));
-        fit_slice = squeeze(Gfit(:,round(mu(2)./dy),i));
+        data_slice = squeeze(data(:,iyslice,i));
+        fit_slice = squeeze(Gfit(:,iyslice,i));
         figure(10000),
         plot([data_slice,fit_slice]),
         ylim([0 max(data(:))*1.2]), legend('data','fit');
-        pause(0.1);
+        pause(0.2);
     end
     disp(['background = ',num2str(p(2))]);
 end

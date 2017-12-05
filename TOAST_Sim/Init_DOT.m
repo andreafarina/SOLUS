@@ -57,15 +57,17 @@ DOT.grid.dz = DOT.grid.dx;
 NUM_HETE = 1;
 %--------------------------- INCLUSION 1 ---------------------------------%
 DOT.opt.hete1.type  = 'Mua';
-DOT.opt.hete1.geometry = 'sphere';
-DOT.opt.hete1.c     = [30, 25, 20];   % down
+DOT.opt.hete1.geometry = 'usimage';
+DOT.opt.hete1.c     = [10, 15, 20];   % down
 % DOT.opt.hete1.d     = [0, 0, -1];   % down
 % DOT.opt.hete1.l     = 20;
 DOT.opt.hete1.sigma = 5;
 DOT.opt.hete1.distrib = 'OFF';
 DOT.opt.hete1.profile = 'Gaussian';%'Step';%'Gaussian';
 DOT.opt.hete1.val   = 5 * DOT.opt.muaB;
-DOT.opt.hete1.path ='../3DMasks/Mask3D_Mask_malignant_4.mat' ;   % down
+%DOT.opt.hete1.path ='../3DMasks/Mask3D_Mask_malignant_2.mat' ;   % down
+%DOT.opt.hete1.path ='../3DMasks/Mask3D_B_splinedMask_benign_1.mat';
+DOT.opt.hete1.path ='./Mask3d_mus1_05-1_56_malignant_3.mat';
 
 %--------------------------- INCLUSION 2 ---------------------------------%
 % DOT.opt.hete2.type  = 'Mua';
@@ -82,15 +84,15 @@ DOT.opt.hete1.path ='../3DMasks/Mask3D_Mask_malignant_4.mat' ;   % down
 %==========================================================================
 %%                         Time domain parameters
 %==========================================================================
-DOT.time.dt = 10;%(50e3/1024/4);        % time step in picoseconds
-DOT.time.nstep = 250;               % number of temporal steps
+DOT.time.dt = 10/2;%(50e3/1024/4);        % time step in picoseconds
+DOT.time.nstep = 2*250;               % number of temporal steps
 DOT.time.noise = 'Poisson';         % 'Poisson','Gaussian','none'
                                     % if 'Poisson' and sigma>0 a
                                     % Gaussian noise is added before
                                     % Poisson noise.
 DOT.time.sigma = 1e-3;              % variance for gaussian noise
 DOT.time.self_norm = false;         % true for self-normalized TPSF
-DOT.time.TotCounts = 1e20;           % total counts for the maximum-energy
+DOT.time.TotCounts = 1e6;           % total counts for the maximum-energy
                                     % TPSF. The other are consequently
                                     % rescaled
 %==========================================================================

@@ -31,5 +31,9 @@ switch upper(hete.geometry)
     
     case 'USIMAGE'
     disp('+++ Distance Transform');
-    [DOT, hete] = priormask3D(DOT, hete);
+    hete = hete;
+    load(hete.path);
+    Mua_r = imresizen(Mua,DOT.grid.dim./size(Mua));
+    DOT.opt.Mua = (Mua_r);% - DOT.opt.muaB);%*1e3;
+    %[DOT, hete] = priormask3D(DOT, hete);
 end

@@ -33,8 +33,6 @@ Dy3D = kron(kron(speye(bz),D1dy),speye(bx));
 D1dx = spdiags( [-ones(bx,1),ones(bx,1)],-1:0,bx,bx);
 Dx3D = kron(speye(bz),kron(speye(by),D1dx));
 
+%kapsqrt = 1;
 L = [kapsqrt*Dx3D; kapsqrt*Dy3D; kapsqrt*Dz3D];
 C3D = L'*L;
-
-%C3D = Dz3D'*kap3D*Dz3D +  Dy3D'*kap3D*Dy3D  + Dx3D'*kap3D*Dx3D; 
-
