@@ -86,7 +86,7 @@ plot3(xxx(x), yyy(y), zzz(z), 'k-','MarkerSize',15);
 axis equal,
 xlim([xx(1) xx(end)]),...
     ylim([yy(1) yy(end)]),...
-    zlim([zz(end) zz(1)]),
+    zlim([min(zz) max(zz)]),
 % %legend('source','detector','pert');
 %vol3d('Cdata',Muaplot,'XData',[xxx(1) xxx(end)],...)
 %'YData',[yyy(1) yyy(end)],'ZData',[zzz(1) zzz(end)])
