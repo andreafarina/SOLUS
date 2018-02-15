@@ -26,6 +26,8 @@ addpath([getenv('DOTSRC'),filesep,'solvers']);
 addpath([getenv('DOTSRC'),filesep,'experimental']);
 addpath([getenv('DOTSRC'),filesep,'visual']);
 addpath([getenv('DOTSRC'),filesep,'multiSimProcedures']);
+addpath([getenv('DOTSRC'),filesep,'TOASTutils']);
+addpath([getenv('DOTSRC'),filesep,'UCLutils']);
 clearvars;
 
 

@@ -19,7 +19,9 @@ if ((roi(1) * roi(2) <0) || (roi(1)>roi(2)))
 
     error('error! check time_windows');
 end
-   
+if param == 1
+    kind = 'integral';
+end   
 switch lower(kind)
     case ('even')
         if nargin < 3

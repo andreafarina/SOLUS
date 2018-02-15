@@ -4,19 +4,20 @@
 REC.domain = 'td';          % CW or TD: data type to be inverted
 
 % -------------------------------------------------------------------------
-REC.time.roi = round([1021,2500]/4);
-NUM_TW = 10;%diff(REC.time.roi)+1;%10;%% Number of Time Windows within REC.time.roi
+REC.time.roi = [1,50];%[68,250];% ROI in time-step unit. If omitted, the ROI will be 
+                        % selected dinamically by the user.
+NUM_TW = 10;            % Number of Time Windows within ROI
 % =========================================================================
 %%                        Initial parameter estimates 
 % =========================================================================
 % In this section all the parameter for the inverse solver are setted.
 % --------------------------- Optical properties --------------------------
-REC.opt.mua0 = 0.011838;    % absorption [mm-1]
-REC.opt.musp0 = 1.2047;      % reduced scattering [mm-1]
-REC.opt.nB = 1.5;
+REC.opt.mua0 = 0.01;    % absorption [mm-1]
+REC.opt.musp0 = 1.0;      % reduced scattering [mm-1]
+REC.opt.nB = 1.4;
 % ---------------------- Solver and regularization ------------------------
-REC.solver.tau = 1e-2;%1e-2;            % regularisation parameter
-REC.solver.type = 'usprior';         % 'born','GN': gauss-newton, 
+REC.solver.tau = 1e-6;            % regularisation parameter
+REC.solver.type = 'fit4param';         % 'born','GN': gauss-newton, 
                                   % 'USprior': Simon's strutural prior
                                   % 'LM': Levenberg-Marquardt,
                                   % 'l1': L1-based minimization
@@ -24,11 +25,11 @@ REC.solver.type = 'usprior';         % 'born','GN': gauss-newton,
 % =========================================================================
 %%                            US prior 
 % =========================================================================
-REC.solver.prior = [];
+REC.solver.prior.path = '../../3DMasks/benign_3.mat';
 % =========================================================================
 %%                     load a precomputed jacobian 
 % =========================================================================
 % Pay attention! The jacobian depends on source-detectors configuration,
 % optical properties of the background and number of time-windows.
-REC.solver.prejacobian.load = true;
-REC.solver.prejacobian.path = [getenv('DOTDIR'),filesep,'/precomputed_jacobians/J'];
+REC.solver.prejacobian.load = false;
+REC.solver.prejacobian.path = '../results/precomputed_jacobians/Je';

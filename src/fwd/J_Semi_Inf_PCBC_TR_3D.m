@@ -33,10 +33,14 @@ kap = 1/(3*(mus));
 ze=2*A*kap;
 n=numel(XX);
 nt=length(t);
-
- if ri(3) > 0,
+%% check that the vector is column
+if isrow(t)
+    t = t';
+end
+%%
+ if ri(3) > 0
     z0=ri(3);     
- elseif ri(3)==0,
+ elseif ri(3)==0
     z0=1/mus; 
     ri(3)=z0;
  end
@@ -48,13 +52,13 @@ z23plus=ZZ;
 %z23minus=-2*ze-rk(3);
 z23minus=-2*ze-ZZ;
 
-rhoijsq=(ri-rj)*(ri-rj)'; 
+%rhoijsq=(ri-rj)*(ri-rj)'; 
 r12plus=sqrt((XX-ri(1)).^2+(YY-ri(2)).^2+(ZZ-z12plus).^2);
 r12minus=sqrt((XX-ri(1)).^2+(YY-ri(2)).^2+(ZZ-z12minus).^2);
 r23plus=sqrt((rj(1)-XX).^2+(rj(2)-YY).^2+(rj(3)-z23plus).^2);
 r23minus=sqrt((rj(1)-XX).^2+(rj(2)-YY).^2+(rj(3)-z23minus).^2);
-ri(3)=z12minus;         % the value is superscript
-rhoijsq_minus=(ri-rj)*(ri-rj)';
+%ri(3)=z12minus;         % the value is superscript
+%rhoijsq_minus=(ri-rj)*(ri-rj)';
 
 rho12plus=reshape(r12plus,[1 n]);
 rho12minus=reshape(r12minus,[1 n]);

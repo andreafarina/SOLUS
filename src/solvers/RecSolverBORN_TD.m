@@ -73,7 +73,7 @@ factor = factor(:);
 
 
 data = data .* factor;
-ref = ref .* factor;
+ref = proj(:);%ref .* factor;
 %% data scaling
 sd = sd(:).*(factor);
 %sd = proj(:);%ref(:);%proj(:);
@@ -121,9 +121,15 @@ else
     toc;
 end
 
-if ~isempty(solver.prior)
-    d1 = (solver.prior(:) > 0 )&(solver.prior(:)==min(solver.prior(:)));
-    d2 = (solver.prior(:) > min(solver.prior(:)))&(solver.prior(:)==max(solver.prior(:)));
+if ~isempty(solver.prior.refimage)
+    %d1 = (solver.prior(:) > 0 )&(solver.prior(:)==min(solver.prior(:)));
+    d1 = solver.prior.refimage(:) > mean(solver.prior.refimage(:));
+    d2 = ~d1; 
+    if mean(solver.prior.refimage(d1))<mean(solver.prior.refimage(d2))
+        d1 = ~d1;
+        d2 = ~d2;
+    end
+    %(solver.prior(:) > min(solver.prior(:)))&(solver.prior(:)==max(solver.prior(:)));
     D = [d1(:),d2(:)];
     J = J * D;
 end
