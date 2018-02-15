@@ -11,7 +11,7 @@ geom = 'semi-inf';
 self_norm = true;
 mua0 = 0.01;
 mus0 = 1.0;
-data2 = ref;%data;%ref;%data;%ref;
+data2 = data;%data;%ref;%data;%ref;
 
 nQM = sum(dmask(:));
 nwin = size(twin,1);

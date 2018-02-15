@@ -12,7 +12,7 @@ function [data,area,peak,baric] = resampleSPC(y,t,dt,flag)
 % peak: structure containing position,value and time of the peak
 % baric: structure containing position and time of the baricenter
 %%
-verbosity = 0;
+verbosity = 1;
 dty = t(2)-t(1);
 bin_ratio = dt./dty;       
 %% Better to first oversample if bin_ratio is not integer

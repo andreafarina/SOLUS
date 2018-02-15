@@ -152,7 +152,21 @@ if FORWARD == 1
             DOT.opt.muspB*ones(DOT.grid.dim), DOT.A, geom, 'homo');
         [RefCW,RefsdCW] = AddNoise(RefCW,'gaussian',DOT.sigma);
     end
-    
+%==========================================================================
+%%                             TOAST2DOT 
+%==========================================================================
+if TOAST2DOT == 1
+    toastfilename = [getenv('DOTDIR'),filesep,'TOAST_Sim',filesep,filename];
+    [time_domain, meshdata, DataTD, RefTD, DataCW, RefCW, nominalcoefficients ,...
+        refindex, Muatoast, Mustoast, prior] = toast2dot(toastfilename);
+    save([rdir,filename,'_', 'FwdTeo'],'RefTD','DataTD');
+%     DOT.time.dt = time_domain(1);
+%     DOT.time.nstep = time_domain(2);
+%     DOT.time.time = (1:DOT.time.nstep) * DOT.time.dt;
+%     DOT.time.irf.data = resampleSPC(DOT.time.irf.data,DOT.time.time,...
+%         DOT.time.dt,'norm');
+end
+
 %==========================================================================
 %%                             TD Forward 
 %==========================================================================
@@ -372,32 +386,13 @@ if strcmpi(REC.domain,'td')
 %         twin = CreateTimeWindows(REC.time.nstep,REC.time.roi,'even',diff(REC.time.roi)+1);
 %     end
 % select ROI dinamically if not defined in RecSettings_DOT.m
-    if ~isfield(REC.time,'roi')
-      figure(999);
-      semilogy(DataTD),hold on
-      semilogy(REC.time.irf.data/max(REC.time.irf.data)*max(DataTD(:)),'g'),
-      ylim([max(DataTD(:))/10000 max(DataTD(:))]),legend('irf'),
-      title('select ROI')
-      [x,y] = ginput(2);
-      REC.time.roi = round(x);
-      REC.solver.prejacobian.load = false;
-      disp(['Used ROI: ',num2str(REC.time.roi')]);
-    end
-      twin = CreateTimeWindows(REC.time.nstep,REC.time.roi,'even',NUM_TW);
+if isempty(REC.time.roi)
+    REC.time.roi = SelectROI(DataTD,REC.time.irf.data);
+end
+    REC.time.twin = CreateTimeWindows(REC.time.nstep,REC.time.roi,'even',NUM_TW);
+    REC.time.nwin = size(REC.time.twin,1);
   
-  REC.time.twin = twin;% + REC.time.irf.ch0 - 1;%+ Chan0-1; % Chan0 is IRF peak channel, add -1 since twin starts from 1
-  REC.time.nwin = size(REC.time.twin,1);
-  
-  % plot temporal windows and data
-  figure(1000),set(gcf,'Position',get(0,'ScreenSize'));
-  dt = REC.time.dt;
-  t = (1:size(DataTD,1))*dt;
-  semilogy(t,DataTD),ylim([max(DataTD(:))./1e3 max(DataTD(:))]),
-  xlabel('time (ps)'),ylabel('counts'),set(gca,'FontSize',20);
-  for i = 1:REC.time.nwin
-    rectangle('Position',[double(dt*REC.time.twin(i,1)),min(DataTD(DataTD(:)>0)),...
-        double(dt*REC.time.twin(i,2)-dt*REC.time.twin(i,1)+1),double(max(DataTD(:,1)))]);
-  end
+  ShowTimeWindows(DataTD,REC.time.twin,REC.time.dt);
   %save_figure('time_ROI');
   drawnow;
   if exist('RefTD','var')
@@ -478,8 +473,20 @@ switch lower(REC.domain)
             case 'gn'
                 
             case 'born'
-                if ~isempty(REC.solver.prior)
-                    REC.solver.prior = REC.opt.Mua;
+                
+                [REC.opt.bmua,REC.opt.bmusp] = RecSolverBORN_TD(REC.solver,...
+                    REC.grid,...
+                    REC.opt.mua0,REC.opt.musp0,REC.opt.nB,REC.A,...
+                    REC.Source.Pos,REC.Detector.Pos,REC.dmask,REC.time.dt,REC.time.nstep,...
+                    REC.time.twin,REC.time.self_norm,REC.Data,...
+                    REC.time.irf.data,REC.ref,REC.sd,0);
+            case 'born2reg'
+                if ~isempty(REC.solver.prior.path)
+                    REC.solver.prior.refimage = ...
+                        priormask3D(REC.solver.prior.path,REC.grid);
+                else
+                    disp('No prior is provided in RECSettings_DOT. Reference mua will be used');
+                    REC.solver.prior.refimage = REC.opt.Mua;
                 end
                 [REC.opt.bmua,REC.opt.bmusp] = RecSolverBORN_TD(REC.solver,...
                     REC.grid,...
@@ -487,10 +494,19 @@ switch lower(REC.domain)
                     REC.Source.Pos,REC.Detector.Pos,REC.dmask,REC.time.dt,REC.time.nstep,...
                     REC.time.twin,REC.time.self_norm,REC.Data,...
                     REC.time.irf.data,REC.ref,REC.sd,0);
+                
+                
+                
 %% @Simon: US prior inversion
             case 'usprior'
-                REC.solver.prior = REC.opt.Mua;   % dictionnary matrix, or []
-
+                if ~isempty(REC.solver.prior.path)
+                    REC.solver.prior.refimage = ...
+                        priormask3D(REC.solver.prior.path,REC.grid);
+                else
+                    disp('No prior is provided in RECSettings_DOT. Reference mua will be used');
+                    REC.solver.prior.refimage = REC.opt.Mua;
+                end
+    
                 [REC.opt.bmua,REC.opt.bmusp] = RecSolverBORN_TD_USPrior(REC.solver,...
                     REC.grid,...
                     REC.opt.mua0,REC.opt.musp0,REC.opt.nB,REC.A,...
@@ -521,6 +537,22 @@ switch lower(REC.domain)
                     REC.time.twin,REC.time.self_norm,REC.Data,...
                     REC.time.irf.data,REC.ref,REC.sd,0);
                 
+            case 'fit4param' %% you require a TOAST installation
+                % check if TOAST is correctly installed
+                if ~isempty(REC.solver.prior.path)
+                    REC.solver.prior.refimage = ...
+                        priormask3D(REC.solver.prior.path,REC.grid);
+                else
+                    disp('No prior is provided in RECSettings_DOT. Reference mua will be used');
+                    REC.solver.prior.refimage = REC.opt.Mua;
+                end
+                [REC.opt.bmua,REC.opt.bmusp] = Fit2Mua2Mus_TD(REC.solver,...
+                    REC.grid,...
+                    REC.opt.mua0,REC.opt.musp0,REC.opt.nB,[],...
+                    REC.Source.Pos,REC.Detector.Pos,REC.dmask,...
+                    REC.time.dt,REC.time.nstep,REC.time.twin,...
+                    REC.time.self_norm,REC.Data,...
+                    REC.time.irf.data,REC.ref,REC.sd,1);
                 
         end
 end

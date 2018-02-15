@@ -35,10 +35,15 @@ proj = WindowTPSF(proj,twin);
 proj = proj(:);
 ref = ref(:);
 data = data(:);
+
 factor = proj./ref;
+% load('factor_ref.mat')
+% factor = repmat(factor,[nwin 1]);
+
+factor = factor(:);
 
 data = data .* factor;
-ref = ref .* factor;
+ref = proj(:);%ref .* factor;
 %% data scaling
 sd = sd(:).*factor;%sqrt(factor);   % Because of the Poisson noise
 %sd = proj(:);
@@ -110,10 +115,11 @@ J(mask,:) = [];
 
 
 %% Structured laplacian prior
-siz_prior = size(solver.prior);
+
+siz_prior = size(solver.prior.refimage);
 %solver.prior(solver.prior == max(solver.prior(:))) = 1.1*min(solver.prior(:)); 
 %solver.prior = solver.prior .* (1 + 0.01*randn(size(solver.prior)));
-[L,~] = StructuredLaplacianPrior(solver.prior,siz_prior(1),siz_prior(2),siz_prior(3));
+[L,~] = StructuredLaplacianPrior(solver.prior.refimage,siz_prior(1),siz_prior(2),siz_prior(3));
 %% Solver
 s = svd(J);
 alpha = solver.tau*s(1) %#ok<NOPRT>
