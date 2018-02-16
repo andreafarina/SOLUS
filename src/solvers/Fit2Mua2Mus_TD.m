@@ -48,7 +48,7 @@ if INCL_ONLY
     x0 = [mua0,mus0];
 %    fitfun = @forward2;
 else
-    x0 = [mua0,mua0,mus0,mus0]; %start from homogeneous combination
+    x0 = [mua0,mus0,mua0,mus0]; %start from homogeneous combination
 %    fitfun = @forward;
 end
 
@@ -57,7 +57,7 @@ opts = optimoptions('lsqcurvefit',...
      'Jacobian','off',...
   ...'Algorithm','levenberg-marquardt',...
      'DerivativeCheck','off',...
-     'MaxIter',100,'Display','iter-detailed',...%'FinDiffRelStep',[1e-3,1e-1],...;%,
+     'MaxIter',100,'Display','iter-detailed',...%'FinDiffRelStep',...[1e-3,1e-1,1e-3,1e-1],...%,
      'TolFun',1e-10,'TolX',1e-10);
 
  x = lsqcurvefit(@forward,x0,[],data(:),[],[],opts);
@@ -75,11 +75,11 @@ end
 optmua = x(1) * priorM;
 optmus = x(2) * priorM;
 if INCL_ONLY
-    optmua = optmua + (~priorM)*x0(1);
-    optmus = optmus + (~priorM)*x0(2);
+    optmua = optmua + (1-priorM)*x0(1);
+    optmus = optmus + (1-priorM)*x0(2);
 else
-    optmua = optmua + (~priorM)*x(3);
-    optmus = optmus + (~priorM)*x(4);
+    optmua = optmua + (1-priorM)*x(3);
+    optmus = optmus + (1-priorM)*x(4);
 end
 %% Map parameter back to basis
 bmua = hbasis.Map('M->B',optmua(:));
@@ -92,11 +92,11 @@ bmus = hbasis.Map('M->B',optmus(:));
 function [proj] = forward(x, ~)
         
         if INCL_ONLY
-            mua = x(1) * priorM + mua0 * ( ~priorM);
-            mus = x(2) * priorM + mus0 * ( ~priorM);
+            mua = x(1) * priorM + mua0 * ( 1-priorM);
+            mus = x(2) * priorM + mus0 * ( 1-priorM);
         else
-            mua = x(1) * priorM + x(3) * ( ~priorM);
-            mus = x(2) * priorM + x(4) * ( ~priorM);
+            mua = x(1) * priorM + x(3) * ( 1-priorM);
+            mus = x(2) * priorM + x(4) * ( 1-priorM);
         end
             
         
@@ -129,6 +129,7 @@ function [proj] = forward(x, ~)
             figure(1003);
             semilogy(t,proj(:),'-',t,data(:),'.'),ylim([1e-3 1])
             drawnow;
+            x
         end
         proj = proj(:)./sd(:);
         
