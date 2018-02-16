@@ -7,7 +7,7 @@ ys = linspace(-15,15,4);
 %ys = linspace(5,50,8);
 zs = 0;
 
-[xxs,yys,zzs] = ndgrid(xs,ys,zs);
+[yys,xxs,zzs] = ndgrid(ys,xs,zs);
 
 DOT.Source.Pos = [xxs(:),yys(:),zzs(:)];
 DOT.Detector.Pos = [xxs(:),yys(:),zzs(:)];

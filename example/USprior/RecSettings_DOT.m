@@ -4,16 +4,16 @@
 REC.domain = 'td';          % CW or TD: data type to be inverted
 
 % -------------------------------------------------------------------------
-REC.time.roi = [1,50];%[68,250];% ROI in time-step unit. If omitted, the ROI will be 
+REC.time.roi = [];%[3,50];% [1,50];%[68,250];% ROI in time-step unit. If omitted, the ROI will be 
                         % selected dinamically by the user.
-NUM_TW = 10;            % Number of Time Windows within ROI
+NUM_TW = 40;            % Number of Time Windows within ROI
 % =========================================================================
 %%                        Initial parameter estimates 
 % =========================================================================
 % In this section all the parameter for the inverse solver are setted.
 % --------------------------- Optical properties --------------------------
-REC.opt.mua0 = 0.01;    % absorption [mm-1]
-REC.opt.musp0 = 1.0;      % reduced scattering [mm-1]
+REC.opt.mua0 = 0.0036;    % absorption [mm-1]
+REC.opt.musp0 = 1.05;      % reduced scattering [mm-1]
 REC.opt.nB = 1.4;
 % ---------------------- Solver and regularization ------------------------
 REC.solver.tau = 1e-6;            % regularisation parameter

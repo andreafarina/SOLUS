@@ -44,7 +44,7 @@ DOT.opt.nE = 1.;        % external refractive index
 %==========================================================================
 DOT.grid.x1 = -25;
 DOT.grid.x2 = 25;
-DOT.grid.dx = 4;
+DOT.grid.dx = 2;
 
 DOT.grid.y1 = -35;
 DOT.grid.y2 = 35;           
@@ -85,7 +85,7 @@ DOT.opt.hete1.path ='../../3DMasks/benign_3.mat';   % down
 %%                         Time domain parameters
 %==========================================================================
 DOT.time.dt = 50;%(50e3/1024/4);        % time step in picoseconds
-DOT.time.nstep = 60;               % number of temporal steps
+DOT.time.nstep = 80;               % number of temporal steps
 DOT.time.noise = 'Poisson';         % 'Poisson','Gaussian','none'
                                     % if 'Poisson' and sigma>0 a
                                     % Gaussian noise is added before
