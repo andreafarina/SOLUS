@@ -5,11 +5,11 @@
 % Andrea Farina 02/18
 %==========================================================================
 
-function [bmua,bmus] = Fit2Mua2Mus_TD(solver,grid,mua0,mus0, n, ~,...
+function [bmua,bmus, OUTPUT] = Fit2Mua2Mus_TD(solver,grid,mua0,mus0, n, ~,...
     Qpos,Mpos,dmask, dt, nstep, twin, self_norm, data, irf, ref, sd,verbosity)
 verbosity = 1;
 self_norm = true;
-INCL_ONLY = false;
+INCL_ONLY = true;
 
 %% initial setting the FEM problem
 % create the mesh
@@ -33,22 +33,25 @@ nQM = sum(dmask(:));
 if self_norm == true
         data = data * spdiags(1./sum(data)',0,nQM,nQM);
         ref = ref * spdiags(1./sum(ref)',0,nQM,nQM);
+        sd = sqrt(data) * spdiags(1./sum(data)',0,nQM,nQM); 
 end
 %% mask for excluding zeros
 mask = (data(:) == 0) | (isnan(data(:)));
 
-sd = ones(size(data));%sqrt(data);%%ones(size(proj));%proj(:);
-%sd = ones(size(data));
+%sd = ones(size(data));%;%%ones(size(proj));%proj(:);
+sd = ones(size(data));
 data = data./sd;
 data(mask) = [];
 sd(mask) = [];
+%data2 (mask) = [];
 
 %% fitting procedure
 if INCL_ONLY
     x0 = [mua0,mus0];
 %    fitfun = @forward2;
 else
-    x0 = [mua0,mus0,mua0,mus0]; %start from homogeneous combination
+   x0 =[mua0,mus0,mua0,mus0]; 
+   %x0 = [0.01,1,0.01,1]; %start from homogeneous combination
 %    fitfun = @forward;
 end
 
@@ -57,10 +60,10 @@ opts = optimoptions('lsqcurvefit',...
      'Jacobian','off',...
   ...'Algorithm','levenberg-marquardt',...
      'DerivativeCheck','off',...
-     'MaxIter',100,'Display','iter-detailed',...%'FinDiffRelStep',...[1e-3,1e-1,1e-3,1e-1],...%,
+     'MaxIter',100,'Display','iter-detailed',...%'FinDiffRelStep',[1e-4,1e-2],...%,
      'TolFun',1e-10,'TolX',1e-10);
 
- x = lsqcurvefit(@forward,x0,[],data(:),[],[],opts);
+ [x,~,~,~,OUTPUT] = lsqcurvefit(@forward,x0,[],data(:),[],[],opts);
 
 
 %% display fit result
@@ -123,15 +126,17 @@ function [proj] = forward(x, ~)
             proj = proj * spdiags(1./sum(proj)',0,nQM,nQM);
         end
         proj(mask) = [];
+        proj = proj(:)./sd(:);
         if verbosity
             % plot forward
             t = (1:numel(data)) * dt;
             figure(1003);
             semilogy(t,proj(:),'-',t,data(:),'.'),ylim([1e-3 1])
-            drawnow;
+            title(['||proj-data||=',num2str(norm(proj-data(:)))])
+            drawnow,
             x
         end
-        proj = proj(:)./sd(:);
+        
         
 end
 

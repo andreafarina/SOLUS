@@ -546,7 +546,7 @@ switch lower(REC.domain)
                     disp('No prior is provided in RECSettings_DOT. Reference mua will be used');
                     REC.solver.prior.refimage = REC.opt.Mua;
                 end
-                [REC.opt.bmua,REC.opt.bmusp] = Fit2Mua2Mus_TD(REC.solver,...
+                [REC.opt.bmua,REC.opt.bmusp, REC.opt.fitOUTPUT] = Fit2Mua2Mus_TD(REC.solver,...
                     REC.grid,...
                     REC.opt.mua0,REC.opt.musp0,REC.opt.nB,[],...
                     REC.Source.Pos,REC.Detector.Pos,REC.dmask,...
@@ -575,7 +575,7 @@ figure,PlotHeteQM(REC,reshape(REC.opt.bmua,REC.grid.dim),REC.opt.mua0);
 drawnow;
 %% Save reconstruction
 if ~strcmpi(REC.solver.type,'fit')
-    disp(['Reconstruction will be stored in: ', rdir,filename,'_', 'REC.m']);
+    disp(['Reconstruction will be stored in: ', rdir,filename,'_', 'REC.mat']);
     save([rdir,filename,'_', 'REC'],'REC');
 end
 % =========================================================================
@@ -589,7 +589,7 @@ Quantification_MultiSim
 %%                            Save quantification 
 % =========================================================================
 if ~strcmpi(REC.solver.type,'fit')
-    disp(['Quantification will be stored in: ', rdir,filename,'_', 'REC.m']);
+    disp(['Quantification will be stored in: ', rdir,filename,'_', 'REC.mat']);
     save([rdir,filename,'_', 'REC'],'Q','-append')
 end
 clearvars REC
