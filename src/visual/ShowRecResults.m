@@ -37,11 +37,11 @@ for i=1:step:N
                     if strcmpi(scale,'adaptive')
                      imagesc(x,y,Data(:,:,i)')
                      set(gca,'ydir','normal'),
-                     xlabel('x(mm)'),ylabel('y(mm)')
+                     xlabel('x(mm)'),ylabel('y(mm)'),axis('image')
                     else
                      imagesc(x,y,Data(:,:,i)',clim)
                      set(gca,'ydir','normal'),
-                     xlabel('x(mm)'),ylabel('y(mm)')
+                     xlabel('x(mm)'),ylabel('y(mm)'),axis('image')
                     end
                      %pcolor(Data(:,:,i)'), shading interp
               %axis image%,axis xy
