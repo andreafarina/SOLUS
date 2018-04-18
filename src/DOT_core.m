@@ -128,7 +128,7 @@ end
 
 % -------------------------------------------------------------------------
 % plot DMASK
-figure, imagesc(DOT.dmask),xlabel('Sources'),ylabel('Meas'),title('Dmask');
+figure, imagesc(DOT.dmask),xlabel('Sources'),ylabel('Meas'), axis image,title('Dmask');
 
 % plot source-detectors and heterogeneities
 figure,PlotHeteQM(DOT,DOT.opt.Mua,DOT.opt.muaB)
@@ -545,6 +545,7 @@ switch lower(REC.domain)
                 else
                     disp('No prior is provided in RECSettings_DOT. Reference mua will be used');
                     REC.solver.prior.refimage = REC.opt.Mua;
+                    
                 end
                 [REC.opt.bmua,REC.opt.bmusp, REC.opt.fitOUTPUT] = Fit2Mua2Mus_TD(REC.solver,...
                     REC.grid,...

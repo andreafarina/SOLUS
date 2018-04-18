@@ -9,7 +9,7 @@ function [bmua,bmus, OUTPUT] = Fit2Mua2Mus_TD(solver,grid,mua0,mus0, n, ~,...
     Qpos,Mpos,dmask, dt, nstep, twin, self_norm, data, irf, ref, sd,verbosity)
 verbosity = 1;
 self_norm = true;
-INCL_ONLY = true;
+INCL_ONLY = false;
 
 %% initial setting the FEM problem
 % create the mesh
@@ -22,12 +22,20 @@ refind = n * ones(hmesh.NodeCount,1);
 bdim = mdim;% + 1;
 hbasis = toastBasis(hmesh,bdim);
 % map prior to mesh
+%solver.prior.refimage = flip(solver.prior.refimage,3);
 priorM = hbasis.Map('B->M',double(solver.prior.refimage));
 % create Q/M
-ds = 1;
+Qds = 1; % width of Sources 
+Mds = 1; % width of Detectors
 hmesh.SetQM(Qpos,Mpos);
-qvec = hmesh.Qvec('Neumann','Gaussian',ds);
-mvec = hmesh.Mvec('Gaussian',ds,0);
+qvec = hmesh.Qvec('Neumann','Gaussian',Qds);
+mvec = hmesh.Mvec('Gaussian',Mds, n);
+
+%     mtot = mvec(:,1) + mvec(:,2) + mvec(:,3) + mvec(:,4) + mvec(:,5) + mvec(:,6) + mvec(:,7) + mvec(:,8); % FOR DISPLAY
+%     qtot = qvec(:,1) + qvec(:,2) + qvec(:,3) + qvec(:,4) + qvec(:,5) + qvec(:,6) + qvec(:,7) + qvec(:,8);
+%     tot = (max(qtot) / max(mtot)) * mtot + qtot;
+%     hmesh.Display(qtot);
+
 nQM = sum(dmask(:));
 %% normalize data
 if self_norm == true
@@ -47,23 +55,24 @@ sd(mask) = [];
 
 %% fitting procedure
 if INCL_ONLY
-    x0 = [mua0,mus0];
+    x0 = [mua0,mus0]; lb = [0,0]; ub = [1, 10];
 %    fitfun = @forward2;
 else
-   x0 =[mua0,mus0,mua0,mus0]; 
-   %x0 = [0.01,1,0.01,1]; %start from homogeneous combination
+   %x0 =[mua0,mus0,mua0,mus0];  % [muaIN, musIN, muaOUT, musOUT]
+   x0 = [0.001,1,0.001,1]; %start from homogeneous combination
+   lb = [0,0,0,0]; ub = [1, 10, 1, 10];
 %    fitfun = @forward;
 end
 
 % setting optimization
 opts = optimoptions('lsqcurvefit',...
      'Jacobian','off',...
-  ...'Algorithm','levenberg-marquardt',...
-     'DerivativeCheck','off',...
+     'Algorithm','trust-region-reflective',...
+     'DerivativeCheck','on',...
      'MaxIter',100,'Display','iter-detailed',...%'FinDiffRelStep',[1e-4,1e-2],...%,
-     'TolFun',1e-10,'TolX',1e-10);
+     'TolFun',1e-8,'TolX',1e-8);
 
- [x,~,~,~,OUTPUT] = lsqcurvefit(@forward,x0,[],data(:),[],[],opts);
+ [x,~,~,~,OUTPUT] = lsqcurvefit(@forward,x0,[],data(:),lb,ub,opts);
 
 
 %% display fit result
@@ -88,8 +97,12 @@ end
 bmua = hbasis.Map('M->B',optmua(:));
 bmus = hbasis.Map('M->B',optmus(:));
 
+%% Delete Mesh and Basis
 
-
+hbasis.delete;
+hmesh.delete;
+clearvars -except bmua bmus OUTPUT
+return;
 
 %% forward solvers
 function [proj] = forward(x, ~)
