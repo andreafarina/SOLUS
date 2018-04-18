@@ -5,14 +5,14 @@ close all;
 CROP = 1;   % enables autocropping of the 2D image to get a better approximation 
             % of the position of the inclusion with respect to the US
             % probe. Preferably set to 1 with dicoms
-SAVE_3D = 0;   % saves 3D image
-SAVE_2D = 0;     % save segmented image
+SAVE_3D = 1;   % saves 3D image
+SAVE_2D = 1;     % save segmented image
 
 FORMAT = 'DICOM'; % or ELSE for other formats (jpg, png)
 
 
-loadname = 'Mdicom1.dcm';
-savename3D = 'USsphere.mat';
+loadname = 'Mdicom4.dcm';
+savename3D = 'Mdicom1_3D.mat';
 savename2D = [loadname, '_SEGMENTED'];
 %% segmentation
 if strcmpi(FORMAT, 'DICOM') == 1 
@@ -50,6 +50,9 @@ if strcmpi(FORMAT, 'DICOM') == 1
     if delta_x ~= delta_y
        
         disp('DICOM image has problems with calibrations: pixels are not squares')
+        delta = 0.5 * (delta_x + delta_y);
+    else
+        delta = delta_x;
     
     end
     
