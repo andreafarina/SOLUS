@@ -2,18 +2,19 @@
 clear;
 close all;
 
-CROP = 1;   % enables autocropping of the 2D image to get a better approximation 
+CROP = 0;   % enables autocropping of the 2D image to get a better approximation 
             % of the position of the inclusion with respect to the US
             % probe. Preferably set to 1 with dicoms
 SAVE_3D = 1;   % saves 3D image
 SAVE_2D = 1;     % save segmented image
+SAVE_JPG = 1; % save images for display
+FORMAT = 'ELSE'; % or ELSE for other formats (jpg, png)
 
-FORMAT = 'DICOM'; % or ELSE for other formats (jpg, png)
 
-
-loadname = 'Mdicom4.dcm';
-savename3D = 'Mdicom1_3D.mat';
-savename2D = [loadname, '_SEGMENTED'];
+loadname = 'Bmode_FieldII.jpg';
+savename3D = [loadname(1: end - 4), '_3D.mat'];
+savename2D = [loadname(1: end - 4), '_SEGMENTED.mat'];
+savenameJPG = [loadname(1: end - 4), '.jpg'];
 %% segmentation
 if strcmpi(FORMAT, 'DICOM') == 1 
     
@@ -61,31 +62,22 @@ else
     
     if CROP == 1
         disp('Cropping...')
-        import = autocropper(import);
+        im = autocropper(im);
     end         
     % delta is set to be 0.1 mm/px just as an example 
-    delta = 0.1; %mm/px
+    %delta = 0.1; %mm/px
+    delta = 0.07; %mm/px FIELDII
 end
 
 segmented = pointSplineSegs(im);
 
 %% Extrusion
-
+disp('Extrusion...');
 mask3D = retrieve_ellipsoid(segmented);
-
-%% show shape
-figure;
-for i = 1:1:25
-subplot(5,5,i);imagesc(mask3D(:,:,round((i/25)*size(mask3D,3)))');axis image;
-end
-
-figure;
-[x, y, z] = ind2sub(size(mask3D), find(mask3D));
-plot3(x, y, z, 'k.'); axis image;
-
 
 
 %% SAVE
+mask3D = logical(mask3D(:,:,1:500));
 if SAVE_3D == 1
     save(savename3D, 'mask3D', 'delta');
 end
@@ -94,5 +86,43 @@ if SAVE_2D == 1
     save(savename2D, 'segmented', 'delta');
 end
 
+%% show and save shape
+if SAVE_JPG == 1;
+    
+    h_2D = figure();
+    imagesc(segmented(:,:)), axis image;
+    saveas(h_2D, ['MASK',savenameJPG]);
+    
+    h_2Ds = figure();
+    
+    if size(im,3) ~=3
+        todisp(:,:,:) = uint8(cat(3, im,im,im));
+    else
+        todisp(:,:,:) = im(:,:,:);
+    end
+    
+    todisp(:,:,2) = todisp(:,:,2) + 100 * uint8(segmented(:,:));
+    image(todisp), axis image
+    saveas(h_2Ds, ['MASKoverDCM_',savenameJPG]);
+    
+    h_dcm = figure();
+    imagesc(im), axis image, colormap(gray(127))
+    saveas(h_dcm, ['readDCM_',savenameJPG]);
+    
+    
+    
+    h_dt2D = figure();
+    for i = 1:1:25
+    subplot(5,5,i);image(1:round(size(mask3D,1) * delta), 1:round(size(mask3D,2) * delta), 255* mask3D(:,:,round((i/25)*size(mask3D,3)))');axis image;
+    %xlabel('x(mm)'),ylabel('y(mm)')%title(sprintf('%d of %d', round((i/25)*size(mask3D,3)), size(mask3D,3))); 
+    end
+    saveas(h_dt2D, ['3Dsliced', savenameJPG]);
+    
+    h_dt3D = figure();
+    [x, y, z] = ind2sub(size(mask3D), find(mask3D));
+    plot3(x*delta, y*delta, z*delta, 'k.'); axis image;xlabel('x(mm)'),ylabel('y(mm)'),zlabel('z(mm)')
+    saveas(h_dt3D, ['3Dwhole', savenameJPG]);
+
+end
 
 

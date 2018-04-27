@@ -13,7 +13,7 @@ function [maskIm] = pointSplineSegs(import)
  % think of using dicomread(imName) with dicom images...to be checked
 
 disp('Segmentation...');
-maskIm = roispline(import);
+maskIm = roispline(uint8(import));
 
 
 figure;

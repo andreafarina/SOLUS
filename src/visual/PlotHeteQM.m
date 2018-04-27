@@ -10,7 +10,7 @@ plot3(DOT.Detector.Pos(:,1),DOT.Detector.Pos(:,2),DOT.Detector.Pos(:,3),'bx','Ma
 xlabel('x(mm)'),ylabel('y(mm)'),zlabel('z(mm)')
 
 %% plot heterogeneities
-RES_FACT = 1;
+RES_FACT = 5;
 data = data - bkg;
 data = imresizen(data,RES_FACT);
 xx = imresizen(DOT.grid.x',RES_FACT);

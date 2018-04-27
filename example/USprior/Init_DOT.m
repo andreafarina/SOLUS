@@ -7,8 +7,8 @@ REF = 1;                % 1: create also the homogeneous data
 % ------------------------- RECONSTRUCTION --------------------------------
 RECONSTRUCTION = 1;     % Enable the reconstruction section.
 % ------------------------- EXPERIMENTAL ----------------------------------
-EXPERIMENTAL = 0;       % Enable experimental options below
-EXP_IRF = 0;            % Use the experimental IRF for forward and 
+EXPERIMENTAL = 1;       % Enable experimental options below
+EXP_IRF = 1;            % Use the experimental IRF for forward and 
                         % reconstruction.
 EXP_DELTA = 'all';      % Substitute the IRF with delta function on the 
                         % baricenter ('baric') or peak ('peak') of the IRF.
@@ -42,16 +42,16 @@ DOT.opt.nE = 1.;        % external refractive index
 %==========================================================================
 %%                                  SET GRID
 %==========================================================================
-DOT.grid.x1 = -30;
-DOT.grid.x2 = 30;
+DOT.grid.x1 = -40;
+DOT.grid.x2 = 40;
 DOT.grid.dx = 2;
 
-DOT.grid.y1 = -45;
-DOT.grid.y2 = 45;           
+DOT.grid.y1 = -60;
+DOT.grid.y2 = 60;           
 DOT.grid.dy = DOT.grid.dx;
 
 DOT.grid.z1 = 0;        
-DOT.grid.z2 = 60;         
+DOT.grid.z2 = 70;         
 DOT.grid.dz = DOT.grid.dx;
 %==========================================================================
 %%                      Set Heterogeneities
@@ -67,7 +67,7 @@ DOT.opt.hete1.sigma = 5;
 DOT.opt.hete1.distrib = 'OFF';
 DOT.opt.hete1.profile = 'Gaussian';%'Step';%'Gaussian';
 DOT.opt.hete1.val   = 2 * DOT.opt.muaB;
-DOT.opt.hete1.path ='../../3DMasks/sphMask.mat';   % down
+DOT.opt.hete1.path ='../../3DMasks/sphMask.mat'%Bmode_FieldII_3D.mat';   % down
 
 %--------------------------- INCLUSION 2 ---------------------------------%
 % DOT.opt.hete2.type  = 'Mua';

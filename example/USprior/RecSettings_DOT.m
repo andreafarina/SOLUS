@@ -4,9 +4,9 @@
 REC.domain = 'td';          % CW or TD: data type to be inverted
 
 % -------------------------------------------------------------------------
-REC.time.roi = [1,60];%[1,50];[3,50];% %[68,250];% ROI in time-step unit. If omitted, the ROI will be 
+REC.time.roi = [1,70];%[1,50];[3,50];% %[68,250];% ROI in time-step unit. If omitted, the ROI will be 
                         % selected dinamically by the user.
-NUM_TW = 60;            % Number of Time Windows within ROI
+NUM_TW = 70;            % Number of Time Windows within ROI
 % =========================================================================
 %%                        Initial parameter estimates 
 % =========================================================================
@@ -26,7 +26,7 @@ REC.solver.type = 'fit4param';         % 'born','GN': gauss-newton,
 % =========================================================================
 %%                            US prior 
 % =========================================================================
-REC.solver.prior.path = '../../3DMasks/sphMask.mat';
+REC.solver.prior.path = '../../3DMasks/sphMask.mat'  %Bmode_FieldII_3D.mat';%';
 % =========================================================================
 %%                     load a precomputed jacobian 
 % =========================================================================
