@@ -28,16 +28,21 @@ neg_mask = ~im_mask;
 [D, IDX] = bwdist(neg_mask, 'euclidean');
 
 
-MAX_third = max(max(D));
-MAX_D = MAX_third;
-MAX_third = ceil(MAX_third);
- 
+MAX_third = max(D(:));
+MAX_D = MAX_third; 
 MAX_x = size(D, 1);
 MAX_y = size(D, 2);
+
 %MAX_third = 0.5 * ceil(max(MAX_x, MAX_y)/2);
-new_mask = zeros(MAX_x, MAX_y, 2*MAX_third);
+%MAX_third = ceil(MAX_third);
 
+%% Proportionality of smoothing factor
+Area = sum(D(:) ~= 0);
+R = MAX_D;
+sm_fact = sqrt(Area/ pi)/R;
 
+MAX_third = ceil(2 * sm_fact * MAX_D);
+new_mask = zeros(MAX_x, MAX_y, MAX_third);
 %% for procedure
 
 tic;
@@ -47,7 +52,7 @@ for i = 1:1:MAX_x
         new_mask(i,j,MAX_third) = im_mask(i,j);
         for k = 1:1: MAX_third - 1
                 
-                if(k < sm_fact * sqrt( 2 * D(i,j) * MAX_D -  D(i,j)^2) )
+                if(k <= sm_fact * sqrt( 2 * D(i,j) * MAX_D -  D(i,j)^2) )
                     new_mask(i, j, MAX_third - k) = 1; 
                     new_mask(i, j, MAX_third + k) = 1; 
                 else

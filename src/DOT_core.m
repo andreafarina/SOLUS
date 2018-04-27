@@ -506,7 +506,7 @@ switch lower(REC.domain)
                     disp('No prior is provided in RECSettings_DOT. Reference mua will be used');
                     REC.solver.prior.refimage = REC.opt.Mua;
                 end
-    
+              REC.solver.prior.refimage =  double(REC.solver.prior.refimage)*10 + 0.1;
                 [REC.opt.bmua,REC.opt.bmusp] = RecSolverBORN_TD_USPrior(REC.solver,...
                     REC.grid,...
                     REC.opt.mua0,REC.opt.musp0,REC.opt.nB,REC.A,...
@@ -541,7 +541,7 @@ switch lower(REC.domain)
                 % check if TOAST is correctly installed
                 if ~isempty(REC.solver.prior.path)
                     REC.solver.prior.refimage = ...
-                        priormask3D(REC.solver.prior.path,REC.grid);
+                        priormask3D(REC.solver.prior.path,REC.grid, REC.solver.type);
                 else
                     disp('No prior is provided in RECSettings_DOT. Reference mua will be used');
                     REC.solver.prior.refimage = REC.opt.Mua;
