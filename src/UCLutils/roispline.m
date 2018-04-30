@@ -23,7 +23,7 @@ elseif nargin<3
 end
 
 siz=size(I);
-imshow(I);
+imshow(I, [0, 255]);
 title('Click right button or close curve clicking near first point');
 hold on;
 
@@ -59,7 +59,7 @@ switch kind
                     cor(:,i)=cor(:,1);
                     flag=0;
                 end
-                imshow(I)
+                imshow(I,[0, 255])
                 hold on;
                 spcv = cscvn(cor);              
                 points=myfnplt(spcv,npoints*i);
@@ -106,7 +106,7 @@ switch kind
                     pointsx=[pointsx, xvec];
                     pointsy=[pointsy, yvec];    
                 end
-                imshow(I);
+                imshow(I,[0, 255]);
                 hold on;
                 plot(pointsx,pointsy,'LineWidth',2);
                 plot(x,y,'y.');

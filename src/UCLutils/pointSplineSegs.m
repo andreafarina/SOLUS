@@ -1,25 +1,24 @@
-function maskIm = pointSplineSegs(str)
-
-close all
-varargin
-
-[caseName, direc,~] = uigetfile('3D_simulations/Segmentation/Milan_Data/*.jpg', 'Choose your Image');
-imName = [direc caseName];
-import = imread(imName); % think of using dicomread(imName) with dicom images...to be checked
-
-im = autocropper(import);
-
-maskIm = roispline(im);
+function [maskIm] = pointSplineSegs(import)
+%-
+% 
+% Takes an image as input and starts the segmentation routine
 
 
-if (exist('str','var') == 1)
-    if (strcmp(str, 'save') == 1)
-        maskName = [direc,'B_splined/', 'Mask_',caseName];
-        imwrite(maskIm,maskName);
-    end
-end
+% if (strcmpi(imName,'choose') == 1);
+%     
+%     [caseName, direc,~] = uigetfile('*.jpg', 'Choose your Image');
+%     imName = [direc caseName];
+% end
+
+ % think of using dicomread(imName) with dicom images...to be checked
+
+disp('Segmentation...');
+maskIm = roispline(uint8(import));
+
 
 figure;
-image(maskIm*255); axis image;  
+image(maskIm*255); axis image; 
+
+
 return;
 end

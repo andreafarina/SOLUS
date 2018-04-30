@@ -1,16 +1,25 @@
 %==========================================================================
 %%  SETTING SOURCES (QVEC), DETECTORS (MVEC) AND THEIR PERMUTATIONS (DMASK)
 %==========================================================================
-% SOLUS SOURCES - DETECTOR POSITIONS
-xs = [-10 10];
-ys = linspace(-15,15,4);
+% SOLUS SOURCES POSITIONS
+relSource = 0;% 0.5 % 1% only 1 out of 7 wavelegths is aligned to the detectors
+xs = [-14.95 , 14.95];%[-15 , 15];%
+ys = linspace(-19.5,19.5,4) + relSource;%[-20, -7, 7, 20];%
 %ys = linspace(5,50,8);
 zs = 0;
 
-[xxs,yys,zzs] = ndgrid(xs,ys,zs);
+[yys,xxs,zzs] = ndgrid(ys,xs,zs);
 
 DOT.Source.Pos = [xxs(:),yys(:),zzs(:)];
-DOT.Detector.Pos = [xxs(:),yys(:),zzs(:)];
+
+% SOLUS DETECTORS POSITIONS
+xd = [-10.95 , 10.95];%[-11 , 11];%
+yd = linspace(-19.5, 19.5 , 4);%[-20, -7, 7, 20];%
+zd = 0;
+
+[yyd,xxd,zzd] = ndgrid(yd,xd,zd);
+
+DOT.Detector.Pos = [xxd(:),yyd(:),zzd(:)];
 
 % non-contact PTB setup 40x40 mm2 scan with 8x8 and s-d 5mm
 % rhozero
