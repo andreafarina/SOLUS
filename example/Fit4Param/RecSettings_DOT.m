@@ -12,6 +12,7 @@ NUM_TW = 10;            % Number of Time Windows within ROI
 % =========================================================================
 % In this section all the parameter for the inverse solver are setted.
 % --------------------------- Optical properties --------------------------
+%REC.solver.variables = {'mua'}; % variables mua,mus.
 REC.opt.mua0 = 0.0036;    % absorption [mm-1]
 REC.opt.musp0 = 1.05;      % reduced scattering [mm-1]
 REC.opt.nB = 1.4;

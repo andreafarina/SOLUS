@@ -1,5 +1,5 @@
 function J = JacobianTD(grid,Spos, Dpos, dmask, muaB, muspB, n, ...
-    A, dt, nstep, twin, irf, geom)
+    A, dt, nstep, twin, irf, geom,type)
 
 v = 0.2999/n;
 
@@ -7,7 +7,12 @@ Ns = size(Spos,1);
 %Nd = size(Dpos,1);
 Nopt = sum(dmask(:));
 nwin = size(twin,1);
-J = zeros(nwin*Nopt,grid.N);
+if strcmpi(type,'muad')
+    n = 2*grid.N;
+else
+    n = grid.N;
+end
+J = zeros(nwin*Nopt,n);
 t = (1:nstep) * dt;
 t = t';
 
@@ -35,8 +40,8 @@ switch lower(geom)
                 m = ind_d(j);
                 J(row_off + (1:nwin),:) = WindowTPSF(...
                   convn(...
-                  J_Semi_Inf_PCBC_TR_3D(t, muaB,muspB,v,A,Spos(i,:),Dpos(m,:),XX,YY,ZZ,...
-                    grid.dV), irf), twin);
+                  J_Semi_Inf_PCBC_TR_3D_muaD(t, muaB,muspB,v,A,Spos(i,:),Dpos(m,:),XX,YY,ZZ,...
+                    grid.dV,type), irf), twin);
                 row_off = row_off + nwin;
             end
         end
