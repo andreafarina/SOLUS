@@ -1,4 +1,4 @@
-filename = 'Test_Standard';% Filename  prefix 
+filename = 'TEST_Fit4Param';%myname 
 session = '201710';
 exp_path = './';%['../data/',session,'/'];
 res_path = './';%['../results/',session,'/'];
