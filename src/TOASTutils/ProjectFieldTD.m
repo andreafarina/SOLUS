@@ -76,7 +76,7 @@ else
     mvecT = gpuArray((mvecT));
     proj = gpuArray(proj);
     
-    tstart = cputime;
+    tstart = cputime; 
     % AF initial conditions see toast examples fwd_tpsf.m
     % initial condition
     q = qvec/dt;
@@ -119,7 +119,8 @@ if self_norm == true
     proj = proj * spdiags(1./Area',0,nQM,nQM);
 end
 %proj = proj * diag(1./Area);
-
+return;
+end
 %% Fluorescence
 % to be completed.
 

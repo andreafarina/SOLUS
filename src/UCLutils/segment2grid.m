@@ -62,7 +62,7 @@ if (DISPLAY == 1)
 
     for i = 1:1:size(out_grid,3)
         
-        figure(1); imagesc(out_grid(:,:,i)); title(sprintf('%d', i)); pause
+        figure(1); imagesc(1:size(out_grid,1) * delta , 1:size(out_grid,2) * delta, out_grid(:,:,i)); title(sprintf('%d', i));axis image, pause
     end
     
 end

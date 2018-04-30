@@ -13,10 +13,10 @@ xlabel('x(mm)'),ylabel('y(mm)'),zlabel('z(mm)')
 RES_FACT = 5;
 data = data - bkg;
 data = imresizen(data,RES_FACT);
-xx = imresize(DOT.grid.x',RES_FACT);
+xx = imresizen(DOT.grid.x',RES_FACT);
 yy = imresizen(DOT.grid.y',RES_FACT);
 zz = imresizen(DOT.grid.z',RES_FACT);
-[x,y,z] = ind2sub(size(data),find(data>1/2*max(data(:))));
+[x,y,z] = ind2sub(size(data),find(data>0.5*max(data(:))));
 plot3(xx(x), yy(y), zz(z), '.k','MarkerSize',15);
 set(gca,'zdir','reverse'),axis equal,
 xlim([DOT.grid.x1 DOT.grid.x2]),...
