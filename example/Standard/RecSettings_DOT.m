@@ -16,8 +16,8 @@ REC.opt.mua0 = 0.01;    % absorption [mm-1]
 REC.opt.musp0 = 1.0;      % reduced scattering [mm-1]
 REC.opt.nB = 1.4;
 % ---------------------- Solver and regularization ------------------------
-REC.solver.tau = 1e-1;            % regularisation parameter
-REC.solver.type = 'usprior';         % 'born','GN': gauss-newton, 
+REC.solver.tau = 1e-3;            % regularisation parameter
+REC.solver.type = 'born';         % 'born','GN': gauss-newton, 
                                   % 'USprior': Simon's strutural prior
                                   % 'LM': Levenberg-Marquardt,
                                   % 'l1': L1-based minimization
@@ -31,5 +31,5 @@ REC.solver.prior = [];
 % =========================================================================
 % Pay attention! The jacobian depends on source-detectors configuration,
 % optical properties of the background and number of time-windows.
-REC.solver.prejacobian.load = true;
-REC.solver.prejacobian.path = '../results/precomputed_jacobians/Je';
+REC.solver.prejacobian.load = false;
+REC.solver.prejacobian.path = '../results/precomputed_jacobians/J';
