@@ -1,5 +1,5 @@
 % Add path and set environment variables.
-
+StartVars = who;
 disp('Setting environment variable DOTDIR');
 setenv('DOTDIR',pwd);
 disp('Setting environment variable DOTSRC');
@@ -28,6 +28,7 @@ addpath([getenv('DOTSRC'),filesep,'visual']);
 addpath([getenv('DOTSRC'),filesep,'multiSimProcedures']);
 addpath([getenv('DOTSRC'),filesep,'TOASTutils']);
 addpath([getenv('DOTSRC'),filesep,'UCLutils']);
-clearvars;
+
+clearvars('-except',StartVars{:});
 
 

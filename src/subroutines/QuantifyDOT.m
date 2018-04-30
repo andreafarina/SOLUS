@@ -42,13 +42,23 @@ if ~exist('mxm','var')
     mxm = max(dmua_rec3d(:));
 end
 %% Gaussian 3d estimation
-[COM_REC,COV_REC,TOT_VOL_REC] = Gaussian3D(x,y,z,dx,dy,dz,dmua_rec3d,V);
+try
+    [COM_REC,COV_REC,TOT_VOL_REC] = Gaussian3D(x,y,z,dx,dy,dz,dmua_rec3d,V);
 
 %% compare with reference
 if ref_true == 1
     dmua_true3d = REC.opt.Mua-REC.opt.muaB; %% subtract background
     dmua_true3d = dmua_true3d.*V;
     [COM_TRUE,COV_TRUE,TOT_VOL_TRUE] = Gaussian3D(x,y,z,dx,dy,dz,dmua_true3d,V);
+end
+catch ME
+    if contains(ME.message,'lsqcurvefit')
+        disp('---- Error in fitting procedure ----')
+        Q = [];
+        return
+    else
+        throw(ME);
+    end
 end
 
 %% Print report 

@@ -9,12 +9,8 @@ if exist('isComingFromInterface','var')
     % Regularization Parameters
     if exist('TAU','var'), REC.solver.tau = eval('P(TAU).Value'); else, warning('Parameter P(TAU).Value not in override. Default value will be used'); end
     if exist('SOLVTYPE','var'), REC.solver.type = eval('P(SOLVTYPE).Value'); else, warning('Parameter P(SOLVTYPE).Value not in override. Default value will be used'); end                                                                                             % 'born','GN': gauss-newton,
-    % 'USprior': Simon's strutural prior
-    % 'LM': Levenberg-Marquardt,
-    % 'l1': L1-based minimization
-    % 'fit': fitting homogeneous data
-    % Forward
     if exist('EXPDELTA','var'), EXP_DELTA = eval('P(EXPDELTA).Value'); else, warning('Parameter P(EXPDELTA).Value not in override. Default value will be used'); end
+    if exist('NOISETYPE','var'), DOT.time.noise = eval('P(NOISETYPE).Value'); else, warning('Parameter P(NOISETYPE).Value not in override. Default value will be used'); end
     
     % Background optical properties
     if exist('MUAB','var'), DOT.opt.muaB = eval('P(MUAB).Value'); else, warning('Parameter P(MUAB).Value not in override. Default value will be used'); end
@@ -55,8 +51,88 @@ if exist('isComingFromInterface','var')
     
     % Type of Cutting for statistics
     if exist('CUT','var'), CUT_COUNTS = eval('P(CUT).Value'); else, warning('Parameter P(CUT).Value not in override. Default value will be used'); end % 0 non gated, 1 gated
-    if exist('ND','var'), NumDelays = eval('P(ND).Value'); else, warning('Parameter P(ND).Value not in override. Default value will be used'); end % number of delays
-    %if exist('NG','var'), NumGates = eval('P(NG).Value'); else, warning('Parameter P(NG).Value not in override. Default value will be used'); end % number of gates
+    if exist('ROISTART','var')
+        REC.time.roi(1)= eval('P(ROISTART).Value');
+        if REC.time.roi(1)<0
+            if iL > 1
+                nREC = REC;
+                load([res_path,filename,'_', 'REC'],'REC')
+                nREC.time.roi = REC.time.roi;
+                clearvars REC; REC = nREC; clearvars nREC
+                P(ROISTART).Default = REC.time.roi(1);
+                if HIDE_FIG == 1
+                    HideFig(true);
+                end
+            else
+                REC.time=rmfield(REC.time,'roi');
+                if HIDE_FIG == 1
+                    HideFig(false);
+                end
+            end
+        end
+    else
+        warning('Parameter P(ROISTART).Value not in override. Default value will be used');
+    end % 0 non gated, 1 gated
+    if exist('ROISTOP','var')
+        REC.time.roi(2)=eval('P(ROISTOP).Value');
+        if REC.time.roi(2)<0
+            if iL > 1
+                nREC = REC;
+                load([res_path,filename,'_', 'REC'],'REC')
+                nREC.time.roi = REC.time.roi;
+                clearvars REC; REC = nREC; clearvars nREC
+                P(ROISTOP).Default = REC.time.roi(2);
+                if HIDE_FIG == 1
+                    HideFig(true);
+                end
+            else
+                REC.time=rmfield(REC.time,'roi');
+                if HIDE_FIG == 1
+                    HideFig(false);
+                end
+            end
+        end
+    else
+        warning('Parameter P(ROISTOP).Value not in override. Default value will be used');
+    end % 0 non gated, 1 gated
+    
+    if exist('ND','var')
+        NumDelays = eval('P(ND).Value');
+        %         if isfield(REC.time,'roi')
+        %             if iL == 1
+        %                 BuffOverride.Roi=REC.time.roi;
+        %                 BuffOverride.ND=NumDelays;
+        %                 %             if isfield(REC.time,'roi')
+        %                 %                 button = questdlg({['Present ROI: ',num2str(REC.time.roi)],'Accept?'});
+        %                 %                 if strcmpi(button,'no')
+        %                 %                     REC.time=rmfield(REC.time,'roi');
+        %                 %                 end
+        %                 %             end
+        %                 if HIDE_FIG == 1
+        %                     HideFig(false);
+        %                 end
+        %             else
+        %                 if (BuffOverride.ND == NumDelays)==false
+        %                     if isfield(REC.time,'roi'), REC.time=rmfield(REC.time,'roi'); end
+        %                     BuffOverride.ND = NumDelays;
+        %                     if HIDE_FIG == 1
+        %                         HideFig(false);
+        %                     end
+        %                 else
+        %                     nREC = REC;
+        %                     load([res_path,filename,'_', 'REC'],'REC')
+        %                     nREC.time.roi = REC.time.roi;
+        %                     clearvars REC; REC = nREC; clearvars nREC
+        %                     if HIDE_FIG == 1
+        %                         HideFig(true);
+        %                     end
+        %
+        %                 end
+        %             end
+        %         end
+    else
+        warning('Parameter P(ND).Value not in override. Default value will be used');
+    end % number of delays
     
     % Load Jacobian
     if exist('LJ','var')
@@ -66,11 +142,16 @@ if exist('isComingFromInterface','var')
             if iL == 1
                 REC.solver.prejacobian.load = false;
                 BuffOverride.MuaB = REC.opt.mua0;
+                BuffOverride.NumDelays = NumDelays;
+                if isfield(REC.time,'Roi'), BuffOverride.Roi = REC.time.roi; end
                 BuffOverride.MusB = REC.opt.musp0;
             else
-                if (BuffOverride.MuaB == REC.opt.mua0 && BuffOverride.MusB == REC.opt.musp0)==false
+                if ~isfield(BuffOverride,'Roi'), BuffOverride.Roi = [0 0]; end
+                if (BuffOverride.MuaB == REC.opt.mua0 && BuffOverride.MusB == REC.opt.musp0 && BuffOverride.NumDelays == NumDelays && all(BuffOverride.Roi == REC.time.roi))==false
+                    BuffOverride.NumDelays = NumDelays;
                     BuffOverride.MuaB = REC.opt.mua0;
                     BuffOverride.MusB = REC.opt.musp0;
+                    BuffOverride.Roi = REC.time.roi;
                     REC.solver.prejacobian.load = false;
                 else
                     REC.solver.prejacobian.load = true;
@@ -81,7 +162,7 @@ if exist('isComingFromInterface','var')
         warning('Parameter P(LJ).Value not in override. Default value will be used');
     end
     
-    % Load Jacobian
+    % Load Forward
     if exist('LF','var')
         if eval('P(LF).Value') == 0
             LOAD_FWD_TEO = false;
