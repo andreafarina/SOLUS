@@ -19,13 +19,8 @@
 
 %clearvars;
 if ~any(strcmpi(fileparts([mfilename('fullpath') '.m']),regexp(path, pathsep, 'split')))
-    cd('../')
-    run('DOT_install.m')
-    cd('./example')
+    disp('Path are not set! Run DOT_install.m');
 end
-cd(fileparts([mfilename('fullpath') '.m']))
-cd('../example')
-
     
 close all;
 
