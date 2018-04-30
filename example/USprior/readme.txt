@@ -1,0 +1,1 @@
+In this example an absorbing perturbation derived from a pre-saved US mask is placed and a linear reconstruction using a structured-laplacian Tikhonov regularization is performed.

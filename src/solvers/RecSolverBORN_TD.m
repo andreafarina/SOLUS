@@ -237,7 +237,7 @@ end
 %==========================================================================
 %%                        Add update to solution
 %==========================================================================
-if ~isempty(solver.prior)
+if ~isempty(solver.prior.refimage)
     dx = D * dx;
 end
 x = x + dx;

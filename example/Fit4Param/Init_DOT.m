@@ -28,15 +28,15 @@ RADIOMETRY = 1;         % apply radiometric inputs to simulated data
 % -------------------------------------------------------------------------
 SAVE_FWD = 1;           % Save forward data (possibly with noise) 
                         % in a _Data.m file
-LOAD_FWD_TEO = 1;       % if 0: save the raw TPSF(un-noisy) in a _FwdTeo.m file.
+LOAD_FWD_TEO = 0;       % if 0: save the raw TPSF(un-noisy) in a _FwdTeo.m file.
                         % if 1: load the raw TPSF for speed up
 % -------------------------------------------------------------------------
 TOAST2DOT = 0;          % if 1 the function toast2dot is used for conversion 
 % ========================================================================= 
 %% ====================== VOLUME DEFINITION ===============================
 %% Background optical properties
-DOT.opt.muaB = 0.01;    % mm-1
-DOT.opt.muspB = 1;      % mm-1
+DOT.opt.muaB = 0.0036;    % mm-1
+DOT.opt.muspB = 1.05;      % mm-1
 DOT.opt.nB = 1.4;       % internal refractive index   
 DOT.opt.nE = 1.;        % external refractive index
 %==========================================================================
@@ -59,15 +59,15 @@ DOT.grid.dz = DOT.grid.dx;
 NUM_HETE = 1;
 %--------------------------- INCLUSION 1 ---------------------------------%
 DOT.opt.hete1.type  = 'Mua';
-DOT.opt.hete1.geometry = 'sphere';
-DOT.opt.hete1.c     = [10, 5, 10];   % down
+DOT.opt.hete1.geometry = 'usimage';
+DOT.opt.hete1.c     = [10, 5, 15];   % down
 % DOT.opt.hete1.d     = [0, 0, -1];   % down
 % DOT.opt.hete1.l     = 20;
 DOT.opt.hete1.sigma = 5;
 DOT.opt.hete1.distrib = 'OFF';
 DOT.opt.hete1.profile = 'Gaussian';%'Step';%'Gaussian';
-DOT.opt.hete1.val   = 5 * DOT.opt.muaB;
-DOT.opt.hete1.path ='../3DMasks/Mask3D_Mask_malignant_4.mat' ;   % down
+DOT.opt.hete1.val   = 2 * DOT.opt.muaB;
+DOT.opt.hete1.path ='../../3DMasks/benign_2.mat';%sphMask.mat'%Bmode_FieldII_3D.mat';   % down
 
 %--------------------------- INCLUSION 2 ---------------------------------%
 % DOT.opt.hete2.type  = 'Mua';
@@ -84,15 +84,15 @@ DOT.opt.hete1.path ='../3DMasks/Mask3D_Mask_malignant_4.mat' ;   % down
 %==========================================================================
 %%                         Time domain parameters
 %==========================================================================
-DOT.time.dt = (50e3/1024/4);        % time step in picoseconds
-DOT.time.nstep = 400;               % number of temporal steps
-DOT.time.noise = 'Poisson';         % 'Poisson','Gaussian','none'
+DOT.time.dt = 50;%(50e3/1024/4);        % time step in picoseconds
+DOT.time.nstep = 60;               % number of temporal steps
+DOT.time.noise = 'none';         % 'Poisson','Gaussian','none'
                                     % if 'Poisson' and sigma>0 a
                                     % Gaussian noise is added before
                                     % Poisson noise.
 DOT.time.sigma = 1e-3;              % variance for gaussian noise
 DOT.time.self_norm = false;         % true for self-normalized TPSF
-DOT.time.TotCounts = 1e6;           % total counts for the maximum-energy
+DOT.time.TotCounts = 1e20;           % total counts for the maximum-energy
                                     % TPSF. The other are consequently
                                     % rescaled
 %==========================================================================
