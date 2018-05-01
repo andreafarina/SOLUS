@@ -11,8 +11,10 @@ geom = 'semi-inf';
 % -------------------------------------------------------------------------
 nQM = sum(dmask(:));
 nwin = size(twin,1);
+% -------------------------------------------------------------------------
+[p,type] = ExtractVariables(solver.variables);
 Jacobian = @(mua, mus) JacobianTD (grid, Spos, Dpos, dmask, mua, mus, n, A, ...
-    dt, nstep, twin, irf, geom);
+    dt, nstep, twin, irf, geom,type);
 %% Inverse solver
 % homogeneous forward model
 [proj, Aproj] = ForwardTD(grid,Spos, Dpos, dmask, mua0, mus0, n, ...
@@ -63,7 +65,8 @@ data(mask) = [];
 
 %sd(mask) = [];
 % solution vector
-x = ones(grid.N,1) * mua0;
+x0 = PrepareX0([mua0,1./(3*mus0)],grid.N,type);
+x = ones(size(x0));
 
 dphi = (data(:)-ref(:))./sd(~mask);%./ref(:);
 %sd = proj(:);
@@ -88,13 +91,6 @@ else
     toc;
 end
 
-% translate the spatial structure into 2 binary complementary masks
-% if ~isempty(solver.prior)
-%     d1 = (solver.prior(:) > 0 )&(solver.prior(:)==min(solver.prior(:)));
-%     d2 = (solver.prior(:) > min(solver.prior(:)))&(solver.prior(:)==max(solver.prior(:)));
-%     D = [d1(:),d2(:)];
-%     J = J * D;
-% end
 if self_norm == true
     for i=1:nQM
         sJ = sum(J((1:nwin)+(i-1)*nwin,:));
@@ -106,11 +102,9 @@ end
 
 J = spdiags(1./sd(:),0,numel(sd),numel(sd)) * J;  % data normalisation
 nsol = size(J,2);
-%   parameter normalisation (map to log)
-%     for i = 1:p
-%         J(:,i) = J(:,i) * x(i);
-%     end
-%proj(mask) = [];
+%   parameter normalisation (scale x0)
+J = J * spdiags(x0,0,length(x0),length(x0));
+   
 J(mask,:) = [];
 
 
@@ -125,7 +119,7 @@ s = svd(J);
 alpha = solver.tau*s(1) %#ok<NOPRT>
 %dx = [J;(alpha)*speye(nsol)]\[dphi;zeros(nsol,1)];
 %dx = [J;(alpha)*L]\[dphi;zeros(3*nsol,1)];
-dx = lsqr([J;alpha*L],[dphi;zeros(3*nsol,1)],1e-6,1000);
+dx = lsqr([J;repmat(alpha*L,1,p)],[dphi;zeros(3*nsol/p,1)],1e-6,1000);
 %dx = lsqr([J;alpha*speye(nsol)],[dphi;zeros(nsol,1)],1e-6,100);
 %==========================================================================
 %%                        Add update to solution
@@ -134,9 +128,8 @@ dx = lsqr([J;alpha*L],[dphi;zeros(3*nsol,1)],1e-6,1000);
 x = x + dx;
 %logx = logx + dx;
 %x = exp(logx);
-
-bmua = x;
-bmus = ones(size(bmua)) * mus0;
+x = x.*x0;
+[bmua,bmus] = XtoMuaMus(x,mua0,mus0,type);
 
 
 end

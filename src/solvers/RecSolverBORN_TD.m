@@ -146,9 +146,6 @@ nsol = size(J,2);
 %   parameter normalisation (scale x0)
 J = J * spdiags(x0,0,length(x0),length(x0));
     
-% ------- to solve only for mua uncomment the following sentence ----------
-%J(:,nsol+(1:nsol)) = 0;
-%proj(mask) = [];
 J(mask,:) = [];
 
 %% Solver 

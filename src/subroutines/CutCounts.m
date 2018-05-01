@@ -26,7 +26,7 @@ function [factor,y,std] = CutCounts(ch,dt,data,MaxCount,radiometry,...
 %dt = t(2)-t(1); % assimung uniform sampling of the time axis
 t = ch * dt;
 
-verbosity = 1;
+verbosity = 0;
 %% remodulate MaxCounts accordingly to the number of delays
 if modality == 1
     MaxCount = MaxCount/NumDelay;
@@ -85,7 +85,7 @@ switch modality
         std = sqrt(y);%bsxfun(@times, sqrt(y1), (factor(idz)./factor'));
         
         if verbosity == 1
-            figure(1)%,subplot(2,2,2),semilogy(t,y1),title('sliced')
+            figure%,subplot(2,2,2),semilogy(t,y1),title('sliced')
             subplot(2,2,3),semilogy(t,y,'b',t,std,'r'),
             title('reconstructed'),legend('recon','sigma');
             subplot(2,2,4),plot(t,factor),title('factor')

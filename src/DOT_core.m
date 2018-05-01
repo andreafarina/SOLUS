@@ -579,9 +579,9 @@ tilefigs;
 disp('recon: finished')
 figure,
 subplot(1,2,1),PlotHeteQM(REC,reshape(REC.opt.bmua,REC.grid.dim),REC.opt.mua0),
-title('Mua');
+title('Recon Mua');
 subplot(1,2,2),PlotHeteQM(REC,reshape(REC.opt.bmusp,REC.grid.dim),REC.opt.musp0),
-title('Mus');
+title('Recon Mus');
 
 drawnow;
 %% Save reconstruction

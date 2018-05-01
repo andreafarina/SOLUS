@@ -42,16 +42,16 @@ DOT.opt.nE = 1.;        % external refractive index
 %==========================================================================
 %%                                  SET GRID
 %==========================================================================
-DOT.grid.x1 = -32;
-DOT.grid.x2 = 32;
-DOT.grid.dx = 2;
+DOT.grid.x1 = -40;
+DOT.grid.x2 = 40;
+DOT.grid.dx = 4;
 
-DOT.grid.y1 = -29;
-DOT.grid.y2 = 29;           
+DOT.grid.y1 = -60;
+DOT.grid.y2 = 60;           
 DOT.grid.dy = DOT.grid.dx;
 
 DOT.grid.z1 = 0;        
-DOT.grid.z2 = 32;         
+DOT.grid.z2 = 40;         
 DOT.grid.dz = DOT.grid.dx;
 %==========================================================================
 %%                      Set Heterogeneities
