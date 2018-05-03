@@ -13,7 +13,7 @@ LOAD_JACOBIAN = solver.prejacobian.load;      % Load a precomputed Jacobian
 geom = 'semi-inf';
 %% REGULARIZATION PARAMETER CRITERION
 NORMDIFF = 'sd';   % 'ref', 'sd'
-REGU = 'external'; % 'lcurve', 'gcv', 'external'
+REGU = 'lcurve'; % 'lcurve', 'gcv', 'external'
 BACKSOLVER = 'tikh'; % 'tikh', 'tsvd', 'discrep','simon', 'gmres', 'pcg', 'lsqr'
 % -------------------------------------------------------------------------
 nQM = sum(dmask(:));

@@ -565,12 +565,12 @@ end
 
 % ---------------------------- display mua --------------------------------
 drawnow;
-figure(304);
+h = figure;h.NumberTitle = 'off';h.Name = 'Recon Mua';
 ShowRecResults(REC.grid,reshape(REC.opt.bmua,REC.grid.dim),...
    REC.grid.z1,REC.grid.z2,REC.grid.dz,1,'auto',0.00,0.05);
 suptitle('Recon Mua');
 % ---------------------------- display musp -------------------------------
-figure(305);
+h = figure;h.NumberTitle = 'off';h.Name = 'Recon Mus';
 ShowRecResults(REC.grid,reshape(REC.opt.bmusp,REC.grid.dim),...
    REC.grid.z1,REC.grid.z2,REC.grid.dz,1,'auto');%,0.,0.64);
 suptitle('Recon Mus');
