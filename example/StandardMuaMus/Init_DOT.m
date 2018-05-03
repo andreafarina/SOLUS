@@ -10,7 +10,7 @@ RECONSTRUCTION = 1;     % Enable the reconstruction section.
 EXPERIMENTAL = 1;       % Enable experimental options below
 EXP_IRF = 1;            % Use the experimental IRF for forward and 
                         % reconstruction.
-EXP_DELTA = 'delta';      % Substitute the IRF with delta function on the 
+EXP_DELTA = 'all';      % Substitute the IRF with delta function on the 
                         % baricenter ('baric') or peak ('peak') of the IRF.
                         % 'all' to use the experimental IRF.                    
 EXP_DATA = 0;           % Load experimental data and use them for 
@@ -91,7 +91,7 @@ DOT.time.noise = 'Poisson';         % 'Poisson','Gaussian','none'
                                     % if 'Poisson' and sigma>0 a
                                     % Gaussian noise is added before
                                     % Poisson noise.
-DOT.time.sigma = 0;%1e-3;              % variance for gaussian noise
+DOT.time.sigma = 1e-3;              % variance for gaussian noise
 DOT.time.self_norm = false;         % true for self-normalized TPSF
 DOT.time.TotCounts = 1e6;           % total counts for the maximum-energy
                                     % TPSF. The other are consequently
