@@ -35,8 +35,10 @@ jacfile = 'J';
 bdim = (grid.dim);
 nQM = sum(dmask(:));
 nwin = size(twin,1);
+% -------------------------------------------------------------------------
+[p,type] = ExtractVariables(solver.variables);
 Jacobian = @(mua, mus) JacobianTD (grid, Spos, Dpos, dmask, mua, mus, n, A, ...
-    dt, nstep, twin, irf, geom);
+    dt, nstep, twin, irf, geom,type);
 %% Inverse solver
 [proj, Aproj] = ForwardTD(grid,Spos, Dpos, dmask, mua0, mus0, n, ...
                 [],[], A, dt, nstep, self_norm,...
@@ -81,9 +83,9 @@ data(mask) = [];
 
 %sd(mask) = [];
 % solution vector
-x = ones(grid.N,1) * mua0; 
-x0 = x;
-p = length(x);
+x0 = PrepareX0([mua0,1./(3*mus0)],grid.N,type);
+x = ones(size(x0));
+
 dphi = (data(:)-ref(:))./sd(~mask);%./ref(:);
 %dphi = log(data(:)) - log(ref(:));
 %save('dphi','dphi');
@@ -108,12 +110,12 @@ else
 end
 
 
-if ~isempty(solver.prior)
-    d1 = (solver.prior(:) > 0 )&(solver.prior(:)==min(solver.prior(:)));
-    d2 = (solver.prior(:) > min(solver.prior(:)))&(solver.prior(:)==max(solver.prior(:)));
-    D = [d1(:),d2(:)];
-    J = J * D;
-end
+% if ~isempty(solver.prior.refimage)
+%     d1 = (solver.prior.refimage(:) > 0 )&(solver.prior.refimage(:)==min(solver.prior.refimage(:)));
+%     d2 = (solver.prior.refimage(:) > min(solver.prior.refimage(:)))&(solver.prior.refimage(:)==max(solver.prior.refimage(:)));
+%     D = [d1(:),d2(:)];
+%     J = J * D;
+% end
 if self_norm == true
     for i=1:nQM
         sJ = sum(J((1:nwin)+(i-1)*nwin,:));
@@ -125,13 +127,11 @@ end
 
 J = spdiags(1./sd(:),0,numel(sd),numel(sd)) * J;  % data normalisation
 nsol = size(J,2);
-%   parameter normalisation (map to log)
-%     for i = 1:p
-%         J(:,i) = J(:,i) * x(i);
-%     end
-% ------- to solve only for mua uncomment the following sentence ----------
-%J(:,nsol+(1:nsol)) = 0;
-proj(mask) = [];
+%   parameter normalisation (scale x0)
+J = J * spdiags(x0,0,length(x0),length(x0));
+
+
+%proj(mask) = [];
 J(mask,:) = [];
 
 %% now ISTA (slow!)
@@ -236,8 +236,7 @@ end
 x = x + dx;
 %logx = logx + dx;
 %x = exp(logx);
-
-bmua = x;
-bmus = ones(size(bmua)) * mus0;
+x = x.*x0;
+[bmua,bmus] = XtoMuaMus(x,mua0,mus0,type);
 
 end

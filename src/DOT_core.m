@@ -9,7 +9,7 @@
 % Absorption only reconstruction.                                       %
 % Possibility to load an a-priori dictionary matrix (see row 526).      % 
 % L1 ISTA reconstruction is implemented.
-% Structural priors regularization is implemented
+% Laplacian Structured priors regularization is implemented
 % Regularization parameter criteria: L-curve, gcv, manual.              %
 % Solver: Tickhonov, Truncated SVD, pcg, gmres                          %
 %                                                                       %
