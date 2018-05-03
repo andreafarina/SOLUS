@@ -10,7 +10,7 @@ RECONSTRUCTION = 1;     % Enable the reconstruction section.
 EXPERIMENTAL = 1;       % Enable experimental options below
 EXP_IRF = 1;            % Use the experimental IRF for forward and 
                         % reconstruction.
-EXP_DELTA = 'all';      % Substitute the IRF with delta function on the 
+EXP_DELTA = 'delta';      % Substitute the IRF with delta function on the 
                         % baricenter ('baric') or peak ('peak') of the IRF.
                         % 'all' to use the experimental IRF.                    
 EXP_DATA = 0;           % Load experimental data and use them for 
@@ -35,8 +35,8 @@ TOAST2DOT = 0;          % if 1 the function toast2dot is used for conversion
 % ========================================================================= 
 %% ====================== VOLUME DEFINITION ===============================
 %% Background optical properties
-DOT.opt.muaB = 0.01;    % mm-1
-DOT.opt.muspB = 1;      % mm-1
+DOT.opt.muaB = 0.0036;    % mm-1
+DOT.opt.muspB = 1.05;      % mm-1
 DOT.opt.nB = 1.4;       % internal refractive index   
 DOT.opt.nE = 1.;        % external refractive index
 %==========================================================================
@@ -44,10 +44,10 @@ DOT.opt.nE = 1.;        % external refractive index
 %==========================================================================
 DOT.grid.x1 = -32;
 DOT.grid.x2 = 32;
-DOT.grid.dx = 2;
+DOT.grid.dx = 4;
 
-DOT.grid.y1 = -29;
-DOT.grid.y2 = 29;           
+DOT.grid.y1 = -28;
+DOT.grid.y2 = 28;           
 DOT.grid.dy = DOT.grid.dx;
 
 DOT.grid.z1 = 0;        
@@ -56,30 +56,31 @@ DOT.grid.dz = DOT.grid.dx;
 %==========================================================================
 %%                      Set Heterogeneities
 %==========================================================================
-NUM_HETE = 1;
+NUM_HETE = 2;
 %--------------------------- INCLUSION 1 ---------------------------------%
-DOT.opt.hete1.type  = 'Mua';
-DOT.opt.hete1.geometry = 'sphere';
-DOT.opt.hete1.c     = [10, 5, 10];   % down
+DOT.opt.hete1.type  = 'Musp';
+DOT.opt.hete1.geometry = 'usimage';
+DOT.opt.hete1.c     = [3, 4, 15];   % down
 % DOT.opt.hete1.d     = [0, 0, -1];   % down
 % DOT.opt.hete1.l     = 20;
 DOT.opt.hete1.sigma = 5;
 DOT.opt.hete1.distrib = 'OFF';
 DOT.opt.hete1.profile = 'Gaussian';%'Step';%'Gaussian';
-DOT.opt.hete1.val   = 5 * DOT.opt.muaB;
-DOT.opt.hete1.path ='../3DMasks/Mask3D_Mask_malignant_4.mat' ;   % down
+DOT.opt.hete1.val   = 2 * DOT.opt.muspB;
+DOT.opt.hete1.path ='../../3DMasks/benign_2.mat' ;   % down
 
 %--------------------------- INCLUSION 2 ---------------------------------%
-% DOT.opt.hete2.type  = 'Mua';
-% DOT.opt.hete2.geometry = 'Sphere';
-% DOT.opt.hete2.c     = [5, 20, 5];   % down
-% DOT.opt.hete2.d     = [ 1, 0, 0];   % down
-% % DOT.opt.hete.d     = (M * [0, 0, -1]')';   % down
-% % DOT.opt.hete.l     = 20;
-% DOT.opt.hete2.sigma = 5;
-% DOT.opt.hete2.distrib = 'OFF';
-% DOT.opt.hete2.profile = 'Gaussian';%'Gaussian';
-% DOT.opt.hete2.val   = 2 * DOT.opt.muaB;
+DOT.opt.hete2.type  = 'Mua';
+DOT.opt.hete2.geometry = 'usimage';
+DOT.opt.hete2.c     = [3, 4, 15];   % down
+% DOT.opt.hete1.d     = [0, 0, -1];   % down
+% DOT.opt.hete1.l     = 20;
+DOT.opt.hete2.sigma = 5;
+DOT.opt.hete2.distrib = 'OFF';
+DOT.opt.hete2.profile = 'Gaussian';%'Step';%'Gaussian';
+DOT.opt.hete2.val   = 2 * DOT.opt.muaB;
+DOT.opt.hete2.path ='../../3DMasks/benign_2.mat' ;   % down
+
 
 %==========================================================================
 %%                         Time domain parameters
@@ -90,7 +91,7 @@ DOT.time.noise = 'Poisson';         % 'Poisson','Gaussian','none'
                                     % if 'Poisson' and sigma>0 a
                                     % Gaussian noise is added before
                                     % Poisson noise.
-DOT.time.sigma = 1e-3;              % variance for gaussian noise
+DOT.time.sigma = 0;%1e-3;              % variance for gaussian noise
 DOT.time.self_norm = false;         % true for self-normalized TPSF
 DOT.time.TotCounts = 1e6;           % total counts for the maximum-energy
                                     % TPSF. The other are consequently
