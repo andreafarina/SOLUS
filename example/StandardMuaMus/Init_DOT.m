@@ -44,7 +44,7 @@ DOT.opt.nE = 1.;        % external refractive index
 %==========================================================================
 DOT.grid.x1 = -32;
 DOT.grid.x2 = 32;
-DOT.grid.dx = 2;
+DOT.grid.dx = 4;
 
 DOT.grid.y1 = -29;
 DOT.grid.y2 = 29;           
@@ -56,30 +56,31 @@ DOT.grid.dz = DOT.grid.dx;
 %==========================================================================
 %%                      Set Heterogeneities
 %==========================================================================
-NUM_HETE = 1;
+NUM_HETE = 2;
 %--------------------------- INCLUSION 1 ---------------------------------%
-DOT.opt.hete1.type  = 'Mua';
+DOT.opt.hete1.type  = 'Musp';
 DOT.opt.hete1.geometry = 'sphere';
-DOT.opt.hete1.c     = [10, 5, 10];   % down
+DOT.opt.hete1.c     = [3, 4, 15];   % down
 % DOT.opt.hete1.d     = [0, 0, -1];   % down
 % DOT.opt.hete1.l     = 20;
 DOT.opt.hete1.sigma = 5;
 DOT.opt.hete1.distrib = 'OFF';
 DOT.opt.hete1.profile = 'Gaussian';%'Step';%'Gaussian';
-DOT.opt.hete1.val   = 5 * DOT.opt.muaB;
-DOT.opt.hete1.path ='../3DMasks/Mask3D_Mask_malignant_4.mat' ;   % down
+DOT.opt.hete1.val   = 2 * DOT.opt.muspB;
+DOT.opt.hete1.path ='../3DMasks/Mask3d_mus1_05-1_56_malignant_3.mat' ;   % down
 
 %--------------------------- INCLUSION 2 ---------------------------------%
-% DOT.opt.hete2.type  = 'Mua';
-% DOT.opt.hete2.geometry = 'Sphere';
-% DOT.opt.hete2.c     = [5, 20, 5];   % down
-% DOT.opt.hete2.d     = [ 1, 0, 0];   % down
-% % DOT.opt.hete.d     = (M * [0, 0, -1]')';   % down
-% % DOT.opt.hete.l     = 20;
-% DOT.opt.hete2.sigma = 5;
-% DOT.opt.hete2.distrib = 'OFF';
-% DOT.opt.hete2.profile = 'Gaussian';%'Gaussian';
-% DOT.opt.hete2.val   = 2 * DOT.opt.muaB;
+DOT.opt.hete2.type  = 'Mua';
+DOT.opt.hete2.geometry = 'sphere';
+DOT.opt.hete2.c     = [3, 4, 15];   % down
+% DOT.opt.hete1.d     = [0, 0, -1];   % down
+% DOT.opt.hete1.l     = 20;
+DOT.opt.hete2.sigma = 5;
+DOT.opt.hete2.distrib = 'OFF';
+DOT.opt.hete2.profile = 'Gaussian';%'Step';%'Gaussian';
+DOT.opt.hete2.val   = 2 * DOT.opt.muaB;
+DOT.opt.hete2.path ='../3DMasks/Mask3d_mus1_05-1_56_malignant_3.mat' ;   % down
+
 
 %==========================================================================
 %%                         Time domain parameters

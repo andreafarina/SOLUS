@@ -9,7 +9,7 @@
 % Absorption only reconstruction.                                       %
 % Possibility to load an a-priori dictionary matrix (see row 526).      % 
 % L1 ISTA reconstruction is implemented.
-% Structural priors regularization is implemented
+% Laplacian Structured priors regularization is implemented
 % Regularization parameter criteria: L-curve, gcv, manual.              %
 % Solver: Tickhonov, Truncated SVD, pcg, gmres                          %
 %                                                                       %
@@ -18,8 +18,11 @@
 
 
 %clearvars;
-if ~any(strcmpi(fileparts([mfilename('fullpath') '.m']),regexp(path, pathsep, 'split')))
-    disp('Path are not set! Run DOT_install.m');
+if ~any(strcmpi([fileparts(mfilename('fullpath')) '\solvers'],regexp(path, pathsep, 'split')))
+    ComingFrom = cd; cd(fileparts([mfilename('fullpath') '.m'])); cd('../');
+    disp('Path are not set! DOT_install.m will be run');
+    run('DOT_install');
+    cd(ComingFrom);
 end
     
 close all;
@@ -135,7 +138,8 @@ end
 figure, imagesc(DOT.dmask),xlabel('Sources'),ylabel('Meas'), axis image,title('Dmask');
 
 % plot source-detectors and heterogeneities
-figure,PlotHeteQM(DOT,DOT.opt.Mua,DOT.opt.muaB)
+subplot(1,2,1),PlotHeteQM(DOT,DOT.opt.Mua,DOT.opt.muaB),title('Mua');
+subplot(1,2,2),PlotHeteQM(DOT,DOT.opt.Musp,DOT.opt.muspB),title('Musp');
 drawnow;
 %==========================================================================
 % The structure DOT contains all geometrical parameters needed also for 
@@ -440,13 +444,13 @@ if isfield(REC.opt,'Mua')
     suptitle('Mua');
 end
 % ------------------------ Reference musp ---------------------------------
-% if isfield(REC.opt,'Musp')
-%     figure(302);
-%     ShowRecResults(REC.grid,REC.opt.Musp,...
-%         REC.grid.z1,REC.grid.z2,REC.grid.dz,1,...
-%         0,max(REC.opt.Musp(:)));
-%     suptitle('Mus');
-% end
+if isfield(REC.opt,'Musp')
+    figure(302);
+    ShowRecResults(REC.grid,REC.opt.Musp,...
+        REC.grid.z1,REC.grid.z2,REC.grid.dz,1,...
+        'auto',0,max(REC.opt.Mua(:)));
+    suptitle('Mus');
+end
 % =========================================================================
 %%                      Reconstruction Solver
 % =========================================================================
@@ -564,19 +568,24 @@ end
 
 % ---------------------------- display mua --------------------------------
 drawnow;
-figure(304);
+h = figure;h.NumberTitle = 'off';h.Name = 'Recon Mua';
 ShowRecResults(REC.grid,reshape(REC.opt.bmua,REC.grid.dim),...
    REC.grid.z1,REC.grid.z2,REC.grid.dz,1,'auto',0.00,0.05);
 suptitle('Recon Mua');
 % ---------------------------- display musp -------------------------------
-% figure(305);
-% ShowRecResults(REC.grid,reshape(REC.opt.bmusp,REC.grid.dim),...
-%    REC.grid.z1,REC.grid.z2,REC.grid.dz,1);%,0.,0.64);
-% suptitle('Recon Mus');
+h = figure;h.NumberTitle = 'off';h.Name = 'Recon Mus';
+ShowRecResults(REC.grid,reshape(REC.opt.bmusp,REC.grid.dim),...
+   REC.grid.z1,REC.grid.z2,REC.grid.dz,1,'auto');%,0.,0.64);
+suptitle('Recon Mus');
 drawnow;
 tilefigs;
 disp('recon: finished')
-figure,PlotHeteQM(REC,reshape(REC.opt.bmua,REC.grid.dim),REC.opt.mua0);
+figure,
+subplot(1,2,1),PlotHeteQM(REC,reshape(REC.opt.bmua,REC.grid.dim),REC.opt.mua0),
+title('Recon Mua');
+subplot(1,2,2),PlotHeteQM(REC,reshape(REC.opt.bmusp,REC.grid.dim),REC.opt.musp0),
+title('Recon Mus');
+
 drawnow;
 %% Save reconstruction
 if ~strcmpi(REC.solver.type,'fit')
