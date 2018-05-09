@@ -18,8 +18,10 @@ BACKSOLVER = 'tikh'; % 'tikh', 'tsvd', 'discrep','simon', 'gmres', 'pcg', 'lsqr'
 % -------------------------------------------------------------------------
 nQM = sum(dmask(:));
 nwin = size(twin,1);
+% -------------------------------------------------------------------------
+[p,type] = ExtractVariables(solver.variables);
 Jacobian = @(mua, mus) JacobianTD (grid, Spos, Dpos, dmask, mua, mus, n, A, ...
-    dt, nstep, twin, irf, geom);
+    dt, nstep, twin, irf, geom,type);
 %% self normalise
 if self_norm == true
         data = data * spdiags(1./sum(data)',0,nQM,nQM);
@@ -44,32 +46,7 @@ proj = proj(:);
 ref = ref(:);
 data = data(:);
 factor = proj./ref;
-%load('factor_ref.mat')
-%factor2 = factor;
-%clear factor
-%factor = 1;
-%factor = repmat(factor,[nwin 1]);
 factor = factor(:);
-%% Plot FIG
-% nx=sqrt(nsd);
-% figure,
-% matref=reshape(ref,ntwin,nsd);
-% matdata=reshape(data,ntwin,nsd);
-% matproj=reshape(proj,ntwin,nsd);
-% figure,semilogy(matref), title('sumref');
-% figure,semilogy(matdata), title('sumdata');
-% figure,semilogy(matproj), title('sumproj');
-% figure,semilogy(matdata./matref), title('ratio ref/data');
-% CWref=sum(matref,1); CWref=reshape(CWref,nx,nx);
-% CWdata=sum(matdata,1); CWdata=reshape(CWdata,nx,nx);
-% figure,
-% subplot(1,3,1), imagesc(CWref);
-% subplot(1,3,2), imagesc(CWdata);
-% subplot(1,3,3), imagesc(CWdata./CWref);
-% figure,
-% subplot(1,3,1), pcolor(CWref), shading interp;
-% subplot(1,3,2), pcolor(CWdata), shading interp;
-% subplot(1,3,3), pcolor(CWdata./CWref), shading interp;
 
 
 data = data .* factor;
@@ -94,7 +71,8 @@ data(mask) = [];
 
 %sd(mask) = [];
 % solution vector
-x = ones(grid.N,1) * mua0; 
+x0 = PrepareX0([mua0,1./(3*mus0)],grid.N,type);
+x = ones(size(x0));
 
 if strcmpi(NORMDIFF,'sd'), dphi = (data(:)-ref(:))./sd(~mask); end
 if strcmpi(NORMDIFF,'ref'), dphi = (data(:)-ref(:))./ref(:); end
@@ -145,13 +123,9 @@ end
 if strcmpi(NORMDIFF,'sd'), J = spdiags(1./sd(:),0,numel(sd),numel(sd)) * J;  end % data normalisation
 if strcmpi(NORMDIFF,'ref'), J = spdiags(1./proj(:),0,numel(proj),numel(proj)) * J;  end % data normalisation
 nsol = size(J,2);
-%   parameter normalisation (map to log)
-%     for i = 1:p
-%         J(:,i) = J(:,i) * x(i);
-%     end
-% ------- to solve only for mua uncomment the following sentence ----------
-%J(:,nsol+(1:nsol)) = 0;
-%proj(mask) = [];
+%   parameter normalisation (scale x0)
+J = J * spdiags(x0,0,length(x0),length(x0));
+    
 J(mask,:) = [];
 
 %% Solver 
@@ -243,9 +217,9 @@ end
 x = x + dx;
 %logx = logx + dx;
 %x = exp(logx);
+x = x.*x0;
+[bmua,bmus] = XtoMuaMus(x,mua0,mus0,type);
 
-bmua = x;
-bmus = ones(size(bmua)) * mus0;
 
 end
 

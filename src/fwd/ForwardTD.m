@@ -8,6 +8,8 @@ Nopt = sum(dmask(:));
 phi = zeros(nstep,Nopt);
 t = (1:nstep) * dt;
 t = t';
+DiffB = 1./(3*muspB);
+Diff = 1./(3*Musp);
 disp(['calculating Forward(',type,', ',geom,')']);
 
 switch lower(type)
@@ -60,8 +62,8 @@ switch lower(type)
                     for jj=1:numel(ind_d)
                         m = ind_d(jj);
                         phi(row_off + (1:nstep)) = SemiInfinite_TR(t, Spos(i,:), Dpos(m,:),muaB,muspB,v,A) + ... 
-                        J_Semi_Inf_PCBC_TR_3D(t, muaB,muspB,v,A,Spos(i,:),Dpos(m,:),XX,YY,ZZ,...
-                            grid.dV) * (Mua(:) - muaB);
+                        J_Semi_Inf_PCBC_TR_3D_muaD(t, muaB,muspB,v,A,Spos(i,:),Dpos(m,:),XX,YY,ZZ,...
+                            grid.dV) * [(Mua(:) - muaB);(Diff(:) - DiffB)];
                         row_off = row_off + nstep;
                     end
                 end
