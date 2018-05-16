@@ -39,7 +39,7 @@ if exist('isComingFromInterface','var')
     % Inclusion 2
     if NUM_HETE > 1
         if exist('INCTYPE2','var'), DOT.opt.hete2.type = eval('P(INCTYPE2).Value'); else, warning('Parameter P(INCTYPE2).Value not in override. Default value will be used'); end           % type of the inclusion
-        if exist('XP2','var'), DOT.opt.hete2.c = eval('[P(XP2).Value, P(YP2).Value, P(ZP2).Value]'); else, warning('Parameter P(XP2).Value not in override. Default value will be used'); end           % down
+        if exist('XP2','var'), DOT.opt.hete2.c = eval('[P(XP1).Value, P(YP1).Value, P(ZP1).Value]'); else, warning('Parameter P(XP2).Value not in override. Default value will be used'); end           % down
         if exist('SIG2','var'), DOT.opt.hete2.sigma = eval('P(SIG2).Value'); else, warning('Parameter P(SIG).Value not in override. Default value will be used'); end
         if exist('PROFILE2','var'), DOT.opt.hete2.profile = eval('P(PROFILE2).Value'); else, warning('Parameter P(PROFILE2).Value not in override. Default value will be used'); end %profile of the inclusion
         if exist('INCPEAKVAL2','var'), DOT.opt.hete2.val = eval('P(INCPEAKVAL2).Value'); else, warning('Parameter P(INCPEAKVAL2).Value not in override. Default value will be used'); end
@@ -74,6 +74,7 @@ if exist('isComingFromInterface','var')
         if REC.solver.prejacobian.load
             if iL == 1
                 REC.solver.prejacobian.load = false;
+                BuffOverride.NumTW = NUM_TW;
                 BuffOverride.JSourcePos = DOT.Source.Pos;
                 BuffOverride.JDetPos = DOT.Detector.Pos;
                 BuffOverride.Jdmask = DOT.dmask;
@@ -84,8 +85,9 @@ if exist('isComingFromInterface','var')
                 BuffOverride.JDOTgrid = DOT.grid;
                 BuffOverride.JDOTtime = DOT.time;
             else
-                if (...
-                        isequaln(BuffOverride.JSourcePos,DOT.Source.Pos)...
+                if (... 
+                        BuffOverride.NumTW == NUM_TW...
+                        && isequaln(BuffOverride.JSourcePos,DOT.Source.Pos)...
                         && isequaln(BuffOverride.JDetPos,DOT.Detector.Pos)...
                         && isequaln(BuffOverride.Jdmask,DOT.dmask)...
                         && BuffOverride.Mua0 == REC.opt.mua0 ...
@@ -95,6 +97,7 @@ if exist('isComingFromInterface','var')
                         && isequaln(BuffOverride.JDOTgrid,DOT.grid)...
                         && isequaln(BuffOverride.JDOTtime,DOT.time)...
                         )==false
+                    BuffOverride.NumTW = NUM_TW;
                     BuffOverride.JSourcePos = DOT.Source.Pos;
                     BuffOverride.JDetPos = DOT.Detector.Pos;
                     BuffOverride.Jdmask = DOT.dmask;

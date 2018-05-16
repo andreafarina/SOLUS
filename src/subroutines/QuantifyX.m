@@ -39,14 +39,15 @@ if ~exist('mxm','var')
     mxm = max(dx_rec3d(:));
 end
 %% Gaussian 3d estimation
+fit_type = 'normal'; % 'normal' or 'gaussian'
 try
-    [COM_REC,COV_REC,TOT_VOL_REC] = Gaussian3D(x,y,z,dx,dy,dz,dx_rec3d,V);
+    [COM_REC,COV_REC,TOT_VOL_REC] = Gaussian3D(x,y,z,dx,dy,dz,dx_rec3d,V,fit_type);
 
 %% compare with reference
 if ref_true == 1
     dx_true3d = xtrue-xB; %% subtract background
     dx_true3d = dx_true3d.*V;
-    [COM_TRUE,COV_TRUE,TOT_VOL_TRUE] = Gaussian3D(x,y,z,dx,dy,dz,dx_true3d,V);
+    [COM_TRUE,COV_TRUE,TOT_VOL_TRUE] = Gaussian3D(x,y,z,dx,dy,dz,dx_true3d,V,fit_type);
 end
 catch ME
     if contains(ME.message,'lsqcurvefit')
@@ -146,10 +147,12 @@ if ref_true == 1
     
     disp(['Relative max error = ',num2str(Q.max.rel_error)]);
     
-    Q.volumeG.true = TOT_VOL_TRUE;
+    if strcmpi(fit_type,'gaussian')
+        Q.volumeG.true = TOT_VOL_TRUE;
+        Q.volumeG.rel_error = (TOT_VOL_REC - TOT_VOL_TRUE)./TOT_VOL_TRUE;
+        disp(['Relative volume (gaussian fit) error = ',num2str(Q.volumeG.rel_error)]);
+    end
     Q.volume.true = DxVolTrue;
-    Q.volumeG.rel_error = (TOT_VOL_REC - TOT_VOL_TRUE)./TOT_VOL_TRUE;
-    disp(['Relative volume (gaussian fit) error = ',num2str(Q.volumeG.rel_error)]);
     Q.volume.rel_error = (DxVolRec-DxVolTrue)/DxVolTrue;
     disp(['Relative volume error = ',num2str(Q.volume.rel_error)]);
     Q.total.rel_error = norm(dx_true3d(:)-dx_rec3d(:))./norm(xrec+dx_true3d(:));

@@ -18,7 +18,7 @@
 
 
 %clearvars;
-if ~any(strcmpi([fileparts(mfilename('fullpath')) '\solvers'],regexp(path, pathsep, 'split')))
+if ~any(strcmpi([fileparts(mfilename('fullpath')) filesep 'solvers'],regexp(path, pathsep, 'split')))
     ComingFrom = cd; cd(fileparts([mfilename('fullpath') '.m'])); cd('../');
     disp('Path are not set! DOT_install.m will be run');
     run('DOT_install');
