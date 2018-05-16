@@ -43,8 +43,9 @@ for i=1:step:N
                      set(gca,'ydir','normal'),
                      xlabel('x(mm)'),ylabel('y(mm)')
                     end
-                     %pcolor(Data(:,:,i)'), shading interp
+%                     pcolor(Data(:,:,i)'), shading interp
               %axis image%,axis xy
+              axis equal;
             
             %end
             %title(['mu_a at z = ' num2str(REC.grid.z(i))]);axis square;colorbar

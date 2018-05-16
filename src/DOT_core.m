@@ -70,10 +70,10 @@ if (EXPERIMENTAL == 1)
     load([exp_path,'EXP_',exp_file])
     % Select measurements by dmask
     if (EXP_DATA == 1)
-        if (size(EXP.data.spc,2)>sum(DOT.dmask))
-            EXP.data.spc = EXP.data.spc(:,DOT.dmask);
-            EXP.data.ref = EXP.data.ref(:,DOT.dmask);
-        end
+%        if (size(EXP.data.spc,2)>sum(DOT.dmask))
+%            EXP.data.spc = EXP.data.spc(:,DOT.dmask);
+%            EXP.data.ref = EXP.data.ref(:,DOT.dmask);
+%        end
     end
 end
 disp(['Experiment file: ',exp_path,'EXP_',exp_file]);
