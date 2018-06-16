@@ -4,6 +4,8 @@
 % ----------------------------- FORWARD -----------------------------------
 FORWARD = 1;            % Simulated forward data and save into _Data file
 REF = 1;                % 1: create also the homogeneous data
+TYPE_FWD = 'linear';    % fwd model computation: 'linear','fem'
+geom = 'semi-inf';      % geometry
 % ------------------------- RECONSTRUCTION --------------------------------
 RECONSTRUCTION = 1;     % Enable the reconstruction section.
 % ------------------------- EXPERIMENTAL ----------------------------------
@@ -58,7 +60,7 @@ DOT.grid.dz = DOT.grid.dx;
 %==========================================================================
 NUM_HETE = 1;
 %--------------------------- INCLUSION 1 ---------------------------------%
-DOT.opt.hete1.type  = 'Mua';
+DOT.opt.hete1.type  = {'Mua'};
 DOT.opt.hete1.geometry = 'usimage';
 DOT.opt.hete1.c     = [10, 5, 15];   % down
 % DOT.opt.hete1.d     = [0, 0, -1];   % down

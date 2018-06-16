@@ -1,8 +1,8 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % DOT_core     %
 %                                                                       %
-% v2:                                                                   %
-% Simulation and reconstruction using Green's function.                 %
+% v3:                                                                   %
+% Simulation and reconstruction using Green's function and TOAST_FEM.                 %
 % Experimental data are not yet implemented.                            %
 % Half-space geometry with fwd and Jacobian for the fluence under PCBC. %
 % CW and time-domain forward and reconstruction.                        %
@@ -13,7 +13,7 @@
 % Regularization parameter criteria: L-curve, gcv, manual.              %
 % Solver: Tickhonov, Truncated SVD, pcg, gmres                          %
 %                                                                       %
-% A. Farina 22/09/2017                                                  %
+% A. Farina 15/06/2018                                                  %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 

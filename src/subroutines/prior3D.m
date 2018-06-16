@@ -13,10 +13,10 @@
 
 
 function [DOT, hete] = prior3D(DOT, hete)
-
-var  = hete.type;
-back = eval(['DOT.opt.',lower(hete.type),'B']);
-intensity = hete.val;
+for itype = 1:size(hete.type,2)
+var  = hete.type{itype};
+back = eval(['DOT.opt.',lower(hete.type{itype}),'B']);
+intensity = hete.val(itype);
 %distrib   = hete.distrib;
 
 
@@ -54,6 +54,7 @@ prior = priormask3D(hete.path,DOT.grid);
 param = getfield(DOT.opt, var); 
 param = param + double(prior)*(intensity-back);
 DOT.opt = setfield(DOT.opt, var, param);
+end
 return;
 end
 
