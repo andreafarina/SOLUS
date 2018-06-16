@@ -19,9 +19,9 @@ BACKSOLVER = 'tikh'; % 'tikh', 'tsvd', 'discrep','simon', 'gmres', 'pcg', 'lsqr'
 nQM = sum(dmask(:));
 nwin = size(twin,1);
 % -------------------------------------------------------------------------
-[p,type] = ExtractVariables(solver.variables);
+[p,type_jac] = ExtractVariables(solver.variables);
 Jacobian = @(mua, mus) JacobianTD (grid, Spos, Dpos, dmask, mua, mus, n, A, ...
-    dt, nstep, twin, irf, geom,type);
+    dt, nstep, twin, irf, geom,type_jac);
 %% self normalise
 if self_norm == true
         data = data * spdiags(1./sum(data)',0,nQM,nQM);
@@ -29,7 +29,7 @@ end
 %% Inverse solver
 [proj, Aproj] = ForwardTD(grid,Spos, Dpos, dmask, mua0, mus0, n, ...
                 [],[], A, dt, nstep, self_norm,...
-                geom, 'homo');
+                geom, 'linear');
 if numel(irf)>1
     z = convn(proj,irf);
     nmax = max(nstep,numel(irf));
@@ -71,7 +71,7 @@ data(mask) = [];
 
 %sd(mask) = [];
 % solution vector
-x0 = PrepareX0([mua0,1./(3*mus0)],grid.N,type);
+x0 = PrepareX0([mua0,1./(3*mus0)],grid.N,type_jac);
 x = ones(size(x0));
 
 if strcmpi(NORMDIFF,'sd'), dphi = (data(:)-ref(:))./sd(~mask); end
@@ -218,7 +218,7 @@ x = x + dx;
 %logx = logx + dx;
 %x = exp(logx);
 x = x.*x0;
-[bmua,bmus] = XtoMuaMus(x,mua0,mus0,type);
+[bmua,bmus] = XtoMuaMus(x,mua0,mus0,type_jac);
 
 
 end

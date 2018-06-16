@@ -6,6 +6,7 @@ FORWARD = 1;            % Simulated forward data and save into _Data file
 REF = 1;                % 1: create also the homogeneous data
 TYPE_FWD = 'linear';    % fwd model computation: 'linear','fem'
 geom = 'semi-inf';      % geometry
+
 % ------------------------- RECONSTRUCTION --------------------------------
 RECONSTRUCTION = 1;     % Enable the reconstruction section.
 % ------------------------- EXPERIMENTAL ----------------------------------
@@ -27,7 +28,7 @@ RADIOMETRY = 1;         % apply radiometric inputs to simulated data
 % -------------------------------------------------------------------------
 SAVE_FWD = 1;           % Save forward data (possibly with noise) 
                         % in a _Data.m file
-LOAD_FWD_TEO = 0;       % if 0: save the raw TPSF(un-noisy) in a _FwdTeo.m file.
+LOAD_FWD_TEO = 1;       % if 0: save the raw TPSF(un-noisy) in a _FwdTeo.m file.
                         % if 1: load the raw TPSF for speed up
 % -------------------------------------------------------------------------
 TOAST2DOT = 0;          % if 1 the function toast2dot is used for conversion 
@@ -43,7 +44,7 @@ DOT.opt.nE = 1.;        % external refractive index
 %==========================================================================
 DOT.grid.x1 = -32;
 DOT.grid.x2 = 32;
-DOT.grid.dx = 4;
+DOT.grid.dx = 2;
 
 DOT.grid.y1 = -29;
 DOT.grid.y2 = 29;           
@@ -55,31 +56,30 @@ DOT.grid.dz = DOT.grid.dx;
 %==========================================================================
 %%                      Set Heterogeneities
 %==========================================================================
-NUM_HETE = 2;
+NUM_HETE = 1;
 %--------------------------- INCLUSION 1 ---------------------------------%
-DOT.opt.hete1.type  = 'Musp';
+DOT.opt.hete1.type  = 'Mua';
 DOT.opt.hete1.geometry = 'sphere';
-DOT.opt.hete1.c     = [0, 0, 05];   % down
+DOT.opt.hete1.c     = [10, 5, 10];   % down
 % DOT.opt.hete1.d     = [0, 0, -1];   % down
 % DOT.opt.hete1.l     = 20;
-DOT.opt.hete1.sigma = 5;
+DOT.opt.hete1.sigma = 4;
 DOT.opt.hete1.distrib = 'OFF';
 DOT.opt.hete1.profile = 'Gaussian';%'Step';%'Gaussian';
-DOT.opt.hete1.val   = 0.5;%2 * DOT.opt.muspB;
-DOT.opt.hete1.path ='../3DMasks/Mask3d_mus1_05-1_56_malignant_3.mat' ;   % down
+DOT.opt.hete1.val   = 5 * DOT.opt.muaB;
+DOT.opt.hete1.path ='../3DMasks/Mask3D_Mask_malignant_4.mat' ;   % down
 
 %--------------------------- INCLUSION 2 ---------------------------------%
-DOT.opt.hete2.type  = 'Mua';
-DOT.opt.hete2.geometry = 'sphere';
-DOT.opt.hete2.c     = [0, 0, 5];   % down
-% DOT.opt.hete1.d     = [0, 0, -1];   % down
-% DOT.opt.hete1.l     = 20;
-DOT.opt.hete2.sigma = 5;
-DOT.opt.hete2.distrib = 'OFF';
-DOT.opt.hete2.profile = 'Gaussian';%'Step';%'Gaussian';
-DOT.opt.hete2.val   = 2 * DOT.opt.muaB;
-DOT.opt.hete2.path ='../3DMasks/Mask3d_mus1_05-1_56_malignant_3.mat' ;   % down
-
+% DOT.opt.hete2.type  = 'Musp';
+% DOT.opt.hete2.geometry = 'Sphere';
+% DOT.opt.hete2.c     = [10, 5, 10];   % down
+% %DOT.opt.hete2.d     = [ 1, 0, 0];   % down
+% % DOT.opt.hete.d     = (M * [0, 0, -1]')';   % down
+% % DOT.opt.hete.l     = 20;
+% DOT.opt.hete2.sigma = 4;
+% DOT.opt.hete2.distrib = 'OFF';
+% DOT.opt.hete2.profile = 'Gaussian';%'Gaussian';
+% DOT.opt.hete2.val   = 2 * DOT.opt.muspB;
 
 %==========================================================================
 %%                         Time domain parameters
@@ -92,7 +92,7 @@ DOT.time.noise = 'Poisson';         % 'Poisson','Gaussian','none'
                                     % Poisson noise.
 DOT.time.sigma = 1e-3;              % variance for gaussian noise
 DOT.time.self_norm = false;         % true for self-normalized TPSF
-DOT.time.TotCounts = 1e10;           % total counts for the maximum-energy
+DOT.time.TotCounts = 1e6;           % total counts for the maximum-energy
                                     % TPSF. The other are consequently
                                     % rescaled
 %==========================================================================
