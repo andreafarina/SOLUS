@@ -18,7 +18,7 @@
 
 
 %clearvars;
-if ~any(strcmpi([fileparts(mfilename('fullpath')) '\solvers'],regexp(path, pathsep, 'split')))
+if ~any(strcmpi([fileparts(mfilename('fullpath')) filesep 'solvers'],regexp(path, pathsep, 'split')))
     ComingFrom = cd; cd(fileparts([mfilename('fullpath') '.m'])); cd('../');
     disp('Path are not set! DOT_install.m will be run');
     run('DOT_install');
@@ -26,7 +26,7 @@ if ~any(strcmpi([fileparts(mfilename('fullpath')) '\solvers'],regexp(path, paths
 end
     
 close all;
-
+global mesh
 % setPath;
 % addpath subroutines solvers
 % addpath(genpath('util'))
@@ -90,6 +90,18 @@ DOT.opt.cs = 0.299/DOT.opt.nB;       % speed of light in medium
 DOT.opt.kap = 1/(3*DOT.opt.muspB);
 DOT.A = A_factor(DOT.opt.nB/DOT.opt.nE); % A factor for boundary conditions
 %==========================================================================
+%%                              SET FWD FEM MESH/GRID
+%==========================================================================
+if strcmpi(TYPE_FWD,'fem')
+    [vtx,idx,eltp] = mkslab([DOT.grid.x1,DOT.grid.y1,DOT.grid.z1;...
+        DOT.grid.x2,DOT.grid.y2,DOT.grid.z2],...
+        round(([DOT.grid.x2,DOT.grid.y2,DOT.grid.z2]-...
+        [DOT.grid.x1,DOT.grid.y1,DOT.grid.z1])./...
+        [DOT.grid.dx,DOT.grid.dy,DOT.grid.dz]));
+    mesh.hMesh=toastMesh(vtx,idx,eltp);
+    clear vtx idx eltp
+end
+%==========================================================================
 %%                                  SET GRID
 %==========================================================================
 DOT.grid = setGrid(DOT); 
@@ -104,6 +116,18 @@ for i = 1:NUM_HETE
     h_string = ['hete',num2str(i)];
     [DOT,DOT.opt.(h_string)] = setHete(DOT,DOT.opt.(h_string));
 end
+% Map optical properties to mesh and QM
+if strcmpi(TYPE_FWD,'fem')
+    mesh.opt.mua = DOT.grid.hBasis.Map('B->M',DOT.opt.Mua);
+    mesh.opt.musp = DOT.grid.hBasis.Map('B->M',DOT.opt.Musp);
+    Qds = 1; % width of Sources 
+    Mds = 1; % width of Detectors
+    mesh.hMesh.SetQM(DOT.Source.Pos,DOT.Detector.Pos);
+    mesh.qvec = mesh.hMesh.Qvec('Neumann','Gaussian',Qds);
+    mesh.mvec = mesh.hMesh.Mvec('Gaussian',Mds, DOT.opt.nB);
+end
+% 
+
 %==========================================================================
 %%                         Time domain parameters
 %==========================================================================
@@ -152,7 +176,7 @@ if FORWARD == 1
     nmeas = sum(DOT.dmask(:));
     DataCW = ForwardCW(DOT.grid,DOT.Source.Pos, DOT.Detector.Pos, DOT.dmask, ...
         DOT.opt.muaB, DOT.opt.muspB, DOT.opt.Mua, ...
-        DOT.opt.Musp, DOT.A, geom, type);
+        DOT.opt.Musp, DOT.A, geom, 'born');
     [DataCW,sdCW] = AddNoise(DataCW,'gaussian',DOT.sigma);
     if REF == 1
         RefCW  = ForwardCW(DOT.grid,DOT.Source.Pos, DOT.Detector.Pos, DOT.dmask,...
@@ -184,14 +208,14 @@ if DOT.TD == 1
     DataTD = ForwardTD(DOT.grid,DOT.Source.Pos, DOT.Detector.Pos, DOT.dmask,...
         DOT.opt.muaB, DOT.opt.muspB,DOT.opt.nB, DOT.opt.Mua,...
                 DOT.opt.Musp, DOT.A, DOT.time.dt,...
-                length(DOT.time.time), DOT.time.self_norm, geom, 'born');
+                length(DOT.time.time), DOT.time.self_norm, geom, TYPE_FWD);
             save([rdir,filename,'_', 'FwdTeo'],'DataTD');
         if REF == 1
             RefTD = ForwardTD(DOT.grid,DOT.Source.Pos, DOT.Detector.Pos, DOT.dmask,...
                 DOT.opt.muaB, DOT.opt.muspB,DOT.opt.nB, ...
                 DOT.opt.muaB*ones(DOT.grid.dim),DOT.opt.muspB*ones(DOT.grid.dim), ...
                 DOT.A, DOT.time.dt,length(DOT.time.time), DOT.time.self_norm,...
-                geom, 'homo');
+                geom, TYPE_FWD);
             save([rdir,filename,'_', 'FwdTeo'],'RefTD','-append');
         end
     else

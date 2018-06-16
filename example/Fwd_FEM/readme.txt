@@ -1,0 +1,1 @@
+In this example an absorbing spherical perturbation is placed. Forward model is computed with FEM. A linear reconstruction using zero-order Tikhonov regularization is performed.
