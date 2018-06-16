@@ -4,7 +4,7 @@ function [proj, Area, proj_lifetime] = ProjectFieldTD(hMesh,qvec,mvec,dmask,...
 % function [proj, Area, proj_lifetime] = ProjectFieldTD(hMesh,qvec,mvec,dmask,...
 %            mua,musp,conc,tau,n,dt,nstep,freq,self_norm,fwd,verbosity)
 % March 2017: implemented GPU iterative solver
-USEGPU = 0;
+USEGPU = 1;
 tol = 1e-8;
 
 spacer = ' ------- ';
