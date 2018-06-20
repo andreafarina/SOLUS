@@ -4,7 +4,7 @@ function [proj, Area, proj_lifetime] = ProjectFieldTD(hMesh,qvec,mvec,dmask,...
 % function [proj, Area, proj_lifetime] = ProjectFieldTD(hMesh,qvec,mvec,dmask,...
 %            mua,musp,conc,tau,n,dt,nstep,freq,self_norm,fwd,verbosity)
 % March 2017: implemented GPU iterative solver
-USEGPU = 1;
+USEGPU = 0;
 tol = 1e-8;
 
 spacer = ' ------- ';
@@ -25,7 +25,9 @@ proj = zeros(nQM,nstep);
 theta = 1;
 
 %[smat,bmat] = toastSysmat (hMesh, mua, mus, ref, 0);
-Smat = real(dotSysmat(hMesh, mua, musp, n, freq));
+%Smat = real(dotSysmat(hMesh, mua, musp, n, freq));
+Smat = dotSysmat2(hMesh, mua, musp, n);%
+
 mmat = hMesh.Massmat; % the bmat is only the boundary part!
 
 K0 = -(Smat * (1-theta) - mmat * 1/dt);            % backward difference matrix
