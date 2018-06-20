@@ -13,7 +13,7 @@ grid = DOT.grid;
 %
 grid.dV = DOT.grid.dx*DOT.grid.dy*DOT.grid.dz;
 %
-if isempty('mesh')
+if (sum(size(mesh)) == 0)
 grid.x = (DOT.grid.x1:DOT.grid.dx:(DOT.grid.x2-DOT.grid.dx)) + DOT.grid.dx/2;
 grid.y = (DOT.grid.y1:DOT.grid.dy:(DOT.grid.y2-DOT.grid.dy)) + DOT.grid.dy/2;
 grid.z = (DOT.grid.z1:DOT.grid.dz:(DOT.grid.z2-DOT.grid.dz)) + DOT.grid.dz/2;

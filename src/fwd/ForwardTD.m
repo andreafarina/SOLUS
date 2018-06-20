@@ -90,8 +90,13 @@ switch lower(FWD_TYPE)
         %textprogressbar('done');
     case 'fem'
         %% PLACE here FEM forward solver
-        mua = grid.hBasis.Map('B->M',Mua);
-        musp = grid.hBasis.Map('B->M',Musp);
+        if (~isempty(Mua))&&(~isempty(Musp))
+            mua = grid.hBasis.Map('B->M',Mua);
+            musp = grid.hBasis.Map('B->M',Musp);
+        else
+            mua = ones(mesh.hMesh.NodeCount,1)*muaB;
+            musp = ones(mesh.hMesh.NodeCount,1)*muspB;
+        end
         [phi,~] = ProjectFieldTD(mesh.hMesh,mesh.qvec,mesh.mvec,...
             dmask, mua,musp,0,0,n*ones(size(mesh.opt.mua)),dt,nstep,0,0,'diff',0);
         

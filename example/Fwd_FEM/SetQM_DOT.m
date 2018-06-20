@@ -11,7 +11,8 @@ zs = 0;
 
 DOT.Source.Pos = [xxs(:),yys(:),zzs(:)];
 DOT.Detector.Pos = [xxs(:),yys(:),zzs(:)];
-
+DOT.Source.Area = 1;    %mm2
+DOT.Detector.Area = 1;  %mm2
 % non-contact PTB setup 40x40 mm2 scan with 8x8 and s-d 5mm
 % rhozero
 % rhosd = 5;

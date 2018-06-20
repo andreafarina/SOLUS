@@ -5,7 +5,7 @@
 %==========================================================================
 
 function [bmua,bmus] = RecSolverBORN_TD(solver,grid,mua0,mus0, n, A,...
-    Spos,Dpos,dmask, dt, nstep, twin, self_norm, data, irf, ref, sd, ~)
+    Spos,Dpos,dmask, dt, nstep, twin, self_norm, data, irf, ref, sd, fwd_type)
 %global factor
 %ref = 0;
 %% Jacobain options
@@ -21,7 +21,7 @@ nwin = size(twin,1);
 % -------------------------------------------------------------------------
 [p,type_jac] = ExtractVariables(solver.variables);
 Jacobian = @(mua, mus) JacobianTD (grid, Spos, Dpos, dmask, mua, mus, n, A, ...
-    dt, nstep, twin, irf, geom,type_jac);
+    dt, nstep, twin, irf, geom,type_jac,fwd_type);
 %% self normalise
 if self_norm == true
         data = data * spdiags(1./sum(data)',0,nQM,nQM);
@@ -29,7 +29,7 @@ end
 %% Inverse solver
 [proj, Aproj] = ForwardTD(grid,Spos, Dpos, dmask, mua0, mus0, n, ...
                 [],[], A, dt, nstep, self_norm,...
-                geom, 'linear');
+                geom, fwd_type);
 if numel(irf)>1
     z = convn(proj,irf);
     nmax = max(nstep,numel(irf));

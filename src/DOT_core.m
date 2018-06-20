@@ -27,6 +27,7 @@ end
     
 close all;
 global mesh
+mesh = [];
 % setPath;
 % addpath subroutines solvers
 % addpath(genpath('util'))
@@ -120,11 +121,11 @@ end
 if strcmpi(TYPE_FWD,'fem')
     mesh.opt.mua = DOT.grid.hBasis.Map('B->M',DOT.opt.Mua);
     mesh.opt.musp = DOT.grid.hBasis.Map('B->M',DOT.opt.Musp);
-    Qds = 1; % width of Sources 
-    Mds = 1; % width of Detectors
+    %Qds = 1; % width of Sources 
+    %Mds = 1; % width of Detectors
     mesh.hMesh.SetQM(DOT.Source.Pos,DOT.Detector.Pos);
-    mesh.qvec = mesh.hMesh.Qvec('Neumann','Gaussian',Qds);
-    mesh.mvec = mesh.hMesh.Mvec('Gaussian',Mds, DOT.opt.nB);
+    mesh.qvec = mesh.hMesh.Qvec('Neumann','Gaussian',DOT.Source.Area);
+    mesh.mvec = mesh.hMesh.Mvec('Gaussian',DOT.Detector.Area, DOT.opt.nB);
 end
 % 
 
@@ -511,7 +512,7 @@ switch lower(REC.domain)
                     REC.opt.mua0,REC.opt.musp0,REC.opt.nB,REC.A,...
                     REC.Source.Pos,REC.Detector.Pos,REC.dmask,REC.time.dt,REC.time.nstep,...
                     REC.time.twin,REC.time.self_norm,REC.Data,...
-                    REC.time.irf.data,REC.ref,REC.sd,0);
+                    REC.time.irf.data,REC.ref,REC.sd,REC.type_fwd);
             case 'born2reg'
                 if ~isempty(REC.solver.prior.path)
                     REC.solver.prior.refimage = ...
@@ -545,7 +546,7 @@ switch lower(REC.domain)
                     REC.Source.Pos,REC.Detector.Pos,REC.dmask,...
                     REC.time.dt,REC.time.nstep,REC.time.twin,...
                     REC.time.self_norm,REC.Data,...
-                    REC.time.irf.data,REC.ref,REC.sd,0);
+                    REC.time.irf.data,REC.ref,REC.sd,REC.type_fwd);
 %%                
             case 'fit'
                 [REC.opt.bmua,REC.opt.bmusp] = FitMuaMus_TD(REC.solver,...

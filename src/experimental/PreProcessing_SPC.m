@@ -18,7 +18,7 @@
 % =========================================================================
 %%                          Options
 % =========================================================================
-SHOW_CURVES = 0;         % Show TR raw curves
+SHOW_CURVES = 1;         % Show TR raw curves
 POISS_DENOISE = 0;       % Anscombe transform and wavelet denoising
 BKG_CONST = 1;           % subtract constant background for each measurements
 APPLY_ROI = 0;           % decide whether or not apply ROI
