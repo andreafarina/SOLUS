@@ -28,7 +28,7 @@ RADIOMETRY = 1;         % apply radiometric inputs to simulated data
 % -------------------------------------------------------------------------
 SAVE_FWD = 1;           % Save forward data (possibly with noise) 
                         % in a _Data.m file
-LOAD_FWD_TEO = 1;       % if 0: save the raw TPSF(un-noisy) in a _FwdTeo.m file.
+LOAD_FWD_TEO = 0;       % if 0: save the raw TPSF(un-noisy) in a _FwdTeo.m file.
                         % if 1: load the raw TPSF for speed up
 % -------------------------------------------------------------------------
 TOAST2DOT = 0;          % if 1 the function toast2dot is used for conversion 
@@ -60,6 +60,7 @@ NUM_HETE = 1;
 %--------------------------- INCLUSION 1 ---------------------------------%
 DOT.opt.hete1.type  = {'Mua','Musp'};
 DOT.opt.hete1.geometry = 'sphere';
+DOT.opt.hete1.randinhom = [50; 0.1]; % [inhomogeneities correlation length in mm; differential maximum variation ]
 DOT.opt.hete1.c     = [10, 5, 10];   % down
 % DOT.opt.hete1.d     = [0, 0, -1];   % down
 % DOT.opt.hete1.l     = 20;

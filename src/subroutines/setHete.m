@@ -32,4 +32,21 @@ switch upper(hete.geometry)
     case 'USIMAGE'
     disp('+++ Distance Transform');
     [DOT,~] = prior3D(DOT, hete);
+    
+
+end
+
+for itype = 1: size(hete.type,2)
+    disp(sprintf('Setting pesudo-inhomogeneities for %s', hete.type{itype}));
+    if isfield(hete, 'randinhom') 
+        if hete.randinhom(1) ~= 0  &&  hete.randinhom(2) ~= 0
+            [DOT.opt.(hete.type{itype}), ~] = AddPseudoInhom(DOT.opt.(hete.type{itype}),...
+                                                             [DOT.grid.Nx, DOT.grid.Ny, DOT.grid.Nz ] , ...
+                                                             hete.randinhom(1)/DOT.grid.dx,...
+                                                             hete.randinhom(2) );
+        end
+    end
+end
+
+
 end
