@@ -8,7 +8,7 @@ if any(strcmpi(REC.solver.variables,'mua'))
 end
 if any(strcmpi(REC.solver.variables,'mus'))
     Q.mus = QuantifyX(REC.grid,REC.opt.muspB,REC.opt.bmusp,...
-    ref_true,REC.opt.hete2.c,REC.opt.Musp);
+    ref_true,REC.opt.hete1.c,REC.opt.Musp);
 end
 
 
