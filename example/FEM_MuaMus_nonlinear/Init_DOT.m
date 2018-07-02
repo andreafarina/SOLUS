@@ -59,16 +59,15 @@ DOT.grid.dz = DOT.grid.dx;
 NUM_HETE = 1;
 %--------------------------- INCLUSION 1 ---------------------------------%
 DOT.opt.hete1.type  = {'Mua','Musp'};
-DOT.opt.hete1.geometry = 'sphere';
-DOT.opt.hete1.randinhom = [50; 0.1]; % [inhomogeneities correlation length in mm; differential maximum variation ]
+DOT.opt.hete1.geometry = 'Sphere';
 DOT.opt.hete1.c     = [10, 5, 10];   % down
 % DOT.opt.hete1.d     = [0, 0, -1];   % down
 % DOT.opt.hete1.l     = 20;
 DOT.opt.hete1.sigma = 4;
 DOT.opt.hete1.distrib = 'OFF';
-DOT.opt.hete1.profile = 'Gaussian';%'Step';%'Gaussian';
-DOT.opt.hete1.val   = [5 * DOT.opt.muaB,2*DOT.opt.muspB];
-DOT.opt.hete1.path ='../3DMasks/Mask3D_Mask_malignant_4.mat' ;   % down
+DOT.opt.hete1.profile = 'Step';%'Step';%'Gaussian';
+DOT.opt.hete1.val   = [2 * DOT.opt.muaB,2*DOT.opt.muspB];
+DOT.opt.hete1.path ='../../3DMasks/benign_2.mat' ;   % down
 
 %--------------------------- INCLUSION 2 ---------------------------------%
 % DOT.opt.hete2.type  = {'Musp'};
@@ -86,7 +85,7 @@ DOT.opt.hete1.path ='../3DMasks/Mask3D_Mask_malignant_4.mat' ;   % down
 %%                         Time domain parameters
 %==========================================================================
 DOT.time.dt = (50e3/1024/4);        % time step in picoseconds
-DOT.time.nstep = 400;               % number of temporal steps
+DOT.time.nstep = 600;               % number of temporal steps
 DOT.time.noise = 'Poisson';         % 'Poisson','Gaussian','none'
                                     % if 'Poisson' and sigma>0 a
                                     % Gaussian noise is added before

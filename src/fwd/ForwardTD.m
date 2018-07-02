@@ -1,6 +1,7 @@
 function [phi, Area] = ForwardTD(grid,Spos, Dpos, dmask, muaB, muspB, n, ...
     Mua, Musp, A, dt, nstep, self_norm, geom, FWD_TYPE)
 global mesh
+DEBUG = 0;
 v = 0.2999/n;
 
 Ns = size(Spos,1);
@@ -94,11 +95,28 @@ switch lower(FWD_TYPE)
             mua = grid.hBasis.Map('B->M',Mua);
             musp = grid.hBasis.Map('B->M',Musp);
         else
-            mua = ones(mesh.hMesh.NodeCount,1)*muaB;
-            musp = ones(mesh.hMesh.NodeCount,1)*muspB;
+            mua = ones(mesh.hMesh.NodeCount,1).*muaB;
+            musp = ones(mesh.hMesh.NodeCount,1).*muspB;
         end
         [phi,~] = ProjectFieldTD(mesh.hMesh,mesh.qvec,mesh.mvec,...
-            dmask, mua,musp,0,0,n*ones(size(mesh.opt.mua)),dt,nstep,0,0,'diff',0);
+            dmask, mua,musp,0,0,n.*ones(size(mesh.opt.mua)),dt,nstep,0,0,'diff',0);
+        if DEBUG == 1
+            row_off = 0;
+            for i = 1:Ns
+                ind_d = find(dmask(:,i));
+                %textprogressbar(i/Ns*100);
+                %pause(0.01);
+                for j=1:numel(ind_d)
+                    m = ind_d(j);
+                    phi2(row_off + (1:nstep)) = SemiInfinite_TR(t, Spos(i,:),...
+                        Dpos(m,:),muaB,muspB,v,A);
+                    row_off = row_off + nstep;
+                end
+            end
+            figure,subplot(1,2,1),semilogy(1:numel(phi),phi(:),1:numel(phi2),phi2(:)),...
+                legend('fem','analytic'),ylim(max(phi(:))*[1e-4 10]),
+            subplot(1,2,2),plot((phi(:)-phi2(:)))
+        end
         
 end
 if nargout > 1
