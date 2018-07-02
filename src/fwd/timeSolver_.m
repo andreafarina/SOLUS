@@ -2,19 +2,20 @@ function tPhi = timeSolver_(mode, phi, dt, nstep, theta, param, USEGPU)
 
 %theta = 1; %0.5;
 tol = 1e-8;
+
 persistent timeSolver
 
 switch mode
   case 'compute'
-
+    c = 0.299./param.ref(1);
     timeSolver = assignFields(timeSolver, 'dt', dt, 'nstep', nstep, 'theta', theta, 'USEGPU', USEGPU);
 
     %smat = real(dotSysmat (param.hMesh, param.mua, param.mus, param.ref, 0));
-    smat = dotSysmat2(param.hMesh, param.mua, param.mus, param.ref);
+    smat = dotSysmat2_noC(param.hMesh, param.mua, param.mus, param.ref);
     mmat = param.hMesh.Massmat; % the bmat is only the boundary part!
 
-    K0 = -(smat * (1-theta) - mmat * 1/dt);            % backward difference matrix
-    K1 = smat * theta + mmat * 1/dt;                   % forward difference matrix
+    K0 = -(smat * (1-theta) - mmat * 1/(c*dt));            % backward difference matrix
+    K1 = smat * theta + mmat * 1/(c*dt);                   % forward difference matrix
 
     
     % Compute inverse / factorization
@@ -41,12 +42,12 @@ switch mode
 
     % initial condition
     %tPhi(1,:,:) = phi;
-    
+    phi = phi/timeSolver.dt;
     tPhi(:,:,1) = phi;
-    phi = phi * 1/timeSolver.dt;
+    
     % AF initial conditions
     if ~timeSolver.USEGPU
-        tPhi(:,:,1) = timeSolver.Q*(timeSolver.U\(timeSolver.L\(timeSolver.P*(timeSolver.R\phi))));
+        %tPhi(:,:,1) = timeSolver.Q*(timeSolver.U\(timeSolver.L\(timeSolver.P*(timeSolver.R\phi))));
         
         spacer = ' ------- ';
         disp([spacer mfilename ': time stepping' spacer]);
@@ -67,6 +68,7 @@ switch mode
                 mod(i,dstep)==0, mfilename);
             %    phi = max(phi,0);
         end
+        %tPhi(:,:,1) = [];
         
     else
         spacer = ' ------- ';
@@ -79,7 +81,7 @@ switch mode
             phi_g = gpuArray(phi(:,is));
             [phiG(:,is),~] = pcg(timeSolver.K1,phi_g,tol,100);
         end
-        tPhi(:,:,1) = gather(phiG);
+       tPhi(:,:,1) = gather(phiG);
         for i = 2:timeSolver.nstep
             q = timeSolver.K0 * tPhi(:,:,i-1);
             for is = 1:ns
@@ -91,6 +93,7 @@ switch mode
             ddisp(['Step: ' num2str(i) '. Elapsed time: ' num2str(cputime - tstart)], ...
                 mod(i,dstep)==0, mfilename);
         end
+        %tPhi(:,:,1) = [];
     end
     tPhi = permute(tPhi, [3 1 2]);
         

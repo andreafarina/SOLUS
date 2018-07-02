@@ -16,8 +16,8 @@ function J = toastJacobianTimedomain_INPROGRESS(hMesh,hBasis,qvec,mvec, dmask, m
 %
 %
 %% FLAG DEFINITION
-CALC = 'fft';
-USEGPU = 0;
+CALC = 'fft';% 'fft';
+USEGPU = 1;
 
 if nargin < 13
     GRADIENT = 'operator';

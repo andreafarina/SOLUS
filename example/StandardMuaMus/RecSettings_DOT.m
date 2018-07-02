@@ -2,7 +2,7 @@
 %%                      RECONSTRUCTION DOMAIN: CW or TD
 %==========================================================================
 REC.domain = 'td';          % CW or TD: data type to be inverted
-
+REC.type_fwd = 'linear';    % 'linear' or 'fem'
 % -------------------------------------------------------------------------
 REC.time.roi = [40,250];% ROI in time-step unit. If omitted, the ROI will be 
                         % selected dinamically by the user.
