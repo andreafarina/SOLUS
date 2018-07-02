@@ -4,7 +4,7 @@
 %==========================================================================
 
 function [bmua,bmus] = RecSolverBORN_TD_USPrior(solver,grid,mua0,mus0, n, A,...
-    Spos,Dpos,dmask, dt, nstep, twin, self_norm, data, irf, ref, sd, ~)
+    Spos,Dpos,dmask, dt, nstep, twin, self_norm, data, irf, ref, sd, type_fwd)
 %% Jacobain options
 LOAD_JACOBIAN = solver.prejacobian.load;      % Load a precomputed Jacobian
 geom = 'semi-inf';
@@ -14,12 +14,12 @@ nwin = size(twin,1);
 % -------------------------------------------------------------------------
 [p,type] = ExtractVariables(solver.variables);
 Jacobian = @(mua, mus) JacobianTD (grid, Spos, Dpos, dmask, mua, mus, n, A, ...
-    dt, nstep, twin, irf, geom,type);
+    dt, nstep, twin, irf, geom,type,type_fwd);
 %% Inverse solver
 % homogeneous forward model
 [proj, Aproj] = ForwardTD(grid,Spos, Dpos, dmask, mua0, mus0, n, ...
     [],[], A, dt, nstep, self_norm,...
-    geom, 'homo');
+    geom, 'linear');
 
 % Convolution with IRF
 if numel(irf)>1

@@ -1,0 +1,1 @@
+In this example an absorbing and scattering perturbation derived by US image is placed. Forward model is computed with FEM. A non-linear reconstruction using Gauss-Newton with structured Total Variation regularization is performed.

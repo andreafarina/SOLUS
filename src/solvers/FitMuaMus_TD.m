@@ -20,7 +20,7 @@ Jacobian = @(mua, mus) JacobianTD (grid, Spos, Dpos, dmask, mua, mus, n, A, ...
 %% Inverse solver
 [proj, Aproj] = ForwardTD(grid,Spos, Dpos, dmask, mua0, mus0, n, ...
                 [],[], A, dt, nstep, self_norm,...
-                geom, 'homo');
+                geom,'linear');
 if numel(irf)>1
     z = convn(proj,irf);
     nmax = max(nstep,numel(irf));
@@ -116,7 +116,7 @@ self_norm = 0;
 mask = true(nwin*nQM,1);
 [proj_fit, Aproj_fit] = ForwardTD(grid,Spos, Dpos, dmask, x(1), x(2), n, ...
                 [],[], A, dt, nstep, self_norm,...
-                geom, 'homo');
+                geom, 'linear');
 proj_fit = circshift(proj_fit,round(x(3)/dt));
 if numel(irf)>1
     z = convn(proj_fit,irf);
@@ -238,7 +238,7 @@ function [proj,J] = forward(x,~)
     t0 = x(3);
     [proj, Aproj] = ForwardTD(grid,Spos, Dpos, dmask, x(1), x(2), n, ...
                 [],[], A, dt, nstep, self_norm,...
-                geom, 'homo');
+                geom, 'linear');
    % [~,proj] = Contini1997(0,(1:nstep)*dt/1000,20,mua(1),mus(1),1,n(1),'slab','Dmus',200);
    % proj = proj';%./sum(proj);
     if numel(irf)>1

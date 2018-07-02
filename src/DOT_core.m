@@ -1,8 +1,8 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % DOT_core     %
 %                                                                       %
-% v2:                                                                   %
-% Simulation and reconstruction using Green's function.                 %
+% v3:                                                                   %
+% Simulation and reconstruction using Green's function and TOAST_FEM.                 %
 % Experimental data are not yet implemented.                            %
 % Half-space geometry with fwd and Jacobian for the fluence under PCBC. %
 % CW and time-domain forward and reconstruction.                        %
@@ -13,7 +13,7 @@
 % Regularization parameter criteria: L-curve, gcv, manual.              %
 % Solver: Tickhonov, Truncated SVD, pcg, gmres                          %
 %                                                                       %
-% A. Farina 22/09/2017                                                  %
+% A. Farina 15/06/2018                                                  %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 
@@ -26,7 +26,8 @@ if ~any(strcmpi([fileparts(mfilename('fullpath')) filesep 'solvers'],regexp(path
 end
     
 close all;
-
+global mesh
+mesh = [];
 % setPath;
 % addpath subroutines solvers
 % addpath(genpath('util'))
@@ -90,6 +91,18 @@ DOT.opt.cs = 0.299/DOT.opt.nB;       % speed of light in medium
 DOT.opt.kap = 1/(3*DOT.opt.muspB);
 DOT.A = A_factor(DOT.opt.nB/DOT.opt.nE); % A factor for boundary conditions
 %==========================================================================
+%%                              SET FWD FEM MESH/GRID
+%==========================================================================
+if strcmpi(TYPE_FWD,'fem')
+    [vtx,idx,eltp] = mkslab([DOT.grid.x1,DOT.grid.y1,DOT.grid.z1;...
+        DOT.grid.x2,DOT.grid.y2,DOT.grid.z2],...
+        round(([DOT.grid.x2,DOT.grid.y2,DOT.grid.z2]-...
+        [DOT.grid.x1,DOT.grid.y1,DOT.grid.z1])./...
+        [DOT.grid.dx,DOT.grid.dy,DOT.grid.dz]));
+    mesh.hMesh=toastMesh(vtx,idx,eltp);
+    clear vtx idx eltp
+end
+%==========================================================================
 %%                                  SET GRID
 %==========================================================================
 DOT.grid = setGrid(DOT); 
@@ -104,6 +117,21 @@ for i = 1:NUM_HETE
     h_string = ['hete',num2str(i)];
     [DOT,DOT.opt.(h_string)] = setHete(DOT,DOT.opt.(h_string));
 end
+% Map optical properties to mesh and QM
+if strcmpi(TYPE_FWD,'fem')
+    mesh.opt.mua = DOT.grid.hBasis.Map('B->M',DOT.opt.Mua);
+    mesh.opt.musp = DOT.grid.hBasis.Map('B->M',DOT.opt.Musp);
+    %Qds = 1; % width of Sources 
+    %Mds = 1; % width of Detectors
+    mesh.hMesh.SetQM(DOT.Source.Pos,DOT.Detector.Pos);
+    mesh.qvec = real(mesh.hMesh.Qvec('Neumann','Gaussian',DOT.Source.Area));
+    %mesh.hMesh.SetQM(DOT.Source.Pos+[0,0,1./DOT.opt.muspB],DOT.Detector.Pos);
+    %mesh.qvec = real(mesh.hMesh.Qvec('Isotropic','Gaussian',DOT.Source.Area));
+    
+    mesh.mvec = 1./(2*DOT.A)*real(mesh.hMesh.Mvec('Gaussian',DOT.Detector.Area, 0));
+end
+% 
+
 %==========================================================================
 %%                         Time domain parameters
 %==========================================================================
@@ -152,7 +180,7 @@ if FORWARD == 1
     nmeas = sum(DOT.dmask(:));
     DataCW = ForwardCW(DOT.grid,DOT.Source.Pos, DOT.Detector.Pos, DOT.dmask, ...
         DOT.opt.muaB, DOT.opt.muspB, DOT.opt.Mua, ...
-        DOT.opt.Musp, DOT.A, geom, type);
+        DOT.opt.Musp, DOT.A, geom, 'born');
     [DataCW,sdCW] = AddNoise(DataCW,'gaussian',DOT.sigma);
     if REF == 1
         RefCW  = ForwardCW(DOT.grid,DOT.Source.Pos, DOT.Detector.Pos, DOT.dmask,...
@@ -184,14 +212,14 @@ if DOT.TD == 1
     DataTD = ForwardTD(DOT.grid,DOT.Source.Pos, DOT.Detector.Pos, DOT.dmask,...
         DOT.opt.muaB, DOT.opt.muspB,DOT.opt.nB, DOT.opt.Mua,...
                 DOT.opt.Musp, DOT.A, DOT.time.dt,...
-                length(DOT.time.time), DOT.time.self_norm, geom, 'born');
+                length(DOT.time.time), DOT.time.self_norm, geom, TYPE_FWD);
             save([rdir,filename,'_', 'FwdTeo'],'DataTD');
         if REF == 1
             RefTD = ForwardTD(DOT.grid,DOT.Source.Pos, DOT.Detector.Pos, DOT.dmask,...
                 DOT.opt.muaB, DOT.opt.muspB,DOT.opt.nB, ...
                 DOT.opt.muaB*ones(DOT.grid.dim),DOT.opt.muspB*ones(DOT.grid.dim), ...
                 DOT.A, DOT.time.dt,length(DOT.time.time), DOT.time.self_norm,...
-                geom, 'homo');
+                geom, TYPE_FWD);
             save([rdir,filename,'_', 'FwdTeo'],'RefTD','-append');
         end
     else
@@ -479,7 +507,29 @@ switch lower(REC.domain)
     case 'td'
         switch lower(REC.solver.type)
             case 'gn'
-                
+                 [REC.opt.bmua,REC.opt.bmusp,REC.erri] = RecSolverGN_TD(REC.solver,...
+                    REC.grid,mesh.hMesh,...
+                    REC.grid.hBasis,...
+                    REC.opt.mua0,REC.opt.musp0,REC.opt.nB,...
+                    mesh.qvec,mesh.mvec,REC.dmask,REC.time.dt,REC.time.nstep,...
+                    REC.time.twin,REC.time.self_norm, REC.Data,...
+                    REC.time.irf.data,REC.ref,REC.sd,0);
+            case 'gn-usprior'
+                if ~isempty(REC.solver.prior.path)
+                    REC.solver.prior.refimage = ...
+                        priormask3D(REC.solver.prior.path,REC.grid);
+                else
+                    disp('No prior is provided in RECSettings_DOT. Reference mua will be used');
+                    REC.solver.prior.refimage = REC.opt.Mua;
+                end
+                REC.solver.prior.refimage = REC.opt.Mua;
+                [REC.opt.bmua,REC.opt.bmusp,REC.erri] = RecSolverGN_TD(REC.solver,...
+                    REC.grid,mesh.hMesh,...
+                    REC.grid.hBasis,...
+                    REC.opt.mua0,REC.opt.musp0,REC.opt.nB,...
+                    mesh.qvec,mesh.mvec,REC.dmask,REC.time.dt,REC.time.nstep,...
+                    REC.time.twin,REC.time.self_norm, REC.Data,...
+                    REC.time.irf.data,REC.ref,REC.sd,0);    
             case 'born'
                 REC.solver.prior.refimage = [];
                 [REC.opt.bmua,REC.opt.bmusp] = RecSolverBORN_TD(REC.solver,...
@@ -487,7 +537,7 @@ switch lower(REC.domain)
                     REC.opt.mua0,REC.opt.musp0,REC.opt.nB,REC.A,...
                     REC.Source.Pos,REC.Detector.Pos,REC.dmask,REC.time.dt,REC.time.nstep,...
                     REC.time.twin,REC.time.self_norm,REC.Data,...
-                    REC.time.irf.data,REC.ref,REC.sd,0);
+                    REC.time.irf.data,REC.ref,REC.sd,REC.type_fwd);
             case 'born2reg'
                 if ~isempty(REC.solver.prior.path)
                     REC.solver.prior.refimage = ...
@@ -521,7 +571,7 @@ switch lower(REC.domain)
                     REC.Source.Pos,REC.Detector.Pos,REC.dmask,...
                     REC.time.dt,REC.time.nstep,REC.time.twin,...
                     REC.time.self_norm,REC.Data,...
-                    REC.time.irf.data,REC.ref,REC.sd,0);
+                    REC.time.irf.data,REC.ref,REC.sd,REC.type_fwd);
 %%                
             case 'fit'
                 [REC.opt.bmua,REC.opt.bmusp] = FitMuaMus_TD(REC.solver,...

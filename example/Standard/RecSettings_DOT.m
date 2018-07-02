@@ -2,7 +2,7 @@
 %%                      RECONSTRUCTION DOMAIN: CW or TD
 %==========================================================================
 REC.domain = 'td';          % CW or TD: data type to be inverted
-
+REC.type_fwd = 'linear';    % 'linear' or 'fem'.
 % -------------------------------------------------------------------------
 REC.time.roi = [68,250];% ROI in time-step unit. If omitted, the ROI will be 
                         % selected dinamically by the user.
@@ -17,7 +17,7 @@ REC.opt.mua0 = 0.01;    % absorption [mm-1]
 REC.opt.musp0 = 1.0;      % reduced scattering [mm-1]
 REC.opt.nB = 1.4;
 % ---------------------- Solver and regularization ------------------------
-REC.solver.tau = 1e-1;            % regularisation parameter
+REC.solver.tau = 1e-2;            % regularisation parameter
 REC.solver.type = 'born';         % 'born','GN': gauss-newton, 
                                   % 'USprior': Simon's strutural prior
                                   % 'LM': Levenberg-Marquardt,

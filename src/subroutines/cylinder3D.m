@@ -22,9 +22,10 @@ d = hete.d;     % direction vector
 d = d./norm(d); % unitary direction vector
 c = hete.c;    % first point on the axis
 l = hete.l;    % length of the cylinder
-back = eval(['DOT.opt.',lower(hete.type),'B']);
+for itype = 1:size(hete.type,2)
+back = eval(['DOT.opt.',lower(hete.type{itype}),'B']);
 sigma = hete.sigma;
-intensity = hete.val;
+intensity = hete.val(itype);
 shape = hete.profile;
 distrib = hete.distrib;
 
@@ -64,9 +65,9 @@ case 'GAUSSIAN'
     
     %-- update concentration --%
     if isfield(DOT,'grid'),
-        param = getfield(DOT.opt, hete.type);
+        param = getfield(DOT.opt, hete.type{itype});
     else
-        a=lower(hete.type);
+        a=lower(hete.type{itype});
         param=getfield(DOT.opt,a);
     end
     switch upper(distrib)
@@ -81,11 +82,11 @@ case 'GAUSSIAN'
 
     end
     
-    hete    = setfield(hete, ['d',hete.type], add);
+    hete    = setfield(hete, ['d',hete.type{itype}], add);
     if isfield(DOT,'grid'),
-       DOT.opt = setfield(DOT.opt, hete.type, param);
+       DOT.opt = setfield(DOT.opt, hete.type{itype}, param);
     else
-        DOT.opt = setfield(DOT.opt, lower(hete.type), param);
+        DOT.opt = setfield(DOT.opt, lower(hete.type{itype}), param);
     end
     
 %-- profil de concentration creneau --%       
@@ -99,9 +100,9 @@ case 'STEP'
     
     %-- update concentration --%
     if isfield(DOT,'grid'),
-        param = getfield(DOT.opt, hete.type);
+        param = getfield(DOT.opt, hete.type{itype});
     else
-        a=lower(hete.type);
+        a=lower(hete.type{itype});
         param=getfield(DOT.opt,a);
     end
     switch upper(distrib)
@@ -113,10 +114,11 @@ case 'STEP'
         add(indx,1) = (intensity-back);
         param(indx) = param(indx) + add(indx);
     end
-    hete    = setfield(hete, ['d',hete.type], add);
+    hete    = setfield(hete, ['d',hete.type{itype}], add);
     if isfield(DOT,'grid'),
-       DOT.opt = setfield(DOT.opt, hete.type, param);
+       DOT.opt = setfield(DOT.opt, hete.type{itype}, param);
     else
-        DOT.opt = setfield(DOT.opt, lower(hete.type), param);
+        DOT.opt = setfield(DOT.opt, lower(hete.type{itype}), param);
     end
+end
 end   

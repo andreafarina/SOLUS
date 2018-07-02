@@ -1,0 +1,1 @@
+In this example an absorbing and scattering spherical perturbation is placed. Forward model is computed with FEM. A non-linear reconstruction using Gauss-Newton with Total Variation regularization is performed.

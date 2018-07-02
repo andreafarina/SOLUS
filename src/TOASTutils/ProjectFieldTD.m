@@ -11,6 +11,7 @@ spacer = ' ------- ';
 disp([spacer mfilename ': setup' spacer]);
 tic;
 
+c = 0.299./n(1);
 % Setting parameters
 N = hMesh.NodeCount;
 nQ = size(dmask,2);       % effective sources
@@ -25,11 +26,13 @@ proj = zeros(nQM,nstep);
 theta = 1;
 
 %[smat,bmat] = toastSysmat (hMesh, mua, mus, ref, 0);
-Smat = real(dotSysmat(hMesh, mua, musp, n, freq));
+%Smat = real(dotSysmat(hMesh, mua, musp, n, freq));
+Smat = dotSysmat2_noC(hMesh, mua, musp, n);%
+
 mmat = hMesh.Massmat; % the bmat is only the boundary part!
 
-K0 = -(Smat * (1-theta) - mmat * 1/dt);            % backward difference matrix
-K1 = Smat * theta + mmat * 1/dt;                   % forward difference matrix
+K0 = -(Smat * (1-theta) - mmat * 1/(c*dt));            % backward difference matrix
+K1 = Smat * theta + mmat * 1/(c*dt);                   % forward difference matrix
 
 %dK1 = sparse(diag(diag(K1)));
 
@@ -54,6 +57,10 @@ if ~USEGPU
     phi = Q*(U\(L\(P*(R\q))));
     tmp = mvecT * phi;
     proj(:,1) = tmp(dmask(:));
+    
+    
+    %% AF calculus
+    %phi = qvec
     for i = 2:nstep
         q = K0 * phi;
         %prec - standard lu
@@ -72,7 +79,7 @@ else
     
     K0 = gpuArray((K0));
     K1 = gpuArray((K1));
-    %dK1 = gpuArray(dK1);
+    %Lc = gpuArray(dK1);
     mvecT = gpuArray((mvecT));
     proj = gpuArray(proj);
     
@@ -80,15 +87,17 @@ else
     % AF initial conditions see toast examples fwd_tpsf.m
     % initial condition
     q = qvec/dt;
-    phi = gpuArray(zeros(size(q)));
+    %phi = gpuArray(zeros(size(q)));
+   % phi = gpuArray(full(q));
     for iq = 1:nQ
         qg = gpuArray((q(:,iq)));
         %[phi(:,iq),flag] = bicgstab(K1,q(:,iq),1e-12,100);%,U);%,PP',PP);
         [phi(:,iq),~] = pcg(K1,qg,tol,100);
+        %phi(:,iq) = full(qg);
         %[phi(:,iq),flag] = gmres(K1,q(:,iq),30,1e-12,100);
     end
     tmp = mvecT * phi;
-    %tmp = gather(tmp);
+    tmp = gather(tmp);
     proj(:,1) = tmp(dmask(:));
     
     
