@@ -5,7 +5,7 @@
 %==========================================================================
 
 function [bmua,bmus] = RecSolverBORN_TD(solver,grid,mua0,mus0, n, A,...
-    Spos,Dpos,dmask, dt, nstep, twin, self_norm, data, irf, ref, sd, ~)
+    Spos,Dpos,dmask, dt, nstep, twin, self_norm, data, irf, ref, sd, fwd_type)
 %global factor
 %ref = 0;
 %% Jacobain options
@@ -19,27 +19,27 @@ BACKSOLVER = 'tikh'; % 'tikh', 'tsvd', 'discrep','simon', 'gmres', 'pcg', 'lsqr'
 nQM = sum(dmask(:));
 nwin = size(twin,1);
 % -------------------------------------------------------------------------
-[p,type] = ExtractVariables(solver.variables);
+[p,type_jac] = ExtractVariables(solver.variables);
 Jacobian = @(mua, mus) JacobianTD (grid, Spos, Dpos, dmask, mua, mus, n, A, ...
-    dt, nstep, twin, irf, geom,type);
-%% self normalise
+    dt, nstep, twin, irf, geom,type_jac,fwd_type);
+%% self normalise (probably useless because input data are normalize)
 if self_norm == true
         data = data * spdiags(1./sum(data)',0,nQM,nQM);
 end
 %% Inverse solver
 [proj, Aproj] = ForwardTD(grid,Spos, Dpos, dmask, mua0, mus0, n, ...
                 [],[], A, dt, nstep, self_norm,...
-                geom, 'homo');
+                geom, fwd_type);
 if numel(irf)>1
     z = convn(proj,irf);
     nmax = max(nstep,numel(irf));
     proj = z(1:nmax,:);
-    clear nmax
+    clear nmax z
+end
     if self_norm == true
         proj = proj * spdiags(1./sum(proj)',0,nQM,nQM);
     end
-    clear z
-end
+    
 proj = WindowTPSF(proj,twin);
 
 proj = proj(:);
@@ -71,7 +71,7 @@ data(mask) = [];
 
 %sd(mask) = [];
 % solution vector
-x0 = PrepareX0([mua0,1./(3*mus0)],grid.N,type);
+x0 = PrepareX0([mua0,1./(3*mus0)],grid.N,type_jac);
 x = ones(size(x0));
 
 if strcmpi(NORMDIFF,'sd'), dphi = (data(:)-ref(:))./sd(~mask); end
@@ -125,15 +125,15 @@ if strcmpi(NORMDIFF,'ref'), J = spdiags(1./proj(:),0,numel(proj),numel(proj)) * 
 nsol = size(J,2);
 %   parameter normalisation (scale x0)
 J = J * spdiags(x0,0,length(x0),length(x0));
-    
+  
 J(mask,:) = [];
 
 %% Solver 
-if ~strcmpi((BACKSOLVER),'simon')
+%if ~strcmpi((BACKSOLVER),'simon')
 [U,s,V]=csvd(J);     % compact SVD (Regu toolbox)
         figure(402);
         picard(U,s,dphi);    % Picard plot (Regu toolbox)    
-end
+%end
 if (~strcmpi(REGU,'lcurve')&&(~strcmpi(REGU,'gcv')))
     alpha = solver.tau * s(1);
 end
@@ -162,10 +162,10 @@ switch lower(BACKSOLVER)
             dx = discrep(U,s,V,dphi,disc_value);
     case 'simon'
         disp('Simon');
-        tic;
-        s1 = svds(J,1);
-        toc;
-        alpha = solver.tau * s1;
+%         tic;
+%         s1 = svds(J,1);
+%         toc;
+%         alpha = solver.tau * s1;
         dx = [J;sqrt(alpha)*speye(nsol)]\[dphi;zeros(nsol,1)];
         %dx = [dx;zeros(nsol,1)];
    
@@ -202,7 +202,9 @@ switch lower(BACKSOLVER)
             alpha = alpha * lambda;
             disp(['alpha=' num2str(alpha)]);
         end
-        dx = lsqr([J;alpha*speye(nsol)],[dphi;zeros(nsol,1)],1e-6,100);
+        
+        
+        dx = lsqr([J;alpha*speye(nsol)],[dphi;zeros(nsol,1)],1e-6,200);
 
         toc;
 
@@ -218,7 +220,7 @@ x = x + dx;
 %logx = logx + dx;
 %x = exp(logx);
 x = x.*x0;
-[bmua,bmus] = XtoMuaMus(x,mua0,mus0,type);
+[bmua,bmus] = XtoMuaMus(x,mua0,mus0,type_jac);
 
 
 end

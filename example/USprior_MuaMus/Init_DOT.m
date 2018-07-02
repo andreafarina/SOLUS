@@ -4,6 +4,8 @@
 % ----------------------------- FORWARD -----------------------------------
 FORWARD = 1;            % Simulated forward data and save into _Data file
 REF = 1;                % 1: create also the homogeneous data
+TYPE_FWD = 'linear';    % fwd model computation: 'linear','fem'
+geom = 'semi-inf';      % geometry
 % ------------------------- RECONSTRUCTION --------------------------------
 RECONSTRUCTION = 1;     % Enable the reconstruction section.
 % ------------------------- EXPERIMENTAL ----------------------------------
@@ -56,9 +58,9 @@ DOT.grid.dz = DOT.grid.dx;
 %==========================================================================
 %%                      Set Heterogeneities
 %==========================================================================
-NUM_HETE = 2;
+NUM_HETE = 1;
 %--------------------------- INCLUSION 1 ---------------------------------%
-DOT.opt.hete1.type  = 'Musp';
+DOT.opt.hete1.type  = {'Mua','Musp'};
 DOT.opt.hete1.geometry = 'usimage';
 DOT.opt.hete1.c     = [3, 4, 15];   % down
 % DOT.opt.hete1.d     = [0, 0, -1];   % down
@@ -66,20 +68,20 @@ DOT.opt.hete1.c     = [3, 4, 15];   % down
 DOT.opt.hete1.sigma = 5;
 DOT.opt.hete1.distrib = 'OFF';
 DOT.opt.hete1.profile = 'Gaussian';%'Step';%'Gaussian';
-DOT.opt.hete1.val   = 2 * DOT.opt.muspB;
+DOT.opt.hete1.val   = 2 * [DOT.opt.muaB,DOT.opt.muspB];
 DOT.opt.hete1.path ='../../3DMasks/benign_2.mat' ;   % down
 
 %--------------------------- INCLUSION 2 ---------------------------------%
-DOT.opt.hete2.type  = 'Mua';
-DOT.opt.hete2.geometry = 'usimage';
-DOT.opt.hete2.c     = [3, 4, 15];   % down
-% DOT.opt.hete1.d     = [0, 0, -1];   % down
-% DOT.opt.hete1.l     = 20;
-DOT.opt.hete2.sigma = 5;
-DOT.opt.hete2.distrib = 'OFF';
-DOT.opt.hete2.profile = 'Gaussian';%'Step';%'Gaussian';
-DOT.opt.hete2.val   = 2 * DOT.opt.muaB;
-DOT.opt.hete2.path ='../../3DMasks/benign_2.mat' ;   % down
+% DOT.opt.hete2.type  = 'Mua';
+% DOT.opt.hete2.geometry = 'usimage';
+% DOT.opt.hete2.c     = [3, 4, 15];   % down
+% % DOT.opt.hete1.d     = [0, 0, -1];   % down
+% % DOT.opt.hete1.l     = 20;
+% DOT.opt.hete2.sigma = 5;
+% DOT.opt.hete2.distrib = 'OFF';
+% DOT.opt.hete2.profile = 'Gaussian';%'Step';%'Gaussian';
+% DOT.opt.hete2.val   = 2 * DOT.opt.muaB;
+% DOT.opt.hete2.path ='../../3DMasks/benign_2.mat' ;   % down
 
 
 %==========================================================================

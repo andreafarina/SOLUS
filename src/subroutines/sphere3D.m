@@ -23,10 +23,11 @@
 function [DOT,hete] = sphere3D(DOT, hete)
 %%--
 c    = hete.c;
-var  = hete.type;
-back = eval(['DOT.opt.',lower(hete.type),'B']);
+for itype = 1:size(hete.type,2)
+var  = hete.type{itype};
+back = eval(['DOT.opt.',lower(hete.type{itype}),'B']);
 sigma= hete.sigma;
-intensity = hete.val;
+intensity = hete.val(itype);
 shape     = hete.profile;
 distrib   = hete.distrib;
 
@@ -85,5 +86,6 @@ end
 add = reshape(add,Nx,Ny,Nz);
 param(indx) = param(indx) + add(indx);
 
-hete    = setfield(hete, ['d',hete.type], add);
+hete    = setfield(hete, ['d',hete.type{itype}], add);
 DOT.opt = setfield(DOT.opt, var, param);
+end
