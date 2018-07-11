@@ -91,7 +91,7 @@ DOT.time.noise = 'Poisson';         % 'Poisson','Gaussian','none'
                                     % Gaussian noise is added before
                                     % Poisson noise.
 DOT.time.sigma = 1e-3;              % variance for gaussian noise
-DOT.time.self_norm = false;         % true for self-normalized TPSF
+DOT.time.self_norm = true;         % true for self-normalized TPSF
 DOT.time.TotCounts = 1e6;           % total counts for the maximum-energy
                                     % TPSF. The other are consequently
                                     % rescaled
