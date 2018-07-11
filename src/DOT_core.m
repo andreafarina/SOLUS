@@ -214,12 +214,18 @@ if DOT.TD == 1
                 DOT.opt.Musp, DOT.A, DOT.time.dt,...
                 length(DOT.time.time), DOT.time.self_norm, geom, TYPE_FWD);
             save([rdir,filename,'_', 'FwdTeo'],'DataTD');
+             if sum(DataTD(:)<0) > 0
+                        warning([num2str(sum(DataTD(:)<0)),' elements of DataTD < 0!']);
+                    end
         if REF == 1
             RefTD = ForwardTD(DOT.grid,DOT.Source.Pos, DOT.Detector.Pos, DOT.dmask,...
                 DOT.opt.muaB, DOT.opt.muspB,DOT.opt.nB, ...
                 DOT.opt.muaB*ones(DOT.grid.dim),DOT.opt.muspB*ones(DOT.grid.dim), ...
                 DOT.A, DOT.time.dt,length(DOT.time.time), DOT.time.self_norm,...
                 geom, TYPE_FWD);
+             if sum(RefTD(:)<0) > 0
+                        warning([num2str(sum(RefTD(:)<0)),' elements of RefTD < 0!']);
+                    end
             save([rdir,filename,'_', 'FwdTeo'],'RefTD','-append');
         end
     else
@@ -270,6 +276,7 @@ if DOT.TD == 1
                         DataTD * factor * RealFactor));
                 case 1
                     %idz = find(factor>0, 1, 'last' );
+                   
                     DataTD = poissrnd(round(DataTD * RealFactor .* factor));
                     %DataTD = bsxfun(@times,DataTD,factor(idz)./factor');
             end
@@ -283,11 +290,11 @@ if DOT.TD == 1
     end
     % self normalized data
     if DOT.time.self_norm == true
-        Area = sum(DataTD);
+        Area = sum(DataTD,'omitnan');
         DataTD = DataTD * spdiags(1./Area',0,nmeas,nmeas);
         sdTD = sqrt(DataTD * spdiags(1./Area',0,nmeas,nmeas));  % Standard deviation
         if REF == 1
-            Area = sum(RefTD);
+            Area = sum(RefTD,'omitnan');
             RefTD = RefTD * spdiags(1./Area',0,nmeas,nmeas);
             sdTD = sqrt(DataTD * spdiags(1./Area',0,nmeas,nmeas));  % Standard deviation
         end
@@ -593,7 +600,7 @@ switch lower(REC.domain)
                     REC.opt.mua0,REC.opt.musp0,REC.opt.nB,REC.A,...
                     REC.Source.Pos,REC.Detector.Pos,REC.dmask,REC.time.dt,REC.time.nstep,...
                     REC.time.twin,REC.time.self_norm,REC.Data,...
-                    REC.time.irf.data,REC.ref,REC.sd,0);
+                    REC.time.irf.data,REC.ref,REC.sd,REC.type_fwd);
                 
             case 'fit4param' %% you require a TOAST installation
                 % check if TOAST is correctly installed
