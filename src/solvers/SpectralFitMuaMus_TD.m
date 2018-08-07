@@ -6,12 +6,12 @@
 %==========================================================================
 
 function [bMua,bMus,bmua,bmus] = SpectralFitMuaMus_TD(~,grid,mua0,mus0, n, A,...
-    Spos,Dpos,dmask, dt, nstep, twin, self_norm, data, irf, ref, sd,~,radiometry,Vars,REC)
+    Spos,Dpos,dmask, dt, nstep, twin, self_norm, data, irf, ref, sd,~,radiometry,spe)
 geom = 'semi-inf';
 self_norm = true;
 weight_type = 'none'; %'rect';
 first_lim = 0.1; last_lim = 0.1;
-ForceConstitSolution = Vars.ForceConstitSolution;
+ForceConstitSolution = spe.ForceConstitSolution;
 
 % mua0 = 0.01;
 % mus0 = 1.0;
@@ -113,10 +113,10 @@ data = ref./sd;
 
 
 %% Setup optimization for lsqcurvefit
-if Vars.SPECTRA == 0 && ForceConstitSolution == false
-    FinDiffRelStep = [2; repmat(1e-3,Vars.nLambda*2,1)];
+if spe.SPECTRA == 0 && ForceConstitSolution == false
+    FinDiffRelStep = [2; repmat(1e-3,spe.nLambda*2,1)];
 else
-    FinDiffRelStep = [2; repmat(1e-3,Vars.nCromo+2,1)];
+    FinDiffRelStep = [2; repmat(1e-3,spe.nCromo+2,1)];
 end
 opts = optimoptions('lsqcurvefit',...
     'Jacobian','off',...
@@ -142,16 +142,16 @@ opts = optimoptions('lsqcurvefit',...
 %% Solve
 %x = fminunc(@objective,x0,opts);
 %x = fminsearch(@objective,x0);
-if Vars.SPECTRA == 0 && ForceConstitSolution == false
+if spe.SPECTRA == 0 && ForceConstitSolution == false
     x0 = {mua0 mus0};
     low_bound = [-100 zeros(1,numel([x0{:}]))];
 else
     if ForceConstitSolution
-        Vars.REC.opt.conc0 = ones(Vars.nCromo,1);
-        Vars.REC.opt.a0 = 1; Vars.REC.opt.b0 = 1;
+        spe.opt.conc0 = ones(spe.nCromo,1);
+        spe.opt.a0 = 1; spe.opt.b0 = 1;
     end
-    x0 = {Vars.REC.opt.conc0',[Vars.REC.opt.a0 Vars.REC.opt.b0]};
-    low_bound = [-100 zeros(1,Vars.nCromo+2)];
+    x0 = {spe.opt.conc0',[spe.opt.a0 spe.opt.b0]};
+    low_bound = [-100 zeros(1,spe.nCromo+2)];
 end
 t0 = 0;
 x0 = [t0 x0{:}];
@@ -161,18 +161,18 @@ x0 = [t0 x0{:}];
 
 %% display fit result
 disp(['Residual: ' num2str(res)])
-if Vars.SPECTRA == 0 && ForceConstitSolution == false
-    bmua = x(2:Vars.nLambda+1);
-    bmus = x(Vars.nLambda+2:end);
+if spe.SPECTRA == 0 && ForceConstitSolution == false
+    bmua = x(2:spe.nLambda+1);
+    bmus = x(spe.nLambda+2:end);
 else
     if isrow(x), x = x'; end
-    bmua = Vars.ext_coeffB*x(2:end-2);
-    bmus = x(end-1).*(Vars.lambda/Vars.lambda0).^(-x(end));
+    bmua = spe.ext_coeffB*x(2:end-2);
+    bmus = x(end-1).*(spe.lambda/spe.lambda0).^(-x(end));
     if iscolumn(bmua), bmua = bmua'; end
     if iscolumn(bmus), bmus = bmus'; end
     display(['a = '  num2str(x(end-1))]); display(['b =' num2str(x(end))]);
-    display([char(Vars.cromo_label) repmat('=',Vars.nCromo,1) num2str(x(2:end-2))]);
-    disp([char(Vars.cromo_label) repmat('=',Vars.nCromo,1) num2str(x(2:end-2).*Vars.cromo_factor') repmat(' ',Vars.nCromo,1) char(Vars.cromo_units)]);
+    display([char(spe.cromo_label) repmat('=',spe.nCromo,1) num2str(x(2:end-2))]);
+    disp([char(spe.cromo_label) repmat('=',spe.nCromo,1) num2str(x(2:end-2).*spe.cromo_factor') repmat(' ',spe.nCromo,1) char(spe.cromo_units)]);
 end
 display(['mua = ',num2str(bmua)]);
 display(['musp = ',num2str(bmus)]);
@@ -211,23 +211,23 @@ save('factor_ref.mat','factor');
     function [proj,J] = forward(x,~)
         %xx = [x(1)*ones(nsol,1);x(2)*ones(nsol,1)];
         t0_ = x(1);
-        if Vars.SPECTRA == 0 && ForceConstitSolution == false
-            mua = x(2:Vars.nLambda+1);
-            mus = x(Vars.nLambda+2:end);
+        if spe.SPECTRA == 0 && ForceConstitSolution == false
+            mua = x(2:spe.nLambda+1);
+            mus = x(spe.nLambda+2:end);
         else
             b_ = x(end); a_ = x(end-1); conc_ = x(2:end-2);
             if isrow(conc_), conc_ = conc_'; end
-            mua = (Vars.ext_coeff0*conc_)';
-            mus = a_.*(Vars.lambda./Vars.lambda0).^(-b_);
+            mua = (spe.ext_coeff0*conc_)';
+            mus = a_.*(spe.lambda./spe.lambda0).^(-b_);
         end
         [proj, Aproj] = ForwardTD_multi_wave(grid,Spos, Dpos, dmask, mua, mus, n, ...
             [],[], A, dt, nstep, self_norm,...
             geom,'linear',radiometry);
-        if Vars.SPECTRA == 0 && ForceConstitSolution == false
+        if spe.SPECTRA == 0 && ForceConstitSolution == false
             display(['mua = ',num2str(mua)]);
             display(['musp = ',num2str(mus)]);
         else
-            disp(Vars.cromo_label); disp(conc_'); disp({'a','b'}); disp([a_ b_]);
+            disp(spe.cromo_label); disp(conc_'); disp({'a','b'}); disp([a_ b_]);
         end
         % [~,proj] = Contini1997(0,(1:nstep)*dt/1000,20,mua(1),mus(1),1,n(1),'slab','Dmus',200);
         % proj = proj';%./sum(proj);
