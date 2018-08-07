@@ -28,7 +28,7 @@ if numel(irf)>1
     proj = z(1:nmax,:);
     clear nmax
     if self_norm == true
-        proj = proj * spdiags(1./sum(proj)',0,nQM,nQM);
+        proj = proj * spdiags(1./sum(proj,'omitnan')',0,nQM,nQM);
     end
     clear z
 end
@@ -93,7 +93,7 @@ end
 
 if self_norm == true
     for i=1:nQM
-        sJ = sum(J((1:nwin)+(i-1)*nwin,:));
+        sJ = sum(J((1:nwin)+(i-1)*nwin,:),'omitnan');
         sJ = repmat(sJ,nwin,1);
         sJ = spdiags(proj((1:nwin)+(i-1)*nwin),0,nwin,nwin) * sJ;
         J((1:nwin)+(i-1)*nwin,:) = (J((1:nwin)+(i-1)*nwin,:) - sJ)./Aproj(i);

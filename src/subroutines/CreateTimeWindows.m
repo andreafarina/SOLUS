@@ -27,6 +27,10 @@ switch lower(kind)
         if nargin < 3
             error('Set the number of windows!')
         end
+        while rem(diff(roi),param)~=0
+            roi(2)=roi(2)-1;
+        end
+        disp(['Final roi: ', num2str(roi)])
         nt_win = round(diff(roi)/param);
         a = roi(1):nt_win:roi(2);
         b = a + (nt_win-1);

@@ -37,7 +37,7 @@ switch lower(type_fwd)
                 for i = 1:Ns
                     ind_d = find(dmask(:,i));
                     %textprogressbar(i/Ns*100);
-                    pause(0.01);
+                    %pause(0.01);
                     for j=1:numel(ind_d)
                         m = ind_d(j);
                         J(row_off + (1:nwin),:) = WindowTPSF(...
@@ -104,7 +104,7 @@ switch lower(type_fwd)
             for i = 1:Ns
                 ind_d = find(dmask(:,i));
                 %textprogressbar(i/Ns*100);
-                pause(0.01);
+                %pause(0.01);
                 for j=1:numel(ind_d)
                     m = ind_d(j);
                     J2(row_off + (1:nwin),:) = WindowTPSF(...

@@ -32,13 +32,13 @@ mW_2_W=1E-3;
 nm_2_m=1E-9;
 
 % unitary factor
-phE = h*c/(LambdaUnitary*nm_2_m); % (J) photon energy
-phN = SourcePowerUnitary*mW_2_W*TaqUnitary/phE; % Number of Injected Photons
+phE = h*c./(LambdaUnitary*nm_2_m); % (J) photon energy
+phN = SourcePowerUnitary*mW_2_W*TaqUnitary./phE; % Number of Injected Photons
 ResponsivityUnitary = DetAreaUnitary*OpticalEfficiency; % mm2
-RealFactor = phN*ResponsivityUnitary*dtUnitary; % Note: you need to divide for PI to transform Reflectance into Radiance
+RealFactor = phN.*ResponsivityUnitary*dtUnitary; % Note: you need to divide for PI to transform Reflectance into Radiance
 
 % attualize to effective parameters
-RealFactor = RealFactor*Area*QuantumEfficiency*...
-    radiometry.timebin*...
-    radiometry.power*...
+RealFactor = RealFactor.*Area*QuantumEfficiency*...
+    radiometry.timebin.*...
+    radiometry.power.*...
     radiometry.acqtime;
