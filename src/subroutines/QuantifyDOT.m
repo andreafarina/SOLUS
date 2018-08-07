@@ -1,14 +1,38 @@
-function Q = QuantifyDOT(REC,ref_true)
+function Q = QuantifyDOT(REC,ref_true,Vars)
 % =========================================================================
-%%                            Quantify DOT 
+%%                            Quantify DOT
 % =========================================================================
 if any(strcmpi(REC.solver.variables,'mua'))
-    Q.mua = QuantifyX(REC.grid,REC.opt.muaB,REC.opt.bmua,...
-    ref_true,REC.opt.hete1.c,REC.opt.Mua);
+    for inl = 1:numel(REC.opt.muaB)
+        fprintf(['<strong>------- Wavelength ',num2str(REC.radiometry.lambda(inl)),'-------</strong>\n'])
+        Q.mua(inl) = QuantifyX(REC.grid,REC.opt.muaB(inl),REC.opt.bmua(:,inl),...
+            ref_true,REC.opt.hete1.c,REC.opt.Mua(:,:,:,inl));
+    end
 end
 if any(strcmpi(REC.solver.variables,'mus'))
-    Q.mus = QuantifyX(REC.grid,REC.opt.muspB,REC.opt.bmusp,...
-    ref_true,REC.opt.hete1.c,REC.opt.Musp);
+    for inl = 1:numel(REC.opt.muspB)
+        fprintf(['<strong>------- Wavelength ',num2str(REC.radiometry.lambda(inl)),'-------</strong>\n'])
+        Q.mus(inl) = QuantifyX(REC.grid,REC.opt.muspB(inl),REC.opt.bmusp(:,inl),...
+            ref_true,REC.opt.hete1.c,REC.opt.Musp(:,:,:,inl));
+    end
+end
+if Vars.SPECTRA
+    if any(strcmpi(REC.solver.variables,'mua'))
+        for inc = 1:Vars.nCromo
+            fprintf(['<strong>------- Chromo ',Vars.cromo_label{inc},'-------</strong>\n'])
+            Q.cromo(inl) = QuantifyX(REC.grid,Vars.REC.opt.conc0(inc),REC.opt.bConc(:,inc),...
+                ref_true,REC.opt.hete1.c,REC.opt.Conc(:,:,:,inc));
+        end
+    end
+    if any(strcmpi(REC.solver.variables,'mus'))
+        fprintf(['<strong>------- A coeff -------</strong>\n'])
+%         Q.a = QuantifyX(REC.grid,REC.opt.muspB(inl),REC.opt.bmusp(:,inl),...
+%             ref_true,REC.opt.hete1.c,REC.opt.Musp(:,:,:,inl));
+        fprintf(['<strong>------- B coeff -------</strong>\n'])
+%         Q.b = QuantifyX(REC.grid,REC.opt.muspB(inl),REC.opt.bmusp(:,inl),...
+%             ref_true,REC.opt.hete1.c,REC.opt.Musp(:,:,:,inl));
+    end
+end
 end
 
 

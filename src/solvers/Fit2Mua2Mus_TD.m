@@ -51,9 +51,9 @@ mvec = hmesh.Mvec('Gaussian',Mds, n);
 nQM = sum(dmask(:));
 %% normalize data
 if self_norm == true
-        data = data * spdiags(1./sum(data)',0,nQM,nQM);
-        ref = ref * spdiags(1./sum(ref)',0,nQM,nQM);
-        sd = sqrt(data) * spdiags(1./sum(data)',0,nQM,nQM); 
+        data = data * spdiags(1./sum(data,'omitnan')',0,nQM,nQM);
+        ref = ref * spdiags(1./sum(ref,'omitnan')',0,nQM,nQM);
+        sd = sqrt(data) * spdiags(1./sum(data,'omitnan')',0,nQM,nQM); 
 end
 %% mask for excluding zeros
 mask = (data(:) == 0) | (isnan(data(:)));
@@ -173,14 +173,14 @@ function [proj] = forward(x, ~)
             proj = z(1:nmax,:);
             clear nmax
             if self_norm == true
-                proj = proj * spdiags(1./sum(proj)',0,nQM,nQM);
+                proj = proj * spdiags(1./sum(proj,'omitnan')',0,nQM,nQM);
             end
             clear z
         end
         %proj = circshift(proj,round(t0/dt));
         proj = WindowTPSF(proj,twin);
         if self_norm == true
-            proj = proj * spdiags(1./sum(proj)',0,nQM,nQM);
+            proj = proj * spdiags(1./sum(proj,'omitnan')',0,nQM,nQM);
         end
         proj(mask) = [];
         proj = proj(:)./sd(:);

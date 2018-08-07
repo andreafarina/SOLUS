@@ -1,5 +1,5 @@
 function [phi, Area] = ForwardTD(grid,Spos, Dpos, dmask, muaB, muspB, n, ...
-    Mua, Musp, A, dt, nstep, self_norm, geom, FWD_TYPE,varargin)
+    Mua, Musp, A, dt, nstep, self_norm, geom, FWD_TYPE)
 global mesh
 DEBUG = 0;
 v = 0.2999/n;
@@ -26,47 +26,26 @@ switch lower(FWD_TYPE)
             type = 'homo';
         end
         disp(['calculating Forward(',type,', ',geom,')']);
-        if isempty(varargin)
-            S.Active = false;
-        else
-            S = varargin{1};
-        end
-        S.Active = true; type = 'homo';
-        S.a = 1; S.b = 2; S.conc = [3 4 5 6]; S.lambda = [600 601 602 603]; S.lambda0 = 600; S.ext_c = [90 91 92 93];
-        S.nL = 4;
+        
         switch lower(type)
             case 'homo'
                 switch lower(geom)
                     case 'infinite'
                         
                     case 'semi-inf'
-                        if S.Active
-                            row_off = 0;
-                            for i = 1:Ns
-                                ind_d = find(dmask(:,i));
-                                %textprogressbar(i/Ns*100);
-                                %pause(0.01);
-                                for j=1:numel(ind_d)
-                                    m = ind_d(j);
-                                    phi(row_off + (1:nstep)) = SemiInfiniteSpectral_TR(t, Spos(i,:),...
-                                        Dpos(m,:),v,A,S);
-                                    row_off = row_off + nstep;
-                                end
-                            end
-                        else
-                            row_off = 0;
-                            for i = 1:Ns
-                                ind_d = find(dmask(:,i));
-                                %textprogressbar(i/Ns*100);
-                                %pause(0.01);
-                                for j=1:numel(ind_d)
-                                    m = ind_d(j);
-                                    phi(row_off + (1:nstep)) = SemiInfinite_TR(t, Spos(i,:),...
-                                        Dpos(m,:),muaB,muspB,v,A);
-                                    row_off = row_off + nstep;
-                                end
+                        row_off = 0;
+                        for i = 1:Ns
+                            ind_d = find(dmask(:,i));
+                            %textprogressbar(i/Ns*100);
+                            %pause(0.01);
+                            for j=1:numel(ind_d)
+                                m = ind_d(j);
+                                phi(row_off + (1:nstep)) = SemiInfinite_TR(t, Spos(i,:),...
+                                    Dpos(m,:),muaB,muspB,v,A);
+                                row_off = row_off + nstep;
                             end
                         end
+                        
                     case 'slab'
                         
                         
@@ -141,10 +120,10 @@ switch lower(FWD_TYPE)
         
 end
 if nargout > 1
-    Area = sum(phi);
+    Area = sum(phi,'omitnan');
 end
 if self_norm == true
-    Area = sum(phi);
+    Area = sum(phi,'omitnan');
     phi = bsxfun(@times,phi,1./Area);
 end
 
