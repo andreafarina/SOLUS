@@ -35,15 +35,11 @@ LOAD_FWD_TEO = 1;       % if 0: save the raw TPSF(un-noisy) in a _FwdTeo.m file.
 % -------------------------------------------------------------------------
 TOAST2DOT = 0;          % if 1 the function toast2dot is used for conversion 
 SPECTRA = 1;
-ForceConstitSolution = 0;
-cromo_label = {'Hb','HbO2','Lipid','H2O','Collagen'};
-cromo_factor = [1,1,10*100*0.91,10*100, 10*100*0.196];
-cromo_units = {'microM','microM','mg/cm^3','mg/cm^3','mg/cm^3'};
-% DOT.spe.cromo_label = {'Hb','HbO2','Lipid','H2O','Collagen'};
-% DOT.spe.cromo_factor = [1,1,10*100*0.91,10*100, 10*100*0.196];
-% DOT.spe.cromo_units = {'microM','microM','mg/cm^3','mg/cm^3','mg/cm^3'};
-% DOT.spe.ForceConstitSolution = 0;
-lamda_id = 1:2;
+DOT.spe.cromo_label = {'Hb','HbO2','Lipid','H2O','Collagen'};
+DOT.spe.cromo_factor = [1,1,10*100*0.91,10*100, 10*100*0.196];
+DOT.spe.cromo_units = {'microM','microM','mg/cm^3','mg/cm^3','mg/cm^3'};
+DOT.spe.ForceConstitSolution = 0;
+lamda_id = 1:8;
 if SPECTRA == 0
 mua_ = [0.00380740474000000 0.00286718196800000 0.00353571764000000 0.0109674880900000 0.0170446766000000 0.0314137863400000 0.0185177919450000 0.0111878307750000];
 musp_ = [1.54530000000000 1.46457537313433 1.18224759036145 1.07242131147541 1.04389946808511 1.00129132653061 0.952684951456311 0.921376056338028];
@@ -121,7 +117,7 @@ DOT.opt.hete1.path ='../3DMasks/Mask3D_Mask_malignant_4.mat' ;   % down
 %==========================================================================
 %%                         Time domain parameters
 %==========================================================================
-DOT.time.dt = (50e3/4096/4)*4;        % time step in picoseconds
+DOT.time.dt = (50e3/4096/6)*4;        % time step in picoseconds
 DOT.time.nstep = 4096/4;               % number of temporal steps
 DOT.time.noise = 'none';         % 'Poisson','Gaussian','none'
                                     % if 'Poisson' and sigma>0 a

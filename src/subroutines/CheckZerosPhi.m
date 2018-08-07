@@ -1,4 +1,6 @@
 function CheckZerosPhi(phi,radiometry,phi_name)
+warning('off','verbose')
+warning('off','backtrace')
 spacer = '-----'; 
 nmeas = size(phi,2)/radiometry.nL;
 disp(['Checking for zeros in ', phi_name])
@@ -11,4 +13,6 @@ for inl = 1:radiometry.nL
         warning([num2str(sum(dummy_phi(:)<0)),' elements of ' phi_name ' < 0!']);
     end
 end
+warning('on','verbose')
+warning('on','backtrace')
 end

@@ -5,7 +5,7 @@
 %==========================================================================
 
 function [bmua,bmus,bconc,bA,bB] = RecSolverBORN_TD_spectral(solver,grid,mua0,mus0, n, A,...
-    Spos,Dpos,dmask, dt, nstep, twin, self_norm, data, irf, ref, sd, fwd_type,radiometry,Vars)
+    Spos,Dpos,dmask, dt, nstep, twin, self_norm, data, irf, ref, sd, fwd_type,radiometry,spe)
 %global factor
 %ref = 0;
 %% Jacobain options
@@ -21,7 +21,7 @@ nwin = size(twin,1);
 % -------------------------------------------------------------------------
 [p,type_jac] = ExtractVariables(solver.variables);
 Jacobian = @(mua, mus) JacobianTD_multiwave_spectral (grid, Spos, Dpos, dmask, mua, mus, n, A, ...
-    dt, nstep, twin, irf, geom,type_jac,fwd_type,radiometry,Vars);
+    dt, nstep, twin, irf, geom,type_jac,fwd_type,radiometry,spe);
 %% self normalise (probably useless because input data are normalize)
 % if self_norm == true
 % %     sh = 0;
@@ -103,7 +103,7 @@ data(mask) = [];
 
 %sd(mask) = [];
 % solution vector
-x0 = PrepareX0_spectral(Vars,grid.N,type_jac);
+x0 = PrepareX0_spectral(spe,grid.N,type_jac);
 x = ones(size(x0));
 
 if strcmpi(NORMDIFF,'sd'), dphi = (data(:)-ref(:))./sd(~mask); end
@@ -256,7 +256,7 @@ x = x + dx;
 %logx = logx + dx;
 %x = exp(logx);
 x = x.*x0;
-[bmua,bmus,bconc,bAB] = XtoMuaMus_spectral(x,mua0,mus0,type_jac,Vars);
+[bmua,bmus,bconc,bAB] = XtoMuaMus_spectral(x,mua0,mus0,type_jac,spe);
 bA = bAB(:,1);bB = bAB(:,2);
 
 end

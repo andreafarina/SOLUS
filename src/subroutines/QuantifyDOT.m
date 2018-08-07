@@ -1,4 +1,4 @@
-function Q = QuantifyDOT(REC,ref_true,Vars)
+function Q = QuantifyDOT(REC,ref_true)
 % =========================================================================
 %%                            Quantify DOT
 % =========================================================================
@@ -16,21 +16,21 @@ if any(strcmpi(REC.solver.variables,'mus'))
             ref_true,REC.opt.hete1.c,REC.opt.Musp(:,:,:,inl));
     end
 end
-if Vars.SPECTRA
+if REC.spe.SPECTRA
     if any(strcmpi(REC.solver.variables,'mua'))
-        for inc = 1:Vars.nCromo
-            fprintf(['<strong>------- Chromo ',Vars.cromo_label{inc},'-------</strong>\n'])
-            Q.cromo(inl) = QuantifyX(REC.grid,Vars.REC.opt.conc0(inc),REC.opt.bConc(:,inc),...
+        for inc = 1:REC.spe.nCromo
+            fprintf(['<strong>------- Chromo ',REC.spe.cromo_label{inc},'-------</strong>\n'])
+            Q.cromo(inl) = QuantifyX(REC.grid,REC.opt.concB(inc),REC.opt.bConc(:,inc),...
                 ref_true,REC.opt.hete1.c,REC.opt.Conc(:,:,:,inc));
         end
     end
     if any(strcmpi(REC.solver.variables,'mus'))
-        fprintf(['<strong>------- A coeff -------</strong>\n'])
-%         Q.a = QuantifyX(REC.grid,REC.opt.muspB(inl),REC.opt.bmusp(:,inl),...
-%             ref_true,REC.opt.hete1.c,REC.opt.Musp(:,:,:,inl));
-        fprintf(['<strong>------- B coeff -------</strong>\n'])
-%         Q.b = QuantifyX(REC.grid,REC.opt.muspB(inl),REC.opt.bmusp(:,inl),...
-%             ref_true,REC.opt.hete1.c,REC.opt.Musp(:,:,:,inl));
+        fprintf('<strong>------- A coeff -------</strong>\n')
+         Q.a = QuantifyX(REC.grid,REC.opt.aB,REC.opt.bA,...
+             ref_true,REC.opt.hete1.c,REC.opt.a);
+        fprintf('<strong>------- B coeff -------</strong>\n')
+         Q.b = QuantifyX(REC.grid,REC.opt.bB,REC.opt.bbB,...
+             ref_true,REC.opt.hete1.c,REC.opt.b);
     end
 end
 end

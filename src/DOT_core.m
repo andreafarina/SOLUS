@@ -70,15 +70,7 @@ if ~exist(rdir,'dir')
 end
 disp(['Results path: ',rdir]);
 %% Get True Variables from X
-Vars = TranslateX_2Var(SPECTRA,Xd,Xp,Xr,DOT.radiometry.lambda,...
-    DOT.opt.hete1.type,DOT.radiometry.lambda0,spectra_file...
-    ,cromo_label,cromo_units,cromo_factor,ForceConstitSolution);
-DOT.opt.muspB = Vars.DOT.opt.muspB;
-DOT.opt.muaB = Vars.DOT.opt.muaB;
-DOT.opt.hete1.val = Vars.DOT.opt.hete1.val;
-REC.opt.mua0 = Vars.REC.opt.mua0;
-REC.opt.musp0 = Vars.REC.opt.musp0;
-% [DOT,REC] = TranslateX_2Var2(SPECTRA,Xd,Xp,Xr,spectra_file,ForceConstitSolution,DOT,REC);
+[DOT,REC] = TranslateX_2Var(SPECTRA,Xd,Xp,Xr,spectra_file,DOT,REC);
 
 %==========================================================================
 %%                          Experimental data
@@ -190,6 +182,7 @@ end
 figure(10), imagesc(DOT.dmask),xlabel('Sources'),ylabel('Meas'), axis image,title('Dmask');
 
 % plot source-detectors and heterogeneities
+figure(11)
 subplot(1,2,1),PlotHeteQM(DOT,squeeze(DOT.opt.Mua(:,:,:,1)),DOT.opt.muaB(1)),title('Mua');
 subplot(1,2,2),PlotHeteQM(DOT,squeeze(DOT.opt.Musp(:,:,:,1)),DOT.opt.muspB(1)),title('Musp');
 drawnow;
@@ -267,7 +260,7 @@ if DOT.TD == 1
     % AF: to optimize memory assign directly DataTD
     if ((EXPERIMENTAL == 1) && (EXP_IRF == 1))
         nsub=numSubplots(DOT.radiometry.nL);
-        figure;
+        figure(12);
         for inl = 1:DOT.radiometry.nL
         meas_set = (1:nmeas)+(inl-1)*nmeas;
         subplot(nsub(1),nsub(2),inl)
@@ -495,8 +488,12 @@ if strcmpi(REC.domain,'td')
 %     end
 % select ROI dinamically if not defined in RecSettings_DOT.m
 if REC.solver.prejacobian.load
+    warning('off','verbose')
+    warning('off','backtrace')
     warning('Pre loaded ROI will be used. Any value will be overwritten');
     warning('Pre loaded NUM_TW will be used. Any value will be overwritten');
+    warning('on','verbose')
+    warning('on','backtrace')
     load(REC.solver.prejacobian.path,'ROI','NW');
     REC.time.roi = ROI;
     NUM_TW = NW;
@@ -558,6 +555,7 @@ REC.cm = 0.299/REC.opt.nB;
 %%              PLOT REFERENCE VALUES IF PRESENT              
 %==========================================================================        
 % ------------------------ Reference mua ----------------------------------
+if ~SPECTRA
 for inl = 1:REC.radiometry.nL
     PlotMua = squeeze(REC.opt.Mua(:,:,:,inl));
     PlotMusp = squeeze(REC.opt.Musp(:,:,:,inl));
@@ -579,28 +577,27 @@ if isfield(REC.opt,'Musp')
     suptitle('Mus');
 end
 end
+end
 if SPECTRA
     mask = REC.opt.Mua(:,:,:,1)./REC.opt.muaB(1);
-    for ic = 1:Vars.nCromo
-    REC.opt.Conc(:,:,:,ic) = mask.*Vars.DOT.opt.concB(ic);
-    fh=figure(900+ic);fh.NumberTitle = 'off';fh.Name = [Vars.cromo_label{ic} ' Map'];
+    for ic = 1:REC.spe.nCromo
+    if REC.opt.conc0(ic)==REC.opt.hete1.conc(ic), mask = ones(size(mask)); end
+    REC.opt.Conc(:,:,:,ic) = mask.*REC.opt.concB(ic);
+    fh=figure(900+ic);fh.NumberTitle = 'off';fh.Name = [REC.spe.cromo_label{ic} ' Map'];
     ShowRecResults(REC.grid,REC.opt.Conc(:,:,:,ic),...
         REC.grid.z1,REC.grid.z2,REC.grid.dz,1,'auto');%,0.,0.64);
-    suptitle(Vars.cromo_label{ic});
+    suptitle(REC.spe.cromo_label{ic});
     end
     mask = REC.opt.Musp(:,:,:,1)./REC.opt.muspB(1);
-    REC.opt.a = mask.*Vars.DOT.opt.aB;
-    if Vars.DOT.opt.aB==Vars.DOT.opt.hete1.a, mask = ones(size(mask)); end
+    if REC.opt.aB==REC.opt.hete1.a, mask = ones(size(mask)); end
+    REC.opt.a = mask.*REC.opt.aB;
     fh=figure(900+ic+1);fh.NumberTitle = 'off';fh.Name = ('a Map');
     ShowRecResults(REC.grid,REC.opt.a,...
         REC.grid.z1,REC.grid.z2,REC.grid.dz,1,'auto');%,0.,0.64);
     suptitle('a');
-    if Vars.DOT.opt.bB==Vars.DOT.opt.hete1.b
-        mask = ones(size(mask));
-    else
-        mask = REC.opt.Musp(:,:,:,1)./REC.opt.muspB(1);
-    end
-    REC.opt.b = mask.*Vars.DOT.opt.bB;
+    mask = REC.opt.Musp(:,:,:,1)./REC.opt.muspB(1);
+    if REC.opt.bB==REC.opt.hete1.b, mask = ones(size(mask)); end
+    REC.opt.b = mask.*REC.opt.bB;
     fh=figure(900+ic+2);fh.NumberTitle = 'off';fh.Name = ('b Map');
     ShowRecResults(REC.grid,REC.opt.b,...
         REC.grid.z1,REC.grid.z2,REC.grid.dz,1,'auto');%,0.,0.64);
@@ -668,12 +665,12 @@ switch lower(REC.domain)
                     REC.time.irf.data,REC.ref,REC.sd,REC.type_fwd);
             case 'spectral_born'
                 REC.solver.prior.refimage = [];
-                [REC.opt.bmua,REC.opt.bmusp,REC.opt.bConc,REC.opt.bA,REC.opt.bB] = RecSolverBORN_TD_spectral(REC.solver,...
+                [REC.opt.bmua,REC.opt.bmusp,REC.opt.bConc,REC.opt.bA,REC.opt.bbB] = RecSolverBORN_TD_spectral(REC.solver,...
                     REC.grid,...
                     REC.opt.mua0,REC.opt.musp0,REC.opt.nB,REC.A,...
                     REC.Source.Pos,REC.Detector.Pos,REC.dmask,REC.time.dt,REC.time.nstep,...
                     REC.time.twin,REC.time.self_norm,REC.Data,...
-                    REC.time.irf.data,REC.ref,REC.sd,REC.type_fwd,REC.radiometry,Vars);
+                    REC.time.irf.data,REC.ref,REC.sd,REC.type_fwd,REC.radiometry,REC.spe);
             case 'born2reg'
                 if ~isempty(REC.solver.prior.path)
                     REC.solver.prior.refimage = ...
@@ -724,7 +721,7 @@ switch lower(REC.domain)
                     REC.Source.Pos,REC.Detector.Pos,REC.dmask,...
                     REC.time.dt,REC.time.nstep,REC.time.twin,...
                     REC.time.self_norm,REC.Data,...
-                    REC.time.irf.data,REC.ref,REC.sd,1,REC.radiometry,Vars);
+                    REC.time.irf.data,REC.ref,REC.sd,1,REC.radiometry,REC.spe);
             case 'cg'
             
             case 'l1'
@@ -760,11 +757,12 @@ switch lower(REC.domain)
 end
 ROI = REC.time.roi; %#ok<NASGU>
 NW = NUM_TW; %#ok<NASGU>
-save(REC.solver.prejacobian.path,'ROI','NW','-append','-v7.3');      
+save(REC.solver.prejacobian.path,'ROI','NW','-append');      
 clear ROI NW
 % ---------------------------- display mua --------------------------------
 if ~contains(REC.solver.type,'fit')
     drawnow;
+if ~strcmpi(REC.solver.type,'spectral_born')
 for inl = 1:REC.radiometry.nL
 PlotMua = reshape(REC.opt.bmua,[REC.grid.dim REC.radiometry.nL]);
 PlotMua = PlotMua(:,:,:,inl);
@@ -791,20 +789,21 @@ title('Recon Mus');
 
 drawnow;
 end
+end
 if strcmpi(REC.solver.type,'spectral_born')
-    for ic = 1:Vars.nCromo
+    for ic = 1:REC.spe.nCromo
     Conc=reshape(REC.opt.bConc(:,ic),REC.grid.dim);
-    fh=figure(800+ic);fh.NumberTitle = 'off';fh.Name = ['Recon ' Vars.cromo_label{ic} ' Map'];
+    fh=figure(800+ic);fh.NumberTitle = 'off';fh.Name = ['Recon ' REC.spe.cromo_label{ic} ' Map'];
     ShowRecResults(REC.grid,Conc,...
         REC.grid.z1,REC.grid.z2,REC.grid.dz,1,'auto');%,0.,0.64);
-    suptitle(['Recon ' Vars.cromo_label{ic}]);
+    suptitle(['Recon ' REC.spe.cromo_label{ic}]);
     end
     fh=figure(800+ic+1);fh.NumberTitle = 'off';fh.Name = ('Recon a Map');
     ShowRecResults(REC.grid,reshape(REC.opt.bA,REC.grid.dim),...
         REC.grid.z1,REC.grid.z2,REC.grid.dz,1,'auto');%,0.,0.64);
     suptitle('Recon a');
     fh=figure(800+ic+2);fh.NumberTitle = 'off';fh.Name = ('Recon b Map');
-    ShowRecResults(REC.grid,reshape(REC.opt.bB,REC.grid.dim),...
+    ShowRecResults(REC.grid,reshape(REC.opt.bbB,REC.grid.dim),...
         REC.grid.z1,REC.grid.z2,REC.grid.dz,1,'auto');%,0.,0.64);
     suptitle('Recon b');
 end
@@ -819,7 +818,7 @@ end
 %%                            Quantify DOT 
 % =========================================================================
 if ~contains(REC.solver.type,'fit')
-    Q = QuantifyDOT(REC,~EXP_DATA,Vars);
+    Q = QuantifyDOT(REC,~EXP_DATA);
 end
 Quantification_MultiSim
 % =========================================================================
