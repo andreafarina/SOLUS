@@ -37,9 +37,7 @@ Jacobian = @(mua, mus) JacobianTD_multiwave_spectral (grid, Spos, Dpos, dmask, m
     [],[], A, dt, nstep, self_norm,...
     geom, fwd_type,radiometry);
 if numel(irf)>1
-%     sh = 0;
     for inl = 1:radiometry.nL
-%         meas_set = sh+(1:nQM);
         meas_set =(1:nQM)+(inl-1)*nQM;
         z = convn(proj(:,meas_set),irf(:,inl));
         nmax = max(nstep,numel(irf(:,inl)));
@@ -50,28 +48,20 @@ if numel(irf)>1
             proj(:,meas_set) = z(1:nmax,:);
         end
         clear nmax z
-%         sh = sh + nQM;
     end
 end
 if self_norm == true
-%     sh = 0;
     for inl = 1:radiometry.nL
-%         meas_set = sh+(1:nQM);
         meas_set = (1:nQM)+(inl-1)*nQM;
         proj(:,meas_set) = proj(:,meas_set)*spdiags(1./sum(proj(:,meas_set),1,'omitnan')',0,nQM,nQM);
-%         sh = sh + nQM;
     end
 end
-% sh = 0; sh_twin = 0;
 dummy_proj = zeros(size(twin,1),nQM*radiometry.nL);
 for inl = 1:radiometry.nL
-%     meas_set = sh + (1:nQM); twin_set = sh_twin + (1:2);
     meas_set = (1:nQM)+(inl-1)*nQM; twin_set = (1:2)+(inl-1)*2;
     proj_single = proj(:,meas_set);
     proj_single = WindowTPSF(proj_single,twin(:,twin_set));
     dummy_proj(:,meas_set) = proj_single;
-%     sh = sh + nQM;
-%     sh_twin = sh_twin + 2;
 end
 proj = dummy_proj;
 proj = proj(:);

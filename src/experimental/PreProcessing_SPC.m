@@ -1,4 +1,4 @@
- function [spc,time,irf] = PreProcessing_SPC(lprm,data_file_spc)
+ function [homo,hete,time,irf] = PreProcessing_SPC(lprm)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Process SPC raw data created with SaveCCD_SPC_Data.m
 % 
@@ -18,9 +18,9 @@
 % =========================================================================
 %%                          Options
 % =========================================================================
-SHOW_CURVES = 1;         % Show TR raw curves
+SHOW_CURVES = 0;         % Show TR raw curves
 POISS_DENOISE = 0;       % Anscombe transform and wavelet denoising
-BKG_CONST = 1;           % subtract constant background for each measurements
+BKG_CONST = 0;           % subtract constant background for each measurements
 APPLY_ROI = 0;           % decide whether or not apply ROI
 APPLY_TWIN = 0;          % apply twin binning
 SAVE = 0;                % save into a new data_file
@@ -89,16 +89,17 @@ if nargin>0
     if isfield(lprm,'path')
         if isfield(lprm.path,'data_folder')
             data_folder = lprm.path.data_folder;
+            irf_file = data_folder;
         end
         if isfield(lprm.path,'day')
             day = lprm.path.day;
         end
+        if isfield(lprm.path,'file_name')
+            data_file_spc = lprm.path.file_name;
+        end
 %         if isfield(lprm.path,'data_file_spc')
 %             data_file_spc = lprm.path.data_file_spc;
 %         end
-        if isfield(lprm.path,'irf_file')
-            irf_file = lprm.path.irf_file;
-        end
     else
         disp('ATTENTION! No data file specified! Using default');
     end
@@ -155,9 +156,12 @@ end
 data_path = data_folder;
 %% load data
 load([data_path,filesep,data_file_spc]);
-spc = all_data;
-clear all_data
+homo = T.meas_homo;
+hete = T.meas_hete;
+dataset = {'homo' 'hete'};
 %% Determine the dataset format
+for idt = 1:2
+spc = eval(dataset{idt});
 s = size(spc);
 spc = reshape(spc,s(1),[]);
 if POISS_DENOISE==1
@@ -168,13 +172,13 @@ if POISS_DENOISE==1
     spc = spcf;
     clear spcf
 end
+eval([dataset{idt} '= spc;']);
+end
 
     
 %% load IRF 
 if nargout > 2
-    tmp  = load([data_path,filesep,irf_file]);
-    irf.data = tmp.IRF;
-    clear tmp
+    irf.data = T.irf.data;
 else
     irf.data = zeros(s(1),1);
     irf.data(1) = 1;
@@ -186,6 +190,9 @@ if POISS_DENOISE==1
     end
 end
 %% Background constant value
+for idt = 1:2
+spc = eval(dataset{idt});
+
 if BKG_CONST == 1
     %bkg=mean(spc(ch_bkg_start:ch_bkg_end,:,:,:));
     bkg = repmat(mean(spc(ch_bkg_start:ch_bkg_end,:)),n_chan,1);
@@ -212,13 +219,12 @@ end
 % =========================================================================
 if SHOW_CURVES == 1
     spc = reshape(spc,s);
-    spc_sum = sum(spc,5);
-    spc_sum_resh = reshape(spc_sum,n_chan,[]);
+    spc_res = reshape(spc,n_chan,[]);
     %hold on
-    for i = 1:size(spc_sum_resh,2)
+    for i = 1:size(spc_res,2)
         %semilogy(time,[spc(:,i),irf.data(:,1)]),ylim([1 65000]),grid,xlabel('time (ps)')
-        semilogy([spc_sum(:,i),sum(irf.data,2)]),ylim([1 65000]),grid,xlabel('chan')
-        
+        semilogy([spc_res(:,i),irf.data]),ylim([1 65000]),grid,xlabel('chan')
+        title(dataset{idt})
         ylabel('Counts'),
         pause(0.1);
     end
@@ -253,6 +259,8 @@ spc = reshape(spc,[n_chan,s(2:end)]);
 if SAVE == 1
     save([data_path, data_file_spc(1:end-4)],'spc','time');
 end
+eval([dataset{idt} '= spc;']);
+end
 
 % =========================================================================
 %%                          Process IRF
@@ -276,21 +284,21 @@ if nargout > 2
     % apply ROI
     %irf.data = irf.data(roi_vec,:);
     %% calculate indicator summing up all the IRF repetitions
-    irf_sum = sum(irf.data,2);
+    dummy_irf = irf.data;
     % Calculate peak position
-    [irf.peak.value,irf.peak.pos] = max(irf_sum);
+    [irf.peak.value,irf.peak.pos] = max(dummy_irf);
     irf.peak.time = time(irf.peak.pos);
     % Calculate area
-    irf.area = sum(irf_sum);
+    irf.area = sum(dummy_irf);
     % Calculate baricenter
-    x = 1:size(irf_sum,1);
-    irf_sum2 = reshape(irf_sum,[size(irf_sum,1) 1]);
+    x = 1:size(dummy_irf,1);
+    irf_sum2 = reshape(dummy_irf,[size(dummy_irf,1) 1]);
     irf.baric.pos = round(x*irf_sum2./irf.area);
     irf.baric.time = time(irf.baric.pos);
     % Shift temoral axis
     time = time - irf.baric.time;
     % Calculate second centered moment
-    irf.variance = ((x.^2)*irf_sum./irf.area - irf.baric.pos.^2).*factor;
+    irf.variance = ((x.^2)*dummy_irf./irf.area - irf.baric.pos.^2).*factor;
     %irf.sigma2 = sqrt(((x-irf.baric.pos).^2*irf.data./irf.area).*factor);
     if APPLY_TWIN == 1
         for w = 1:nwin
