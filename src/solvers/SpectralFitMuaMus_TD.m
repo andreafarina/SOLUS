@@ -101,7 +101,7 @@ end
 ref(mask) = [];
 data(mask) = [];
 proj(mask) = [];
-weight(mask) = [];
+%weight(mask) = [];
 figure(1002);semilogy([proj,data]),legend('proj','ref')
 sd = sqrt(ref);%%ones(size(proj));%proj(:);
 %sd = ones(size(data));
@@ -265,10 +265,10 @@ save('factor_ref.mat','factor');
             dummy_proj_(:,meas_set_) = proj_single_;
         end
         proj = dummy_proj_(:);
-        proj(mask) = [];
         if ~strcmpi(weight_type,'none')
             proj = proj.*weight;
         end
+        proj(mask) = [];
         proj = proj(:)./sd;
         
         % plot forward

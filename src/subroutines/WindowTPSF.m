@@ -26,7 +26,7 @@ nwin = size(twin,1);
 size_y(1) = nwin;
 y = zeros(size_y);
 for w = 1:nwin
-             y(w,:) = sum(TPSF(twin(w,1):twin(w,2),:),1);
+             y(w,:) = sum(TPSF(twin(w,1):twin(w,2),:),1,'omitnan');
 end
 
     

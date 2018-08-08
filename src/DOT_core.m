@@ -406,15 +406,34 @@ if ((EXPERIMENTAL == 1) && (EXP_DATA == 1))
         if FORWARD == 1
             h = 1;
             nsub=numSubplots(DOT.radiometry.nL);
-			fh=figure(201+h);
-            for inl = 1:DOT.radiometry.nL
+			for h=1:size(z,2)
+                fh=figure(202);
+                fh.Name = ['Ref measurement number ',num2str(h)];
+                fh=figure(203);
+                fh.Name = ['Data measurement number ',num2str(h)];
+                for inl = 1:DOT.radiometry.nL
                 meas_set = (1:nmeas)+(inl-1)*nmeas;
                 subplot(nsub(1),nsub(2),inl);
-                semilogy(1:size(z,1),[f(:,meas_set(h))./sum(f(:,meas_set(h)),'omitnan'),RefTD(:,meas_set(h))./sum(RefTD(:,meas_set(h)),'omitnan')]),
+                figure(202);semilogy(1:size(z,1),[f(:,meas_set(h))./sum(f(:,meas_set(h)),'omitnan'),RefTD(:,meas_set(h))./sum(RefTD(:,meas_set(h)),'omitnan')]),
                 legend('Data','conv(irf,fwd)'),
                 title(['Wavelength :' num2str(DOT.radiometry.lambda(inl))]);
+                figure(203);semilogy(1:size(z,1),[z(:,meas_set(h))./sum(z(:,meas_set(h)),'omitnan'),DataTD(:,meas_set(h))./sum(DataTD(:,meas_set(h)),'omitnan')]),
+                legend('Data','conv(irf,fwd)'),
+                title(['Wavelength :' num2str(DOT.radiometry.lambda(inl))]);
+                end
+                ImageMeasure(DOT,h);
+                pause(0.01);
             end
-            fh.Name = ['Ref measurement number ',num2str(h)];
+            %             for h = 1:size(z,2)
+%             semilogy(1:size(z,1),[f(:,h)./sum(f(:,h)),RefTD(:,h)./sum(RefTD(:,h),'omitnan')]),
+%             legend('Data','conv(irf,fwd)'),
+%             title(['Ref measurement number ',num2str(h)]);
+%             figure(204);semilogy(1:size(z,1),[z(:,h)./sum(z(:,h)),DataTD(:,h)./sum(DataTD(:,h),'omitnan')]),
+%             legend('Data','conv(irf,fwd)'),
+%             title(['Data measurement number ',num2str(h)]);
+%             ImageMeasure(DOT,h);
+%             pause(0.01)
+%             end
         end
         %figure;semilogy(f)
         %figure;semilogy(f./z)
@@ -507,7 +526,7 @@ end
 end
 REC.ref = []; REC.Data = []; REC.sd = [];
 nsub = numSubplots(REC.radiometry.nL);
-figure;
+figure(20);
 for inl = 1:REC.radiometry.nL
     meas_set = (1:nmeas)+(inl-1)*nmeas;
     twin_set = (1:2)+(inl-1)*2;
@@ -588,17 +607,28 @@ if SPECTRA
         REC.grid.z1,REC.grid.z2,REC.grid.dz,1,'auto');%,0.,0.64);
     suptitle(REC.spe.cromo_label{ic});
     end
+    REC.opt.HbTot = REC.opt.Conc(:,:,:,strcmpi(REC.spe.cromo_label,'hb'))+...
+        REC.opt.Conc(:,:,:,strcmpi(REC.spe.cromo_label,'hbo2'));
+    REC.opt.So2 = REC.opt.Conc(:,:,:,strcmpi(REC.spe.cromo_label,'hbo2'))./REC.opt.HbTot;
+    fh=figure(900+ic+1);fh.NumberTitle = 'off';fh.Name = 'HbTot Map';
+    ShowRecResults(REC.grid,REC.opt.HbTot,...
+        REC.grid.z1,REC.grid.z2,REC.grid.dz,1,'auto');%,0.,0.64);
+    suptitle('HbTot');
+    fh=figure(900+ic+2);fh.NumberTitle = 'off';fh.Name = 'So2 Map';
+    ShowRecResults(REC.grid,REC.opt.So2,...
+        REC.grid.z1,REC.grid.z2,REC.grid.dz,1,'auto');%,0.,0.64);
+    suptitle('So2');
     mask = REC.opt.Musp(:,:,:,1)./REC.opt.muspB(1);
     if REC.opt.aB==REC.opt.hete1.a, mask = ones(size(mask)); end
     REC.opt.a = mask.*REC.opt.aB;
-    fh=figure(900+ic+1);fh.NumberTitle = 'off';fh.Name = ('a Map');
+    fh=figure(900+ic+3);fh.NumberTitle = 'off';fh.Name = ('a Map');
     ShowRecResults(REC.grid,REC.opt.a,...
         REC.grid.z1,REC.grid.z2,REC.grid.dz,1,'auto');%,0.,0.64);
     suptitle('a');
     mask = REC.opt.Musp(:,:,:,1)./REC.opt.muspB(1);
     if REC.opt.bB==REC.opt.hete1.b, mask = ones(size(mask)); end
     REC.opt.b = mask.*REC.opt.bB;
-    fh=figure(900+ic+2);fh.NumberTitle = 'off';fh.Name = ('b Map');
+    fh=figure(900+ic+4);fh.NumberTitle = 'off';fh.Name = ('b Map');
     ShowRecResults(REC.grid,REC.opt.b,...
         REC.grid.z1,REC.grid.z2,REC.grid.dz,1,'auto');%,0.,0.64);
     suptitle('b');
@@ -657,15 +687,46 @@ switch lower(REC.domain)
                     REC.time.irf.data,REC.ref,REC.sd,0);    
             case 'born'
                 REC.solver.prior.refimage = [];
-                [REC.opt.bmua,REC.opt.bmusp] = RecSolverBORN_TD(REC.solver,...
+            for inl = 1:REC.radiometry.nL
+                fprintf(['<strong>------- Wavelength ',num2str(REC.radiometry.lambda(inl)),'-------</strong>\n'])
+                [REC.opt.bmua(:,inl),REC.opt.bmusp(:,inl)] = RecSolverBORN_TD(REC.solver,...
+                    REC.grid,...
+                    REC.opt.mua0(inl),REC.opt.musp0(inl),REC.opt.nB,REC.A,...
+                    REC.Source.Pos,REC.Detector.Pos,REC.dmask,REC.time.dt,REC.time.nstep,...
+                    REC.time.twin(:,(1:2)+(inl-1)*2),REC.time.self_norm,REC.Data(:,(1:nmeas)+(inl-1)*nmeas),...
+                    REC.time.irf.data(:,inl),REC.ref(:,(1:nmeas)+(inl-1)*nmeas),REC.sd(:,(1:nmeas)+(inl-1)*nmeas),REC.type_fwd);
+            end
+            case 'born_spectral_post_proc'
+                REC.solver.prior.refimage = [];
+            for inl = 1:REC.radiometry.nL
+                fprintf(['<strong>------- Wavelength ',num2str(REC.radiometry.lambda(inl)),'-------</strong>\n'])
+                [REC.opt.bmua(:,inl),REC.opt.bmusp(:,inl)] = RecSolverBORN_TD(REC.solver,...
+                    REC.grid,...
+                    REC.opt.mua0(inl),REC.opt.musp0(inl),REC.opt.nB,REC.A,...
+                    REC.Source.Pos,REC.Detector.Pos,REC.dmask,REC.time.dt,REC.time.nstep,...
+                    REC.time.twin(:,(1:2)+(inl-1)*2),REC.time.self_norm,REC.Data(:,(1:nmeas)+(inl-1)*nmeas),...
+                    REC.time.irf.data(:,inl),REC.ref(:,(1:nmeas)+(inl-1)*nmeas),REC.sd(:,(1:nmeas)+(inl-1)*nmeas),REC.type_fwd);
+            end
+            if 1
+                [REC.opt.bmua,REC.opt.bmusp,REC.opt.bConc,REC.opt.bA,REC.opt.bbB]=FitVoxel(REC.opt.bmua,REC.opt.bmusp,REC.spe);
+            end
+            case 'spectral_born'
+                REC.solver.prior.refimage = [];
+                [REC.opt.bmua,REC.opt.bmusp,REC.opt.bConc,REC.opt.bA,REC.opt.bbB] = RecSolverBORN_TD_spectral(REC.solver,...
                     REC.grid,...
                     REC.opt.mua0,REC.opt.musp0,REC.opt.nB,REC.A,...
                     REC.Source.Pos,REC.Detector.Pos,REC.dmask,REC.time.dt,REC.time.nstep,...
                     REC.time.twin,REC.time.self_norm,REC.Data,...
-                    REC.time.irf.data,REC.ref,REC.sd,REC.type_fwd);
-            case 'spectral_born'
-                REC.solver.prior.refimage = [];
-                [REC.opt.bmua,REC.opt.bmusp,REC.opt.bConc,REC.opt.bA,REC.opt.bbB] = RecSolverBORN_TD_spectral(REC.solver,...
+                    REC.time.irf.data,REC.ref,REC.sd,REC.type_fwd,REC.radiometry,REC.spe);
+            case 'spectral_usprior'
+                if ~isempty(REC.solver.prior.path)
+                    REC.solver.prior.refimage = ...
+                        priormask3D(REC.solver.prior.path,REC.grid);
+                else
+                    disp('No prior is provided in RECSettings_DOT. Reference mua will be used');
+                    REC.solver.prior.refimage = REC.opt.Mua;
+                end
+                [REC.opt.bmua,REC.opt.bmusp,REC.opt.bConc,REC.opt.bA,REC.opt.bbB] = RecSolverBORN_TD_USPrior_spectral(REC.solver,...
                     REC.grid,...
                     REC.opt.mua0,REC.opt.musp0,REC.opt.nB,REC.A,...
                     REC.Source.Pos,REC.Detector.Pos,REC.dmask,REC.time.dt,REC.time.nstep,...
@@ -762,7 +823,7 @@ clear ROI NW
 % ---------------------------- display mua --------------------------------
 if ~contains(REC.solver.type,'fit')
     drawnow;
-if ~strcmpi(REC.solver.type,'spectral_born')
+if ~contains(REC.solver.type,'spectral')
 for inl = 1:REC.radiometry.nL
 PlotMua = reshape(REC.opt.bmua,[REC.grid.dim REC.radiometry.nL]);
 PlotMua = PlotMua(:,:,:,inl);
@@ -790,7 +851,7 @@ title('Recon Mus');
 drawnow;
 end
 end
-if strcmpi(REC.solver.type,'spectral_born')
+if contains(REC.solver.type,'spectral')
     for ic = 1:REC.spe.nCromo
     Conc=reshape(REC.opt.bConc(:,ic),REC.grid.dim);
     fh=figure(800+ic);fh.NumberTitle = 'off';fh.Name = ['Recon ' REC.spe.cromo_label{ic} ' Map'];
@@ -798,11 +859,22 @@ if strcmpi(REC.solver.type,'spectral_born')
         REC.grid.z1,REC.grid.z2,REC.grid.dz,1,'auto');%,0.,0.64);
     suptitle(['Recon ' REC.spe.cromo_label{ic}]);
     end
-    fh=figure(800+ic+1);fh.NumberTitle = 'off';fh.Name = ('Recon a Map');
+    REC.opt.HbTot = reshape(REC.opt.bConc(:,strcmpi(REC.spe.cromo_label,'hb')),REC.grid.dim)+...
+        reshape(REC.opt.bConc(:,strcmpi(REC.spe.cromo_label,'hbo2')),REC.grid.dim);
+    REC.opt.So2 = reshape(REC.opt.bConc(:,strcmpi(REC.spe.cromo_label,'hbo2')),REC.grid.dim)./REC.opt.HbTot;
+    fh=figure(800+ic+1);fh.NumberTitle = 'off';fh.Name = 'HbTot Map';
+    ShowRecResults(REC.grid,REC.opt.HbTot,...
+        REC.grid.z1,REC.grid.z2,REC.grid.dz,1,'auto');%,0.,0.64);
+    suptitle('HbTot');
+    fh=figure(800+ic+2);fh.NumberTitle = 'off';fh.Name = 'So2 Map';
+    ShowRecResults(REC.grid,REC.opt.So2,...
+        REC.grid.z1,REC.grid.z2,REC.grid.dz,1,'auto');%,0.,0.64);
+    suptitle('So2');
+    fh=figure(800+ic+3);fh.NumberTitle = 'off';fh.Name = ('Recon a Map');
     ShowRecResults(REC.grid,reshape(REC.opt.bA,REC.grid.dim),...
         REC.grid.z1,REC.grid.z2,REC.grid.dz,1,'auto');%,0.,0.64);
     suptitle('Recon a');
-    fh=figure(800+ic+2);fh.NumberTitle = 'off';fh.Name = ('Recon b Map');
+    fh=figure(800+ic+4);fh.NumberTitle = 'off';fh.Name = ('Recon b Map');
     ShowRecResults(REC.grid,reshape(REC.opt.bbB,REC.grid.dim),...
         REC.grid.z1,REC.grid.z2,REC.grid.dz,1,'auto');%,0.,0.64);
     suptitle('Recon b');
