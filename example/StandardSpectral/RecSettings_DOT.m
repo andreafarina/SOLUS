@@ -34,6 +34,15 @@ REC.solver.type = 'spectral_born';         % 'born','GN': gauss-newton,
                                   % 'LM': Levenberg-Marquardt,
                                   % 'l1': L1-based minimization
                                   % 'fit': fitting homogeneous data
+                                  % 'spectral_fit': fitting homogeneous
+                                  % data with spectral model
+                                  % 'spectral_usprior': spectral approach
+                                  % to USprior
+                                  % 'spectral_born': recon with spectral
+                                  % Jacobian
+                                  % 'born_spectral_post_proc': multi_wave
+                                  % classical born with post proc
+                                  % chromophores estimation
 if strcmpi(REC.solver.type,'spectral_born')&&SPECTRA == 0
 MEx = MException('spectral_born:SpectralDataInput','Set SPECTRA = 1 to use spectra_born');
 throwAsCaller(MEx);    
