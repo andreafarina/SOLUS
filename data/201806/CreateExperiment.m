@@ -7,10 +7,10 @@
 
 InitScript
 addpath('../../src/experimental/');
-folder_data = 'Dati phantom silicone/Data_hete_10_0.2_6m';
+folder_data = 'Dati phantom carne/LARD+TEND';
 addpath((['./Tomo structs/' folder_data]));
-%lambda   = [635, 670, 830, 915, 940, 980, 1030, 1065]; %lambda used
-lambda = [620 670 740 800 910 1020 1050 1090];
+lambda   = [635, 670, 830, 915, 940, 980, 1030, 1065]; %lambda used
+%lambda = [620 670 740 800 910 1020 1050 1090];
 
 for iw = 1:numel(lambda)
 EXP_file = strcat('Tomo_wave_',num2str(lambda(iw)));
@@ -80,6 +80,7 @@ EXP.optp.homo.abs = T.opt.homo.abs;
 EXP.optp.homo.sca = T.opt.homo.sca;
 EXP.optp.hete.abs = T.opt.hete.abs;
 EXP.optp.hete.sca = T.opt.hete.sca;
+EXP.lambda = T.lambda;
 mkdir(fullfile(pwd,'EXP structs',folder_data))
 str_file = [fullfile(pwd,'EXP structs',folder_data),filesep,...
     'EXP_',EXP_file,output_suffix];
@@ -95,7 +96,7 @@ EXP_full.data.spc(:,(1:size(EXP.data.spc,2))+(iw-1)*size(EXP.data.spc,2)) = EXP.
 EXP_full.path = EXP.path; EXP_full.path.file_name = 'Tomo';
 EXP_full.spc = EXP.spc;EXP_full.time = EXP.time;
 EXP_full.bkg = EXP.bkg;EXP_full.grid = EXP.grid;
-EXP_full.optp = EXP.optp;
+EXP_full.optp = EXP.optp; EXP_full.lambda = EXP.lambda;
 end
 clear EXP
 EXP = EXP_full;
