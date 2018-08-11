@@ -7,7 +7,7 @@
 
 InitScript
 addpath('../../src/experimental/');
-folder_data = 'Dati phantom carne/LARD+TEND';
+folder_data = 'Dati phantom carne/VEAL+LARD';
 addpath((['./Tomo structs/' folder_data]));
 lambda   = [635, 670, 830, 915, 940, 980, 1030, 1065]; %lambda used
 %lambda = [620 670 740 800 910 1020 1050 1090];

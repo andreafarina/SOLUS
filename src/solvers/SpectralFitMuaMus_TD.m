@@ -147,7 +147,7 @@ if spe.SPECTRA == 0 && ForceConstitSolution == false
     low_bound = [-100 zeros(1,numel([x0{:}]))];
 else
     if ForceConstitSolution
-        spe.opt.conc0 = ones(spe.nCromo,1);
+        spe.opt.conc0 = ones(spe.nCromo,1).*spe.active_cromo';
         spe.opt.a0 = 1; spe.opt.b0 = 1;
     end
     x0 = {spe.opt.conc0',[spe.opt.a0 spe.opt.b0]};
@@ -215,7 +215,7 @@ save('factor_ref.mat','factor');
             mua = x(2:spe.nLambda+1);
             mus = x(spe.nLambda+2:end);
         else
-            b_ = x(end); a_ = x(end-1); conc_ = x(2:end-2);
+            b_ = x(end); a_ = x(end-1); conc_ = x(2:end-2).*spe.active_cromo;
             if isrow(conc_), conc_ = conc_'; end
             mua = (spe.ext_coeff0*conc_)';
             mus = a_.*(spe.lambda./spe.lambda0).^(-b_);

@@ -413,11 +413,12 @@ if ((EXPERIMENTAL == 1) && (EXP_DATA == 1))
                 fh.Name = ['Data measurement number ',num2str(h)];
                 for inl = 1:DOT.radiometry.nL
                 meas_set = (1:nmeas)+(inl-1)*nmeas;
-                subplot(nsub(1),nsub(2),inl);
-                figure(202);semilogy(1:size(z,1),[f(:,meas_set(h))./sum(f(:,meas_set(h)),'omitnan'),RefTD(:,meas_set(h))./sum(RefTD(:,meas_set(h)),'omitnan')]),
+                figure(202);subplot(nsub(1),nsub(2),inl);
+                semilogy(1:size(z,1),[f(:,meas_set(h))./sum(f(:,meas_set(h)),'omitnan'),RefTD(:,meas_set(h))./sum(RefTD(:,meas_set(h)),'omitnan')]),
                 legend('Data','conv(irf,fwd)'),
                 title(['Wavelength :' num2str(DOT.radiometry.lambda(inl))]);
-                figure(203);semilogy(1:size(z,1),[z(:,meas_set(h))./sum(z(:,meas_set(h)),'omitnan'),DataTD(:,meas_set(h))./sum(DataTD(:,meas_set(h)),'omitnan')]),
+                figure(203);subplot(nsub(1),nsub(2),inl);
+                semilogy(1:size(z,1),[z(:,meas_set(h))./sum(z(:,meas_set(h)),'omitnan'),DataTD(:,meas_set(h))./sum(DataTD(:,meas_set(h)),'omitnan')]),
                 legend('Data','conv(irf,fwd)'),
                 title(['Wavelength :' num2str(DOT.radiometry.lambda(inl))]);
                 end
@@ -513,7 +514,11 @@ if REC.solver.prejacobian.load
     warning('Pre loaded NUM_TW will be used. Any value will be overwritten');
     warning('on','verbose')
     warning('on','backtrace')
+    if strcmpi(REC.solver.type,'born')
+    load([REC.solver.prejacobian.path,num2str(REC.radiometry.lambda(1)),'.mat'],'ROI','NW');
+    else
     load(REC.solver.prejacobian.path,'ROI','NW');
+    end
     REC.time.roi = ROI;
     NUM_TW = NW;
 end
@@ -599,14 +604,19 @@ end
 end
 if SPECTRA
     mask = REC.opt.Mua(:,:,:,1)./REC.opt.muaB(1);
-    for ic = 1:REC.spe.nCromo
-    if REC.opt.conc0(ic)==REC.opt.hete1.conc(ic), mask = ones(size(mask)); end
+    for ic = (1:REC.spe.nCromo)
+    if REC.opt.conc0(ic)==REC.opt.hete1.conc(ic)
+        mask = ones(size(mask));
+    else
+        mask = REC.opt.Mua(:,:,:,1)./REC.opt.muaB(1);
+    end
     REC.opt.Conc(:,:,:,ic) = mask.*REC.opt.concB(ic);
     fh=figure(900+ic);fh.NumberTitle = 'off';fh.Name = [REC.spe.cromo_label{ic} ' Map'];
     ShowRecResults(REC.grid,REC.opt.Conc(:,:,:,ic),...
         REC.grid.z1,REC.grid.z2,REC.grid.dz,1,'auto');%,0.,0.64);
     suptitle(REC.spe.cromo_label{ic});
     end
+    if REC.spe.active_cromo(strcmpi(REC.spe.cromo_label,'hb'))
     REC.opt.HbTot = REC.opt.Conc(:,:,:,strcmpi(REC.spe.cromo_label,'hb'))+...
         REC.opt.Conc(:,:,:,strcmpi(REC.spe.cromo_label,'hbo2'));
     REC.opt.So2 = REC.opt.Conc(:,:,:,strcmpi(REC.spe.cromo_label,'hbo2'))./REC.opt.HbTot;
@@ -618,6 +628,9 @@ if SPECTRA
     ShowRecResults(REC.grid,REC.opt.So2,...
         REC.grid.z1,REC.grid.z2,REC.grid.dz,1,'auto');%,0.,0.64);
     suptitle('So2');
+    else
+        REC.opt.HbTot = zeros(REC.grid.dim);REC.opt.So2 = zeros(REC.grid.dim);
+    end
     mask = REC.opt.Musp(:,:,:,1)./REC.opt.muspB(1);
     if REC.opt.aB==REC.opt.hete1.a, mask = ones(size(mask)); end
     REC.opt.a = mask.*REC.opt.aB;
@@ -633,7 +646,7 @@ if SPECTRA
         REC.grid.z1,REC.grid.z2,REC.grid.dz,1,'auto');%,0.,0.64);
     suptitle('b');
 end
-
+drawnow
 % =========================================================================
 %%                      Reconstruction Solver
 % =========================================================================
@@ -686,8 +699,13 @@ switch lower(REC.domain)
                     REC.time.twin,REC.time.self_norm, REC.Data,...
                     REC.time.irf.data,REC.ref,REC.sd,0);    
             case 'born'
+                close all
                 REC.solver.prior.refimage = [];
+                original_path = REC.solver.prejacobian.path;
             for inl = 1:REC.radiometry.nL
+                if REC.solver.prejacobian.load
+                    REC.solver.prejacobian.path=strcat(original_path,num2str(REC.radiometry.lambda(inl)),'.mat');
+                end
                 fprintf(['<strong>------- Wavelength ',num2str(REC.radiometry.lambda(inl)),'-------</strong>\n'])
                 [REC.opt.bmua(:,inl),REC.opt.bmusp(:,inl)] = RecSolverBORN_TD(REC.solver,...
                     REC.grid,...
@@ -695,10 +713,19 @@ switch lower(REC.domain)
                     REC.Source.Pos,REC.Detector.Pos,REC.dmask,REC.time.dt,REC.time.nstep,...
                     REC.time.twin(:,(1:2)+(inl-1)*2),REC.time.self_norm,REC.Data(:,(1:nmeas)+(inl-1)*nmeas),...
                     REC.time.irf.data(:,inl),REC.ref(:,(1:nmeas)+(inl-1)*nmeas),REC.sd(:,(1:nmeas)+(inl-1)*nmeas),REC.type_fwd);
+                if REC.solver.prejacobian.load==0
+                    movefile([REC.solver.prejacobian.path,'.mat'],strcat(REC.solver.prejacobian.path,num2str(REC.radiometry.lambda(inl)),'.mat'));
+                end
+                drawnow
             end
+            REC.solver.prejacobian.path = original_path; clear original_path
             case 'born_spectral_post_proc'
-                REC.solver.prior.refimage = [];
+                 REC.solver.prior.refimage = [];
+                original_path = REC.solver.prejacobian.path;
             for inl = 1:REC.radiometry.nL
+                if REC.solver.prejacobian.load
+                    REC.solver.prejacobian.path=strcat(original_path,num2str(REC.radiometry.lambda(inl)),'.mat');
+                end
                 fprintf(['<strong>------- Wavelength ',num2str(REC.radiometry.lambda(inl)),'-------</strong>\n'])
                 [REC.opt.bmua(:,inl),REC.opt.bmusp(:,inl)] = RecSolverBORN_TD(REC.solver,...
                     REC.grid,...
@@ -706,8 +733,14 @@ switch lower(REC.domain)
                     REC.Source.Pos,REC.Detector.Pos,REC.dmask,REC.time.dt,REC.time.nstep,...
                     REC.time.twin(:,(1:2)+(inl-1)*2),REC.time.self_norm,REC.Data(:,(1:nmeas)+(inl-1)*nmeas),...
                     REC.time.irf.data(:,inl),REC.ref(:,(1:nmeas)+(inl-1)*nmeas),REC.sd(:,(1:nmeas)+(inl-1)*nmeas),REC.type_fwd);
+                if REC.solver.prejacobian.load==0
+                    movefile([REC.solver.prejacobian.path,'.mat'],strcat(REC.solver.prejacobian.path,num2str(REC.radiometry.lambda(inl)),'.mat'));
+                end
+                drawnow
             end
-            [REC.opt.bmua,REC.opt.bmusp,REC.opt.bConc,REC.opt.bA,REC.opt.bbB]=FitVoxel(REC.opt.bmua,REC.opt.bmusp,REC.spe);
+            REC.solver.prejacobian.path = original_path; clear original_path
+            [bmua,bmusp,REC.opt.bConc,REC.opt.bA,REC.opt.bbB]=FitVoxel(REC.opt.bmua,REC.opt.bmusp,REC.spe);
+            REC.opt.bmua = []; REC.opt.bmua = bmua;REC.opt.bmua = []; REC.opt.bmusp = bmusp;
             case 'spectral_born'
                 REC.solver.prior.refimage = [];
                 [REC.opt.bmua,REC.opt.bmusp,REC.opt.bConc,REC.opt.bA,REC.opt.bbB] = RecSolverBORN_TD_spectral(REC.solver,...
@@ -816,12 +849,26 @@ switch lower(REC.domain)
 end
 ROI = REC.time.roi; %#ok<NASGU>
 NW = NUM_TW; %#ok<NASGU>
-save(REC.solver.prejacobian.path,'ROI','NW','-append');      
+if strcmpi(REC.solver.type,'born')
+   for inl = 1:REC.radiometry.nL
+       if ~exist([REC.solver.prejacobian.path,num2str(REC.radiometry.lambda(inl)),'.mat'],'file')
+           save([REC.solver.prejacobian.path,num2str(REC.radiometry.lambda(inl)),'.mat'],'ROI','NW');
+       else
+           save([REC.solver.prejacobian.path,num2str(REC.radiometry.lambda(inl)),'.mat'],'ROI','NW','-append');
+       end
+   end
+else
+  if ~exist([REC.solver.prejacobian.path '.mat'],'file')
+      save(REC.solver.prejacobian.path,'ROI','NW');
+  else
+      save(REC.solver.prejacobian.path,'ROI','NW','-append');
+  end
+end
 clear ROI NW
 % ---------------------------- display mua --------------------------------
 if ~contains(REC.solver.type,'fit')
     drawnow;
-if ~contains(REC.solver.type,'spectral')
+%if ~contains(REC.solver.type,'spectral')
 for inl = 1:REC.radiometry.nL
 PlotMua = reshape(REC.opt.bmua,[REC.grid.dim REC.radiometry.nL]);
 PlotMua = PlotMua(:,:,:,inl);
@@ -847,7 +894,7 @@ subplot(1,2,2),PlotHeteQM(REC,PlotMus,REC.opt.musp0(inl)),
 title('Recon Mus');
 
 drawnow;
-end
+%end
 end
 if contains(REC.solver.type,'spectral')
     for ic = 1:REC.spe.nCromo
@@ -857,6 +904,7 @@ if contains(REC.solver.type,'spectral')
         REC.grid.z1,REC.grid.z2,REC.grid.dz,1,'auto');%,0.,0.64);
     suptitle(['Recon ' REC.spe.cromo_label{ic}]);
     end
+    if REC.spe.active_cromo(strcmpi(REC.spe.cromo_label,'hb'))
     REC.opt.HbTot = reshape(REC.opt.bConc(:,strcmpi(REC.spe.cromo_label,'hb')),REC.grid.dim)+...
         reshape(REC.opt.bConc(:,strcmpi(REC.spe.cromo_label,'hbo2')),REC.grid.dim);
     REC.opt.So2 = reshape(REC.opt.bConc(:,strcmpi(REC.spe.cromo_label,'hbo2')),REC.grid.dim)./REC.opt.HbTot;
@@ -868,6 +916,9 @@ if contains(REC.solver.type,'spectral')
     ShowRecResults(REC.grid,REC.opt.So2,...
         REC.grid.z1,REC.grid.z2,REC.grid.dz,1,'auto');%,0.,0.64);
     suptitle('So2');
+    else
+        REC.opt.HbTot = zeros(REC.grid.dim);REC.opt.So2 = zeros(REC.grid.dim);
+    end
     fh=figure(800+ic+3);fh.NumberTitle = 'off';fh.Name = ('Recon a Map');
     ShowRecResults(REC.grid,reshape(REC.opt.bA,REC.grid.dim),...
         REC.grid.z1,REC.grid.z2,REC.grid.dz,1,'auto');%,0.,0.64);
