@@ -2,7 +2,7 @@
 %%                              OPTIONS 
 %==========================================================================
 % ----------------------------- FORWARD -----------------------------------
-FORWARD = 1;            % Simulated forward data and save into _Data file
+FORWARD = 0;            % Simulated forward data and save into _Data file
 REF = 1;                % 1: create also the homogeneous data
 TYPE_FWD = 'linear';    % fwd model computation: 'linear','fem'
 geom = 'semi-inf';      % geometry
@@ -15,7 +15,7 @@ EXP_IRF = 1;            % Use the experimental IRF for forward and
 EXP_DELTA = 'all';      % Substitute the IRF with delta function on the 
                         % baricenter ('baric') or peak ('peak') of the IRF.
                         % 'all' to use the experimental IRF.                    
-EXP_DATA = 0;           % Load experimental data and use them for 
+EXP_DATA = 1;           % Load experimental data and use them for 
                         % reconstruction
 % -------------------------------------------------------------------------
 %DOT.TYPE = 'pointlike'; % 'pointlike','linesources' or 'pattern'
@@ -30,24 +30,25 @@ RADIOMETRY = 1;         % apply radiometric inputs to simulated data
 % -------------------------------------------------------------------------
 SAVE_FWD = 1;           % Save forward data (possibly with noise) 
                         % in a _Data.m file
-LOAD_FWD_TEO = 1;       % if 0: save the raw TPSF(un-noisy) in a _FwdTeo.m file.
+LOAD_FWD_TEO = 0;       % if 0: save the raw TPSF(un-noisy) in a _FwdTeo.m file.
                         % if 1: load the raw TPSF for speed up
 % -------------------------------------------------------------------------
 TOAST2DOT = 0;          % if 1 the function toast2dot is used for conversion 
 SPECTRA = 1;
 DOT.spe.cromo_label = {'Hb','HbO2','Lipid','H2O','Collagen'};
+DOT.spe.active_cromo = [1,1,1,1,1];
 DOT.spe.cromo_factor = [1,1,10*100*0.91,10*100, 10*100*0.196];
 DOT.spe.cromo_units = {'microM','microM','mg/cm^3','mg/cm^3','mg/cm^3'};
 DOT.spe.ForceConstitSolution = 0;
 lamda_id = 1:8;
 if SPECTRA == 0
-mua_ = [0.00380740474000000 0.00286718196800000 0.00353571764000000 0.0109674880900000 0.0170446766000000 0.0314137863400000 0.0185177919450000 0.0111878307750000];
-musp_ = [1.54530000000000 1.46457537313433 1.18224759036145 1.07242131147541 1.04389946808511 1.00129132653061 0.952684951456311 0.921376056338028];
+mua_ = [0.00380793160000000,0.00134266120000000,0.00138762010000000,0.0100602733000000,0.00755439960000000,0.00394251390000000,0.00761375700000000,0.00493305200000000];
+musp_ = [1.22842091900000,1.18990461900000,0.913511025000000,0.803037154800000,0.769676676200000,0.756078261900000,0.702287059500000,0.675179692900000];
 mua_ = mua_(lamda_id); musp_ = musp_(lamda_id);
 Xd = {mua_,musp_};
 else
-a_ = 1.5453;	b_ = 1; % a (mm-1), b(adimensionale)
-conc_ = [0.40855 0.71424 0.48844 0.5868	0.37051]; 
+a_ = 1.5221;	b_ = 1.1415;
+conc_ = [1.4492 0.48527 0.97134 0.037411 0.2021];
 Xd = {conc_,[a_ b_]};
 end
 % ========================================================================= 
@@ -78,7 +79,7 @@ NUM_HETE = 1;
 %--------------------------- INCLUSION 1 ---------------------------------%
 DOT.opt.hete1.type  = {'Mua','Musp'};
 DOT.opt.hete1.geometry = 'sphere';
-DOT.opt.hete1.c     = [10, 5, 10];   % down
+DOT.opt.hete1.c     = [0, -5, 10];   % down
 % DOT.opt.hete1.d     = [0, 0, -1];   % down
 % DOT.opt.hete1.l     = 20;
 DOT.opt.hete1.sigma = 5;
@@ -86,10 +87,10 @@ DOT.opt.hete1.distrib = 'OFF';
 DOT.opt.hete1.profile = 'Gaussian';%'Step';%'Gaussian';
 DOT.opt.hete1.val   = 5 * DOT.opt.muaB;
 if SPECTRA == 0
-muap_ = [0.00761480948000000 0.00573436393600000 0.00707143528000000 0.0219349761800000 0.0340893532000000 0.0628275726800000 0.0370355838900000 0.0223756615500000];
+muap_ = [0.0373210250000000,0.0213434250000000,0.0104115095000000,0.0157479800000000,0.0230874250000000,0.0515664600000000,0.0294118300000000,0.0196425550000000];
 muap_ = muap_(lamda_id);
-muspp_ = [1.69983000000000 1.60241242802354 1.26610780480890 1.13734804151341 1.10411916578599 1.05464890071945 0.998471424960467 0.962436353621574];
-Xp = {muap_};
+muspp_ = [0.371159400000000,0.314731450000000,0.214725500000000,0.208025850000000,0.222794350000000,0.297037400000000,0.220381200000000,0.189757350000000];
+Xp = {muap_,muspp_};
 else
 a_ = (1+10/100)*1.5453;	b_ = 1; % a (mm-1), b(adimensionale)
 concp_ = 2.*[0.40855	0.71424 0.48844	0.5868	0.37051]; %microMolare
@@ -119,7 +120,7 @@ DOT.time.noise = 'none';         % 'Poisson','Gaussian','none'
                                     % Gaussian noise is added before
                                     % Poisson noise.
 DOT.time.sigma = 1e-3;              % variance for gaussian noise
-DOT.time.self_norm = false;         % true for self-normalized TPSF
+DOT.time.self_norm = true;         % true for self-normalized TPSF
 DOT.time.TotCounts = 1e6;           % total counts for the maximum-energy
                                     % TPSF. The other are consequently
                                     % rescaled
@@ -131,7 +132,7 @@ DOT.radiometry.timebin = ...
     DOT.time.dt;                % (ps) width of the time bin
 DOT.radiometry.acqtime = 1;     % (s) acquisition time %AAA
 DOT.radiometry.opteff = 0.9;    % Typical efficiency of the optical path
-DOT.radiometry.lambda = [635 670 830 915 940 980 1030 1065];
+DOT.radiometry.lambda = [635,670,830,915,940,980,1030,1065];
 DOT.radiometry.lambda = DOT.radiometry.lambda(lamda_id);
 DOT.radiometry.nL = numel(DOT.radiometry.lambda);
                                 % (just for calculation of input photons)

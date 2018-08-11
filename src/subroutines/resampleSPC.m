@@ -16,7 +16,7 @@ verbosity = 0;
 dty = t(2)-t(1);
 bin_ratio = dt./dty;       
 %% Better to first oversample if bin_ratio is not integer
-if floor(bin_ratio)>(bin_ratio+eps*1e4) || floor(bin_ratio)<(bin_ratio-eps*1e4)
+if floor(bin_ratio)>(bin_ratio+eps*1e6) || floor(bin_ratio)<(bin_ratio-eps*1e6)
     dt_ov = 1e-3;    % 1 fs
     tii = t(1):dt_ov:t(end);
     yii = interp1(t,y,tii);
