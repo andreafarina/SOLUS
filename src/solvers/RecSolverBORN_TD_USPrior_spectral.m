@@ -109,7 +109,7 @@ else
     if ~exist(jpath,'dir')
         mkdir(jpath)
     end
-    save(solver.prejacobian.path,'J');
+    save(solver.prejacobian.path,'J','-v7.3');
     toc;
 end
 
@@ -146,7 +146,11 @@ s = svd(J);
 alpha = solver.tau*s(1) %#ok<NOPRT>
 %dx = [J;(alpha)*speye(nsol)]\[dphi;zeros(nsol,1)];
 %dx = [J;(alpha)*L]\[dphi;zeros(3*nsol,1)];
-dx = lsqr([J;repmat(alpha*L,1,p)],[dphi;zeros(3*nsol/p,1)],1e-6,1000);
+L1 = [];
+for ip = 1:p
+     L1 = blkdiag(L1,L);
+end
+dx = lsqr([J;alpha*L],[dphi;zeros(p*3*nsol/p,1)],1e-6,1000);
 %dx = lsqr([J;alpha*speye(nsol)],[dphi;zeros(nsol,1)],1e-6,100);
 %==========================================================================
 %%                        Add update to solution

@@ -29,12 +29,14 @@ l = 1;
 if ((nargin < 7)||strcmpi(scale,'auto'))
   cmin = min(Data(:));
   cmax = max(Data(:));
+%  cmin = prctile(Data(:),3);
+%  cmax = prctile(Data(:),97);
 end
-Data_dummy = Data(:,:,5:end);
-if ((nargin < 7)||strcmpi(scale,'auto'))
-  cmin = min(Data_dummy(:));
-  cmax = max(Data_dummy(:));
-end
+% Data_dummy = Data(:,:,z>5);
+% if ((nargin < 7)||strcmpi(scale,'auto'))
+%   cmin = min(Data_dummy(:));
+%   cmax = max(Data_dummy(:));
+% end
 clim = [cmin-eps cmax+eps];
 for i=1:step:N
            % Data(:,:,i) = Data(:,:,i)';

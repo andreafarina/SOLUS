@@ -86,7 +86,7 @@ end
 add = squeeze(reshape(add,Nx,Ny,Nz,DOT.radiometry.nL));
 indx_dummy = indx;
 for inl = 1:DOT.radiometry.nL-1
-    indx = [indx;indx_dummy+inl*prod(DOT.grid.dim)];
+    indx = [indx;indx_dummy+inl*DOT.grid.N];
 end
 param(indx) = param(indx) + add(indx);
 
