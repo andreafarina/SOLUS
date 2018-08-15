@@ -4,19 +4,19 @@ function Q = QuantifyDOT(REC,ref_true)
 % =========================================================================
 if any(strcmpi(REC.solver.variables,'mua'))
     for inl = 1:numel(REC.opt.muaB)
-        fprintf(['<strong>------- Wavelength ',num2str(REC.radiometry.lambda(inl)),'-------</strong>\n'])
+        fprintf(['<strong>------- Absorbtion: Wavelength ',num2str(REC.radiometry.lambda(inl)),'-------</strong>\n'])
         Q.mua(inl) = QuantifyX(REC.grid,REC.opt.muaB(inl),REC.opt.bmua(:,inl),...
             ref_true,REC.opt.hete1.c,REC.opt.Mua(:,:,:,inl));
     end
 end
 if any(strcmpi(REC.solver.variables,'mus'))
     for inl = 1:numel(REC.opt.muspB)
-        fprintf(['<strong>------- Wavelength ',num2str(REC.radiometry.lambda(inl)),'-------</strong>\n'])
+        fprintf(['<strong>------- Scattering: Wavelength ',num2str(REC.radiometry.lambda(inl)),'-------</strong>\n'])
         Q.mus(inl) = QuantifyX(REC.grid,REC.opt.muspB(inl),REC.opt.bmusp(:,inl),...
             ref_true,REC.opt.hete1.c,REC.opt.Musp(:,:,:,inl));
     end
 end
-if REC.spe.SPECTRA
+if contains(lower(REC.solver.type),'spectral')
     if any(strcmpi(REC.solver.variables,'mua'))
         for inc = 1:REC.spe.nCromo
             fprintf(['<strong>------- Chromo ',REC.spe.cromo_label{inc},'-------</strong>\n'])
