@@ -131,17 +131,19 @@ end
 
 % Map optical properties to mesh and QM
 if strcmpi(TYPE_FWD,'fem')
-    mesh.opt.mua = DOT.grid.hBasis.Map('B->M',DOT.opt.Mua);
-    mesh.opt.musp = DOT.grid.hBasis.Map('B->M',DOT.opt.Musp);
-    %Qds = 1; % width of Sources
-    %Mds = 1; % width of Detectors
+    for inl = 1: DOT.radiometry.nL
+        mesh.opt.mua(:,inl) = DOT.grid.hBasis.Map('B->M',DOT.opt.Mua(:,:,:,inl));
+        mesh.opt.musp(:,inl) = DOT.grid.hBasis.Map('B->M',DOT.opt.Musp(:,:,:,inl));
+        %Qds = 1; % width of Sources
+        %Mds = 1; % width of Detectors
+    end        
     mesh.hMesh.SetQM(DOT.Source.Pos,DOT.Detector.Pos);
     mesh.qvec = real(mesh.hMesh.Qvec('Neumann','Gaussian',DOT.Source.Area));
     %mesh.hMesh.SetQM(DOT.Source.Pos+[0,0,1./DOT.opt.muspB],DOT.Detector.Pos);
     %mesh.qvec = real(mesh.hMesh.Qvec('Isotropic','Gaussian',DOT.Source.Area));
-    
-    mesh.mvec = 1./(2*DOT.A)*real(mesh.hMesh.Mvec('Gaussian',DOT.Detector.Area, 0));
+    mesh.mvec = 1./(2*DOT.A)*real(mesh.hMesh.Mvec('Gaussian',DOT.Detector.Area, 0));    
 end
+
 %
 
 %==========================================================================
