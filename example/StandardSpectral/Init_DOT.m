@@ -40,11 +40,9 @@ DOT.spe.active_cromo = [1,1,1,1,1];
 DOT.spe.cromo_factor = [1,1,10*100*0.91,10*100, 10*100*0.196];
 DOT.spe.cromo_units = {'microM','microM','mg/cm^3','mg/cm^3','mg/cm^3'};
 DOT.spe.ForceConstitSolution = 0;
-lamda_id = 1:8;
 if SPECTRA == 0
-mua_ = [0.00380793160000000,0.00134266120000000,0.00138762010000000,0.0100602733000000,0.00755439960000000,0.00394251390000000,0.00761375700000000,0.00493305200000000];
-musp_ = [1.22842091900000,1.18990461900000,0.913511025000000,0.803037154800000,0.769676676200000,0.756078261900000,0.702287059500000,0.675179692900000];
-mua_ = mua_(lamda_id); musp_ = musp_(lamda_id);
+mua_ = [0.003807,0.001342,0.001387,0.010060,0.007554,0.003942,0.007613,0.004933];
+musp_ = [1.22842,1.189904,0.913511,0.803037,0.769676,0.7560782,0.702287,0.675179];
 Xd = {mua_,musp_};
 else
 a_ = 1.5221;	b_ = 1.1415;
@@ -54,8 +52,8 @@ end
 % ========================================================================= 
 %% ====================== VOLUME DEFINITION ===============================
 %% Background optical properties
-DOT.opt.muaB = 0.01;    % mm-1
-DOT.opt.muspB = 1;      % mm-1
+% DOT.opt.muaB = 0.01;    % mm-1
+% DOT.opt.muspB = 1;      % mm-1
 DOT.opt.nB = 1.4;       % internal refractive index   
 DOT.opt.nE = 1.;        % external refractive index
 %==========================================================================
@@ -79,21 +77,20 @@ NUM_HETE = 1;
 %--------------------------- INCLUSION 1 ---------------------------------%
 DOT.opt.hete1.type  = {'Mua','Musp'};
 DOT.opt.hete1.geometry = 'sphere';
-DOT.opt.hete1.c     = [0, -5, 10];   % down
+DOT.opt.hete1.c     = [0, -5, 15];   % down
 % DOT.opt.hete1.d     = [0, 0, -1];   % down
 % DOT.opt.hete1.l     = 20;
 DOT.opt.hete1.sigma = 5;
 DOT.opt.hete1.distrib = 'OFF';
 DOT.opt.hete1.profile = 'Gaussian';%'Step';%'Gaussian';
-DOT.opt.hete1.val   = 5 * DOT.opt.muaB;
+% DOT.opt.hete1.val   = 5 * DOT.opt.muaB;
 if SPECTRA == 0
-muap_ = [0.0373210250000000,0.0213434250000000,0.0104115095000000,0.0157479800000000,0.0230874250000000,0.0515664600000000,0.0294118300000000,0.0196425550000000];
-muap_ = muap_(lamda_id);
-muspp_ = [0.371159400000000,0.314731450000000,0.214725500000000,0.208025850000000,0.222794350000000,0.297037400000000,0.220381200000000,0.189757350000000];
+muap_ = [0.037321,0.021343,0.010411,0.015747,0.023087,0.051566,0.029411,0.019642];
+muspp_ = [0.371159,0.314731,0.214725,0.208025,0.222794,0.297037,0.220381,0.189757];
 Xp = {muap_,muspp_};
 else
 a_ = (1+10/100)*1.5453;	b_ = 1; % a (mm-1), b(adimensionale)
-concp_ = 2.*[0.40855	0.71424 0.48844	0.5868	0.37051]; %microMolare
+concp_ = 2.*[0.40855	0.71424 0.48844	0.5868	0.37051];
 Xp = {concp_,[a_ b_]};
 end
 DOT.opt.hete1.path ='../3DMasks/Mask3D_Mask_malignant_4.mat' ;   % down
@@ -120,7 +117,7 @@ DOT.time.noise = 'none';         % 'Poisson','Gaussian','none'
                                     % Gaussian noise is added before
                                     % Poisson noise.
 DOT.time.sigma = 1e-3;              % variance for gaussian noise
-DOT.time.self_norm = true;         % true for self-normalized TPSF
+DOT.time.self_norm = false;         % true for self-normalized TPSF
 DOT.time.TotCounts = 1e6;           % total counts for the maximum-energy
                                     % TPSF. The other are consequently
                                     % rescaled
@@ -133,14 +130,15 @@ DOT.radiometry.timebin = ...
 DOT.radiometry.acqtime = 1;     % (s) acquisition time %AAA
 DOT.radiometry.opteff = 0.9;    % Typical efficiency of the optical path
 DOT.radiometry.lambda = [635,670,830,915,940,980,1030,1065];
-DOT.radiometry.lambda = DOT.radiometry.lambda(lamda_id);
+DOT.radiometry.lambda0 = 635;
+DOT.radiometry.lambda = DOT.radiometry.lambda;
 DOT.radiometry.nL = numel(DOT.radiometry.lambda);
                                 % (just for calculation of input photons)
 DOT.radiometry.area = 4;        % mm^2
 DOT.radiometry.qeff = 0.05;     % Quantum efficiency
-DOT.radiometry.lambda0 = 635;
 if size(DOT.time.TotCounts,2)<DOT.radiometry.nL
-    DOT.time.TotCounts = repmat(DOT.time.TotCounts,1,DOT.radiometry.nL);
+    DOT.time.TotCounts = repmat(DOT.time.TotCounts(1),1,DOT.radiometry.nL);
+    DOT.radiometry.power = repmat(DOT.radiometry.power(1),1,DOT.radiometry.nL);
 end
 %==========================================================================
 %%                   Cutting of counts
