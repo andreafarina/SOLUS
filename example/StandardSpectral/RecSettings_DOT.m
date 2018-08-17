@@ -44,7 +44,7 @@ REC.solver.type = 'spectral_born';         % 'born','GN': gauss-newton,
                                   % 'born_spectral_post_proc': multi_wave
                                   % classical born with post proc
                                   % chromophores estimation
-if strcmpi(REC.solver.type,'spectral_born')&&SPECTRA == 0
+if (strcmpi(REC.solver.type,'spectral_born')||strcmpi(REC.solver.type,'spectral_usprior'))&&SPECTRA == 0
 MEx = MException('spectral_born:SpectralDataInput','Set SPECTRA = 1 to use spectra_born');
 throwAsCaller(MEx);    
 end
