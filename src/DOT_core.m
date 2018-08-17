@@ -383,6 +383,7 @@ if SAVE_FWD == 1
         
     end
 end
+drawnow
 %==========================================================================
 %%                              END FORWARD
 %==========================================================================
@@ -514,8 +515,6 @@ if RECONSTRUCTION == 1
             warning('off','backtrace')
             warning('Pre loaded ROI will be used. Any value will be overwritten');
             warning('Pre loaded NUM_TW will be used. Any value will be overwritten');
-            warning('on','verbose')
-            warning('on','backtrace')
             if strcmpi(REC.solver.type,'born')||...
                 strcmpi(REC.solver.type,'born_spectral_post_proc')||...
                 strcmpi(REC.solver.type,'usprior')
@@ -523,8 +522,14 @@ if RECONSTRUCTION == 1
             else
                 load(REC.solver.prejacobian.path,'ROI','NW');
             end
-            REC.time.roi = ROI;
-            NUM_TW = NW;
+            if exist('ROI','var')
+                REC.time.roi = ROI;
+                NUM_TW = NW;
+            else
+                warning('Loading of ROI and NW FAILED. Not present in J');
+            end
+            warning('on','verbose')
+            warning('on','backtrace')
         end
         if isempty(REC.time.roi)
             for inl = 1:REC.radiometry.nL
@@ -535,8 +540,8 @@ if RECONSTRUCTION == 1
         end
         REC.ref = []; REC.Data = []; REC.sd = [];
         nsub = numSubplots(REC.radiometry.nL);
-        figure(20);
         for inl = 1:REC.radiometry.nL
+            figure(20);
             meas_set = (1:nmeas)+(inl-1)*nmeas;
             twin_set = (1:2)+(inl-1)*2;
             fprintf(['<strong>------- Wavelength ',num2str(REC.radiometry.lambda(inl)),'-------</strong>\n'])
@@ -546,7 +551,6 @@ if RECONSTRUCTION == 1
             ShowTimeWindows(DataTD(:,meas_set),REC.time.twin(:,twin_set),REC.time.dt);
             title(['Wavelength: ' num2str(REC.radiometry.lambda(inl))]);
             %save_figure('time_ROI');
-            drawnow;
             if exist('RefTD','var')
                 REC.ref(:,meas_set) = WindowTPSF(RefTD(:,meas_set),REC.time.twin(:,twin_set));
                 if inl == REC.radiometry.nL,  clear RefTD; end
