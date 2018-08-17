@@ -150,7 +150,7 @@ L1 = [];
 for ip = 1:p
      L1 = blkdiag(L1,L);
 end
-dx = lsqr([J;alpha*L],[dphi;zeros(p*3*nsol/p,1)],1e-6,1000);
+dx = lsqr([J;alpha*L1],[dphi;zeros(p*3*nsol/p,1)],1e-6,1000);
 %dx = lsqr([J;alpha*speye(nsol)],[dphi;zeros(nsol,1)],1e-6,100);
 %==========================================================================
 %%                        Add update to solution
