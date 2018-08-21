@@ -156,6 +156,7 @@ J(mask,:) = [];
 
 %% Solver
 %if ~strcmpi((BACKSOLVER),'simon')
+disp('Calculating singolar values');
 [U,s,V]=csvd(J);     % compact SVD (Regu toolbox)
 figure(402);
 picard(U,s,dphi);    % Picard plot (Regu toolbox)
@@ -173,6 +174,7 @@ if ~exist('alpha','var')
     
 end
 disp(['alpha = ' num2str(alpha)]);
+disp('Solving...')
 switch lower(BACKSOLVER)
     case 'tikh'
         disp('Tikhonov');

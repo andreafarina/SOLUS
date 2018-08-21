@@ -115,6 +115,7 @@ siz_prior = size(solver.prior.refimage);
 %solver.prior = solver.prior .* (1 + 0.01*randn(size(solver.prior)));
 [L,~] = StructuredLaplacianPrior(solver.prior.refimage,siz_prior(1),siz_prior(2),siz_prior(3));
 %% Solver
+disp('Calculating singolar values');
 s = svd(J);
 alpha = solver.tau*s(1) %#ok<NOPRT>
 %dx = [J;(alpha)*speye(nsol)]\[dphi;zeros(nsol,1)];
@@ -123,6 +124,7 @@ L1 = [];
 for ip = 1:p
      L1 = blkdiag(L1,L);
 end
+disp('Solving...')
 dx = lsqr([J;alpha*L1],[dphi;zeros(p*3*nsol/p,1)],1e-6,1000);
 %dx = lsqr([J;repmat(alpha*L,1,p)],[dphi;zeros(3*nsol/p,1)],1e-6,1000);
 %dx = lsqr([J;alpha*speye(nsol)],[dphi;zeros(nsol,1)],1e-6,100);

@@ -23,9 +23,9 @@ nwin = size(twin,1);
 Jacobian = @(mua, mus) JacobianTD (grid, Spos, Dpos, dmask, mua, mus, n, A, ...
     dt, nstep, twin, irf, geom,type_jac,fwd_type);
 %% self normalise (probably useless because input data are normalize)
-if self_norm == true
-        data = data * spdiags(1./sum(data,'omitnan')',0,nQM,nQM);
-end
+% if self_norm == true
+%         data = data * spdiags(1./sum(data,'omitnan')',0,nQM,nQM);
+% end
 %% Inverse solver
 [proj, Aproj] = ForwardTD(grid,Spos, Dpos, dmask, mua0, mus0, n, ...
                 [],[], A, dt, nstep, self_norm,...
@@ -129,6 +129,7 @@ J = J * spdiags(x0,0,length(x0),length(x0));
 J(mask,:) = [];
 
 %% Solver 
+disp('Calculating singolar values');
 %if ~strcmpi((BACKSOLVER),'simon')
 [U,s,V]=csvd(J);     % compact SVD (Regu toolbox)
         figure(402);
@@ -147,6 +148,7 @@ if ~exist('alpha','var')
     
 end
 disp(['alpha = ' num2str(alpha)]);
+disp('Solving...')
 switch lower(BACKSOLVER)
     case 'tikh'
         disp('Tikhonov');
