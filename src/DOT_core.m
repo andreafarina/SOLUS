@@ -747,7 +747,7 @@ if RECONSTRUCTION == 1
                     end
                     REC.solver.prejacobian.path = original_path; clear original_path
                     [bmua,bmusp,REC.opt.bConc,REC.opt.bA,REC.opt.bbB]=FitVoxel(REC.opt.bmua,REC.opt.bmusp,REC.spe);
-                    REC.opt.bmua = []; REC.opt.bmua = bmua;REC.opt.bmusp = []; REC.opt.bmusp = bmusp;
+                    %REC.opt.bmua = bmua;REC.opt.bmusp = bmusp;
                 case 'spectral_born'
                     REC.solver.prior.refimage = [];
                     [REC.opt.bmua,REC.opt.bmusp,REC.opt.bConc,REC.opt.bA,REC.opt.bbB] = RecSolverBORN_TD_spectral(REC.solver,...
@@ -926,19 +926,19 @@ if RECONSTRUCTION == 1
                 suptitle(['Recon ' REC.spe.cromo_label{ic}]);
             end
             if REC.spe.active_cromo(strcmpi(REC.spe.cromo_label,'hb'))
-                REC.opt.HbTot = reshape(REC.opt.bConc(:,strcmpi(REC.spe.cromo_label,'hb')),REC.grid.dim)+...
-                    reshape(REC.opt.bConc(:,strcmpi(REC.spe.cromo_label,'hbo2')),REC.grid.dim);
-                REC.opt.So2 = reshape(REC.opt.bConc(:,strcmpi(REC.spe.cromo_label,'hbo2')),REC.grid.dim)./REC.opt.HbTot;
+                REC.opt.HbTot = REC.opt.bConc(:,strcmpi(REC.spe.cromo_label,'hb'))+...
+                    REC.opt.bConc(:,strcmpi(REC.spe.cromo_label,'hbo2'));
+                REC.opt.So2 = REC.opt.bConc(:,strcmpi(REC.spe.cromo_label,'hbo2'))./REC.opt.HbTot;
                 fh=figure(800+ic+1);fh.NumberTitle = 'off';fh.Name = 'HbTot Map';
-                ShowRecResults(REC.grid,REC.opt.HbTot,...
+                ShowRecResults(REC.grid,reshape(REC.opt.HbTot,REC.grid.dim),...
                     REC.grid.z1,REC.grid.z2,REC.grid.dz,1,'auto');%,0.,0.64);
                 suptitle('HbTot');
                 fh=figure(800+ic+2);fh.NumberTitle = 'off';fh.Name = 'So2 Map';
-                ShowRecResults(REC.grid,REC.opt.So2,...
+                ShowRecResults(REC.grid,reshape(REC.opt.So2,REC.grid.dim),...
                     REC.grid.z1,REC.grid.z2,REC.grid.dz,1,'auto');%,0.,0.64);
                 suptitle('So2');
             else
-                REC.opt.HbTot = zeros(REC.grid.dim);REC.opt.So2 = zeros(REC.grid.dim);
+                REC.opt.HbTot = zeros(prod(REC.grid.dim),1);REC.opt.So2 = zeros(prod(REC.grid.dim),1);
             end
             fh=figure(800+ic+3);fh.NumberTitle = 'off';fh.Name = ('Recon a Map');
             ShowRecResults(REC.grid,reshape(REC.opt.bA,REC.grid.dim),...
