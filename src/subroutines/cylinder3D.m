@@ -25,7 +25,7 @@ l = hete.l;    % length of the cylinder
 for itype = 1:size(hete.type,2)
 back = eval(['DOT.opt.',lower(hete.type{itype}),'B']);
 sigma = hete.sigma;
-intensity = hete.val(itype);
+intensity = hete.val((1:DOT.radiometry.nL)+(itype-1)*DOT.radiometry.nL);
 shape = hete.profile;
 distrib = hete.distrib;
 
@@ -39,13 +39,19 @@ if isfield(DOT,'grid'),
     Z = reshape(Z,DOT.grid.N,[]);
     M = [X-c(1) Y-c(2) Z-c(3)];
     dist = sum(cross(D,M).^2,2).^0.5./norm(d);
-    add = zeros(DOT.grid.N,1);
+    add = zeros(DOT.grid.N,DOT.radiometry.nL);
+    Nx = DOT.grid.Nx;
+    Ny = DOT.grid.Ny;
+    Nz = DOT.grid.Nz;
 else
     %-- distance to the axis of the cylinder --%
     D = [d(1)*ones(DOT.mesh.N,1),d(2)*ones(DOT.mesh.N,1),d(3)*ones(DOT.mesh.N,1)];
     M = [DOT.mesh.pos(:,1)-c(1) DOT.mesh.pos(:,2)-c(2) DOT.mesh.pos(:,3)-c(3)];
     dist = sum(cross(D,M).^2,2).^0.5./norm(d);
-    add = zeros(DOT.mesh.N,1);
+    add = zeros(DOT.mesh.N,DOT.radiometry.nL);
+    Nx = DOT.grid.Nx;
+    Ny = DOT.grid.Ny;
+    Nz = DOT.grid.Nz;
 end
 
 %-- axial distance --%
@@ -72,12 +78,22 @@ case 'GAUSSIAN'
     end
     switch upper(distrib)
     case 'ON'
-        add(indx,1) = add(indx,1) + exp(-dist(indx,1).^2/sigma/sigma);
-        add = add*intensity/sum(add);
+        add(indx,:) = add(indx,:) + exp(-dist(indx,1).^2/sigma/sigma);
+        add = add.*intensity./sum(add,1);
+        add = squeeze(reshape(add,Nx,Ny,Nz,DOT.radiometry.nL));
+        indx_dummy = indx;
+        for inl = 1:DOT.radiometry.nL-1
+            indx = [indx;indx_dummy+inl*DOT.grid.N];
+        end
         param(indx) = param(indx) + add(indx);    
     
     case 'OFF'  
-        add(indx,1) = add(indx,1) + (intensity-back)*exp(-dist(indx,1).^2/sigma/sigma);
+        add(indx,:) = add(indx,:) + (intensity-back).*exp(-dist(indx,1).^2/sigma/sigma);
+        add = squeeze(reshape(add,Nx,Ny,Nz,DOT.radiometry.nL));
+        indx_dummy = indx;
+        for inl = 1:DOT.radiometry.nL-1
+            indx = [indx;indx_dummy+inl*DOT.grid.N];
+        end
         param(indx) = param(indx) + add(indx);
 
     end
@@ -107,11 +123,21 @@ case 'STEP'
     end
     switch upper(distrib)
     case 'ON'
-        add(indx,1) = intensity/length(indx);
+        add(indx,:) = intensity./length(indx);
+        add = squeeze(reshape(add,Nx,Ny,Nz,DOT.radiometry.nL));
+        indx_dummy = indx;
+        for inl = 1:DOT.radiometry.nL-1
+            indx = [indx;indx_dummy+inl*DOT.grid.N];
+        end
         param(indx) = param(indx) + add(indx);
     
     case 'OFF'
-        add(indx,1) = (intensity-back);
+        add(indx,:) = (intensity-back);
+        add = squeeze(reshape(add,Nx,Ny,Nz,DOT.radiometry.nL));
+        indx_dummy = indx;
+        for inl = 1:DOT.radiometry.nL-1
+            indx = [indx;indx_dummy+inl*DOT.grid.N];
+        end
         param(indx) = param(indx) + add(indx);
     end
     hete    = setfield(hete, ['d',hete.type{itype}], add);

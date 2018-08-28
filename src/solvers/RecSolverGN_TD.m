@@ -48,7 +48,7 @@ if numel(irf)>1
     clear nmax z
 end
 if self_norm == true
-    proj = proj * spdiags(1./sum(proj)',0,nQM,nQM);
+    proj = proj * spdiags(1./sum(proj,'omitnan')',0,nQM,nQM);
 end
    
 proj = WindowTPSF(proj,twin);
