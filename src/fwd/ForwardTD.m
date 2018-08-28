@@ -120,10 +120,10 @@ switch lower(FWD_TYPE)
         
 end
 if nargout > 1
-    Area = sum(phi);
+    Area = sum(phi,'omitnan');
 end
 if self_norm == true
-    Area = sum(phi);
+    Area = sum(phi,'omitnan');
     phi = bsxfun(@times,phi,1./Area);
 end
 

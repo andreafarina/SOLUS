@@ -38,7 +38,7 @@ if numel(irf)>1
     clear nmax z
 end
     if self_norm == true
-        proj = proj * spdiags(1./sum(proj)',0,nQM,nQM);
+        proj = proj * spdiags(1./sum(proj,'omitnan')',0,nQM,nQM);
     end
     
 proj = WindowTPSF(proj,twin);
@@ -116,7 +116,7 @@ if ~isempty(solver.prior.refimage)
 end
 if self_norm == true
     for i=1:nQM
-        sJ = sum(J((1:nwin)+(i-1)*nwin,:));
+        sJ = sum(J((1:nwin)+(i-1)*nwin,:),'omitnan');
         sJ = repmat(sJ,nwin,1);
         sJ = spdiags(proj((1:nwin)+(i-1)*nwin),0,nwin,nwin) * sJ;
         J((1:nwin)+(i-1)*nwin,:) = (J((1:nwin)+(i-1)*nwin,:) - sJ)./Aproj(i);
@@ -132,6 +132,7 @@ J = J * spdiags(x0,0,length(x0),length(x0));
 J(mask,:) = [];
 
 %% Solver 
+disp('Calculating singolar values');
 %if ~strcmpi((BACKSOLVER),'simon')
 [U,s,V]=csvd(J);     % compact SVD (Regu toolbox)
         figure(402);
@@ -150,6 +151,7 @@ if ~exist('alpha','var')
     
 end
 disp(['alpha = ' num2str(alpha)]);
+disp('Solving...')
 switch lower(BACKSOLVER)
     case 'tikh'
         disp('Tikhonov');

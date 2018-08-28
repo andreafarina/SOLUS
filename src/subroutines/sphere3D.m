@@ -27,7 +27,7 @@ for itype = 1:size(hete.type,2)
 var  = hete.type{itype};
 back = eval(['DOT.opt.',lower(hete.type{itype}),'B']);
 sigma= hete.sigma;
-intensity = hete.val(itype);
+intensity = hete.val((1:DOT.radiometry.nL)+(itype-1)*DOT.radiometry.nL);
 shape     = hete.profile;
 distrib   = hete.distrib;
 
@@ -39,7 +39,7 @@ if isfield(DOT,'grid'),
     Y = reshape(Y,DOT.grid.N,[]);
     Z = reshape(Z,DOT.grid.N,[]);
     M = [X-c(1) Y-c(2) Z-c(3)];
-    add = zeros(DOT.grid.N,1);
+    add = zeros(DOT.grid.N,DOT.radiometry.nL);
     Nx = DOT.grid.Nx;
     Ny = DOT.grid.Ny;
     Nz = DOT.grid.Nz;
@@ -47,7 +47,7 @@ if isfield(DOT,'grid'),
 %-- Regular mesh --%   
 else
     M = [DOT.mesh.pos(:,1)-c(1) DOT.mesh.pos(:,2)-c(2) DOT.mesh.pos(:,3)-c(3)];
-    add = zeros(DOT.mesh.N,1);
+    add = zeros(DOT.mesh.N,DOT.radiometry.nL);
     Nx = DOT.mesh.Nx;
     Ny = DOT.mesh.Ny;
     Nz = DOT.mesh.Nz;
@@ -64,10 +64,10 @@ case 'GAUSSIAN'
     param = getfield(DOT.opt, var);    
     switch upper(distrib)
     case 'ON'    
-        add(indx,1) = add(indx,1) + exp(-dist2(indx,1)/sigma/sigma);
-        add = add*intensity/sum(add);   
+        add(indx,:) = add(indx,:) + exp(-dist2(indx,1)/sigma/sigma);
+        add = add.*intensity./sum(add,1);   
     case 'OFF'
-        add(indx,1) = add(indx,1) + (intensity-back)*exp(-dist2(indx,1)/sigma/sigma);
+        add(indx,:) = add(indx,:) + (intensity-back).*exp(-dist2(indx,1)/sigma/sigma);
     end   
     
 %% --------------------- profil de concentration creneau -----------------%       
@@ -77,13 +77,17 @@ case 'STEP'
     %-- update concentration --%
     param = getfield(DOT.opt, var);  
     switch upper(distrib)
-    case 'ON',      add = intensity/length(indx);    
+    case 'ON',      add = intensity./length(indx);    
     case 'OFF',     param(indx) = param(indx) + (intensity-back);
     end
 end
 
 %% ---------------------------- Update -----------------------------------%
-add = reshape(add,Nx,Ny,Nz);
+add = squeeze(reshape(add,Nx,Ny,Nz,DOT.radiometry.nL));
+indx_dummy = indx;
+for inl = 1:DOT.radiometry.nL-1
+    indx = [indx;indx_dummy+inl*DOT.grid.N];
+end
 param(indx) = param(indx) + add(indx);
 
 hete    = setfield(hete, ['d',hete.type{itype}], add);

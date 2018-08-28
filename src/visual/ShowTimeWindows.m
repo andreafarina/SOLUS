@@ -1,7 +1,7 @@
 function [] = ShowTimeWindows(y,twin,dt)
 % Plot Time windows overlayed to time-resolved data y depending on twin.
 % if the time step dt is provided the plot has time on abscissa
-figure
+% figure
 if nargin < 3
     dt = 1;
     strx = 'channel';
