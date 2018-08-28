@@ -5,7 +5,7 @@
 %==========================================================================
 
 function [bmua,bmus] = RecSolverL1_TD(solver,grid,mua0,mus0, n, A,...
-    Spos,Dpos,dmask, dt, nstep, twin, self_norm, data, irf, ref, sd, ~)
+    Spos,Dpos,dmask, dt, nstep, twin, self_norm, data, irf, ref, sd, fwd_type)
 %% Jacobain options
 LOAD_JACOBIAN = solver.prejacobian.load;      % Load a precomputed Jacobian
 geom = 'semi-inf';
@@ -36,25 +36,27 @@ bdim = (grid.dim);
 nQM = sum(dmask(:));
 nwin = size(twin,1);
 % -------------------------------------------------------------------------
-[p,type] = ExtractVariables(solver.variables);
+[p,type_jac] = ExtractVariables(solver.variables);
 Jacobian = @(mua, mus) JacobianTD (grid, Spos, Dpos, dmask, mua, mus, n, A, ...
-    dt, nstep, twin, irf, geom,type);
-%% Inverse solver
+    dt, nstep, twin, irf, geom,type_jac,fwd_type);
+%% self normalise (probably useless because input data are normalize)
+% if self_norm == true
+%         data = data * spdiags(1./sum(data,'omitnan')',0,nQM,nQM);
+%         ref = ref * spdiags(1./sum(ref,'omitnan')',0,nQM,nQM);
+% end%% Inverse solver
 [proj, Aproj] = ForwardTD(grid,Spos, Dpos, dmask, mua0, mus0, n, ...
                 [],[], A, dt, nstep, self_norm,...
-                geom, 'homo');
+                geom, fwd_type);
 if numel(irf)>1
-    for i = 1:nQM
-        z(:,i) = conv(proj(:,i),irf);
-    end
+    z = convn(proj,irf);
     nmax = max(nstep,numel(irf));
     proj = z(1:nmax,:);
-    clear nmax
+    clear nmax z
+end
     if self_norm == true
         proj = proj * spdiags(1./sum(proj,'omitnan')',0,nQM,nQM);
     end
-    clear z
-end
+    
 proj = WindowTPSF(proj,twin);
 proj = proj(:);
 ref = ref(:);
@@ -83,7 +85,7 @@ data(mask) = [];
 
 %sd(mask) = [];
 % solution vector
-x0 = PrepareX0([mua0,1./(3*mus0)],grid.N,type);
+x0 = PrepareX0([mua0,1./(3*mus0)],grid.N,type_jac);
 x = ones(size(x0));
 
 dphi = (data(:)-ref(:))./sd(~mask);%./ref(:);
@@ -237,6 +239,6 @@ x = x + dx;
 %logx = logx + dx;
 %x = exp(logx);
 x = x.*x0;
-[bmua,bmus] = XtoMuaMus(x,mua0,mus0,type);
+[bmua,bmus] = XtoMuaMus(x,mua0,mus0,type_jac);
 
 end

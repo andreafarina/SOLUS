@@ -2,7 +2,7 @@ function [factor,y,std] = CutCounts(ch,dt,data,MaxCount,radiometry,...
             modality, NumDelay)
 % calculate the multiplicative factor for converting 
 % TPSFs curves(without Poisson noise) expressed in photon-counts into 
-% different kind of data representative of gated and non-gated measruements
+% different kind of data representative of gated and non-gated measurements
 % size(data) = [numel(t),num_TPSF]
 % modality = 0 
 %   classic mode: the highest power TPSF is identified, a constant 

@@ -54,11 +54,11 @@ switch lower(kind)
         mask = isinf(data_o)||isnan(data_0);
 end
 %% apply mask
-data_o(mask) = [];
-ref_o(mask) = [];
-sd_o(mask) = [];
-sdj(mask) = [];
-proj(mask) = [];
+% data_o(mask) = [];
+% ref_o(mask) = [];
+% sd_o(mask) = [];
+% sdj(mask) = [];
+% proj(mask) = [];
 %% vectorize
 data_o = data_o(:);
 ref_o = ref_o(:);

@@ -15,6 +15,11 @@ nwin = size(twin,1);
 [p,type] = ExtractVariables(solver.variables);
 Jacobian = @(mua, mus) JacobianTD (grid, Spos, Dpos, dmask, mua, mus, n, A, ...
     dt, nstep, twin, irf, geom,type,type_fwd);
+%% self normalise (probably useless because input data are normalize)
+if self_norm == true
+        data = data * spdiags(1./sum(data)',0,nQM,nQM);
+        ref = ref * spdiags(1./sum(ref)',0,nQM,nQM);
+end
 %% Inverse solver
 % homogeneous forward model
 [proj, Aproj] = ForwardTD(grid,Spos, Dpos, dmask, mua0, mus0, n, ...
@@ -26,12 +31,12 @@ if numel(irf)>1
     z = convn(proj,irf);
     nmax = max(nstep,numel(irf));
     proj = z(1:nmax,:);
-    clear nmax
+    clear nmax z
+end
     if self_norm == true
         proj = proj * spdiags(1./sum(proj,'omitnan')',0,nQM,nQM);
     end
-    clear z
-end
+    
 
 proj = WindowTPSF(proj,twin);
 proj = proj(:);
@@ -43,7 +48,9 @@ factor = proj./ref;
 % factor = repmat(factor,[nwin 1]);
 
 factor = factor(:);
-
+if self_norm == true
+    factor = 1;
+end
 data = data .* factor;
 ref = proj(:);%ref .* factor;
 %% data scaling
