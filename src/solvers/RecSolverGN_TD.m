@@ -22,8 +22,14 @@ prm.method = 'TV';
 [~,type_jac] = ExtractVariables(solver.variables);
 Jacobian = @(mua, mus) JacobianTD (grid, [], [], dmask, mua, mus, refind, [], ...
     dt, nstep, twin, irf, [],type_jac,'fem');
-N = hMesh.NodeCount;
+%% self normalise (probably useless because input data are normalize)
 nQM = sum(dmask(:));
+% if self_norm == true
+%         data = data * spdiags(1./sum(data)',0,nQM,nQM);
+%         ref = ref * spdiags(1./sum(ref)',0,nQM,nQM);
+% end
+N = hMesh.NodeCount;
+
 % Set up homogeneous initial parameter estimates
 mua = ones(N,1) * mua0;                           % initial mua estimate
 mus = ones(N,1) * mus0;                         % initial mus estimate
@@ -48,8 +54,16 @@ end
 proj = WindowTPSF(proj,twin);
 
 %% prepareData
+if self_norm == true
+    strfactor = 'factor_one';
+    strsd = 'poisson';
+else
+    strfactor = 'factor_td';
+    strsd = 'Poisson';
+end
 [data,sd,ref,sdj,proj,mask] = PrepDataLH(data,sd,ref,proj,...
-    'nonlin','factor_td','poisson');
+    'nonlin',strfactor,strsd);
+
    
 % map initial parameter estimates to solution basis
 bdim = (hBasis.Dims())';
@@ -83,9 +97,10 @@ if ~isempty(solver.prior.path)
     prm.prior.smooth = 0.1;
 end
 end
+prm.tau = 1; %no tau is set
 hreg = toastRegul(prm,logx);
 % -------------------- Initial data error (=2 due to data scaling) --------
-err0 = toastObjective (proj, data, sd, hreg, logx);  %initial error
+err0 = toastObjective (proj(~mask), data(~mask), sd(~mask), hreg, logx);  %initial error
 err = err0;                                         % current error
 errp = inf;%1e10;                                         % previous error
 erri(1) = err0;
@@ -161,14 +176,14 @@ while (itr <= solver.itrmax) && (err > solver.tol*err0)...
     for i = 1:numel(proj)
         J(i,:) = J(i,:) / sdj(i);
     end  
-    J(mask,:) = [];
-    J = spdiags(1./sd,0,numel(data),numel(data)) * J;
     
+    J = spdiags(1./sd,0,numel(data),numel(data)) * J;
+    J(mask,:) = [];
    
     
    % Normalisation of Hessian (map to diagonal 1)
-    psiHdiag = hreg.HDiag(logx);
-    M = zeros(nsol,1);
+    %psiHdiag = hreg.HDiag(logx);
+    %M = zeros(nsol,1);
 %     for i = 1:p
 %         M(i) = sum(J(:,i) .* J(:,i));
 %         M(i) = M(i) + psiHdiag(i);
@@ -181,8 +196,10 @@ while (itr <= solver.itrmax) && (err > solver.tol*err0)...
 
  %M = ones(size(M));
     % Gradient of cost function
-    r = J' * (2*(data-proj)./sd);
-    r = r - hreg.Gradient (logx) .* M;
+    tau = solver.tau * max(svd(J))
+    %tau = solver.tau * sum(sum(J.^2))
+    r = J' * (2*(data(~mask)-proj(~mask))./sd(~mask));
+    r = r - tau * hreg.Gradient (logx) .* M;
     
     if solver.Himplicit == true
         % Update with implicit Krylov solver
@@ -272,13 +289,13 @@ while (itr <= solver.itrmax) && (err > solver.tol*err0)...
     
     proj = WindowTPSF(proj,twin);
     proj = proj(:);%-proj0(:);% * factor;
-    proj(mask) = [];
+    %proj(mask) = [];
     %proj = log(proj(:)) - log(proj0(:));
     %sdj = proj(:);  
     %==========================================================================
     %%                        Update objective function
     %==========================================================================
-    err = toastObjective (proj, data, sd, hreg, logx);
+    err = toastObjective (proj(~mask), data(~mask), sd(~mask), hreg, logx);
     fprintf (1, '**** GN ITERATION %d, ERROR %e\n\n', itr, err);
     
     erri(itr) = err;
@@ -332,11 +349,11 @@ end
     
     proj = WindowTPSF(proj,twin);
     proj = proj(:);%-proj0(:);% * factor;
-    proj (mask) = [];
+    %proj (mask) = [];
     %proj = log(proj(:)) - log(proj0(:));
     %sdj = proj(:);
     %proj = privProject (hMesh, hBasis, x, ref, freq, qvec, mvec);
-    [p, p_data, p_prior] = toastObjective (proj, data, sd, hreg, x);
+    [p, p_data, p_prior] = toastObjective (proj(~mask), data(~mask), sd(~mask), hreg, x);
    % if verbosity > 0
         fprintf (1, '    [LH: %e, PR: %e]\n', p_data, p_prior);
    % end
@@ -370,7 +387,7 @@ end
     function b = jtjx(x)
         b = J' * (J*x);
         if exist('hreg','var')
-            b = b + M .* (HessReg * (M .* x));
+            b = b + M .* (tau * HessReg * (M .* x));
         end
     end
 

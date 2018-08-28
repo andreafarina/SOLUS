@@ -13,6 +13,7 @@ dimRect = [64 32];                          % solution basis: grid dimension
 grd = round(dimRect);                         % solution basis: grid dimension
 freq = 0;                             % modulation frequency [MHz]
 test_meshbasis = false;
+self_norm = true;
 % ======================================================================
 % End user-defined parameters
 % ======================================================================
@@ -33,7 +34,7 @@ nstep = 1000;
 a = 1:1:nstep;
 b = a + 99;
 twin = [a', a'];
-%twin = [ a',b'];
+nwin = size(twin,1);
 
 % Read a TOAST mesh definition from file.
 %% Make rectangle
@@ -75,24 +76,25 @@ qvec = hMesh.Qvec('Neumann', 'Gaussian', 2);
 A = toastDotBndterm(ref,'Contini');
 mvec = hMesh.Mvec ('Gaussian', 2,0).*ones(n,1)./(2*A);
 
-% SINUSIODAL Q / M
-    Area = dimRect(1);
-    x = 1:Area;
-    N = 16;
-    p = sin(2*pi*x./N);
-    qvec = zeros(1,n);
-    qbasis = zeros(bdim);
-    qbasis(:,1) = 1/2 + 1/2*p;
-    qvec = hBasis.Map('B->M',qbasis);
-    mvec = zeros(1,n);
-    mbasis = zeros(bdim);
-    mbasis(:,end) = 1/2 + 1/2*p;
-    mvec = hBasis.Map('B->M',mbasis);
-% Initial data set f[x0]
+%% SINUSIODAL Q / M
+%     Area = dimRect(1);
+%     x = 1:Area;
+%     N = 16;
+%     p = sin(2*pi*x./N);
+%     qvec = zeros(1,n);
+%     qbasis = zeros(bdim);
+%     qbasis(:,1) = 1/2 + 1/2*p;
+%     qvec = hBasis.Map('B->M',qbasis);
+%     mvec = zeros(1,n);
+%     mbasis = zeros(bdim);
+%     mbasis(:,end) = 1/2 + 1/2*p;
+%     mvec = hBasis.Map('B->M',mbasis);
+
+%% Initial data set f[x0]
 %proj0 = toastProject (hMesh,mua0,mus0,ref,freq,qvec,mvec);
 %dmask = true;
-proj0 = ProjectFieldTD(hMesh,qvec,mvec,dmask,...
-            mua0,mus0,[],[],ref,dt,nstep,freq,'diff',0);
+[proj0,Aproj] = ProjectFieldTD(hMesh,qvec,mvec,dmask,...
+            mua0,mus0,[],[],ref,dt,nstep,freq,self_norm,'diff',0);
 
 dmua = max(mua0)*1e-3;
 bkap0 = 1./(3*bmus0);
@@ -113,6 +115,7 @@ J = toastJacobianTimedomain_(hMesh,0,qvec,mvec, dmask, mua0, mus0, ref,dt,nstep,
 %J = -toastJacobianTimedomain_conv_time(hMesh,0,qvec,mvec, dmask, mua0, mus0, ref,dt,nstep,twin);
 J = toastJacobianTimedomain_INPROGRESS(hMesh,hBasis,qvec,mvec, ...
     dmask, mua0, mus0, ref,dt,nstep,twin,irf, GRADIENT);
+
 toc;
 % h = waitbar(0,'Calculating explicit Jacobian');
 % 
@@ -164,33 +167,42 @@ tic;
 J = toastJacobianTimedomain_INPROGRESS(hMesh,hBasis,qvec,mvec, ...
     dmask, mua0, mus0, ref,dt,nstep,twin,irf, GRADIENT) * vscale * dt;
 toc;
-%save('J_TD2','J');
-%load J_TD2
-h = waitbar(0,'Calculating explicit Jacobian');
-tic;
-for i=1:slen
-    idx = solmask(i);
-    bkap = bkap0;
-    bmua = bmua0;
-    bmua(idx) = bmua0(idx)+dmua;
-    mua = hBasis.Map('B->M',bmua);
-    proj = ProjectFieldTD(hMesh,qvec,mvec,dmask,...
-            mua,mus0,[],[],ref,dt,nstep,freq,0,'diff',0);
-    dy = (proj-proj0)/dmua;
-    Je(:,i) = dy;% / cm;
-    bkap(idx) = bkap0(idx) + dkap;
-    kap = hBasis.Map('B->M',bkap);
-    mus = 1./(3*kap);
-    proj = ProjectFieldTD(hMesh,qvec,mvec,dmask,...
-            mua0,mus,[],[],ref,dt,nstep,freq,0,'diff',0);
-    dy = (proj-proj0)/dkap;
-    Je(:,i+slen) = dy;% / cm;
-    waitbar(i/slen);
+save('J_TD_selfnorm','J');
+%load J_TD_selfnorm
+nQM = 1;
+if self_norm == true
+        for i=1:nQM
+            sJ = sum(J((1:nwin)+(i-1)*nwin,:));
+            sJ = repmat(sJ,nwin,1);
+            sJ = spdiags(proj0((1:nwin)+(i-1)*nwin),0,nwin,nwin) * sJ;
+            J((1:nwin)+(i-1)*nwin,:) = (J((1:nwin)+(i-1)*nwin,:) - sJ)./Aproj(i);
+        end
 end
-toc
-delete(h);
-% save('Je_TD5','Je');
-%load Je_TD5
+% h = waitbar(0,'Calculating explicit Jacobian');
+% tic;
+% for i=1:slen
+%     idx = solmask(i);
+%     bkap = bkap0;
+%     bmua = bmua0;
+%     bmua(idx) = bmua0(idx)+dmua;
+%     mua = hBasis.Map('B->M',bmua);
+%     proj = ProjectFieldTD(hMesh,qvec,mvec,dmask,...
+%             mua,mus0,[],[],ref,dt,nstep,freq,self_norm,'diff',0);
+%     dy = (proj-proj0)/dmua;
+%     Je(:,i) = dy;% / cm;
+%     bkap(idx) = bkap0(idx) + dkap;
+%     kap = hBasis.Map('B->M',bkap);
+%     mus = 1./(3*kap);
+%     proj = ProjectFieldTD(hMesh,qvec,mvec,dmask,...
+%             mua0,mus,[],[],ref,dt,nstep,freq,self_norm,'diff',0);
+%     dy = (proj-proj0)/dkap;
+%     Je(:,i+slen) = dy;% / cm;
+%     waitbar(i/slen);
+% end
+% toc
+% delete(h);
+%save('Je_TD_selfnorm','Je');
+load Je_TD_selfnorm
 %Je = Je./cm;
 %% plot
 for i = 1:50:nstep

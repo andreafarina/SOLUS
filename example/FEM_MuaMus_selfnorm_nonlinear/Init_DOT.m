@@ -4,15 +4,16 @@
 % ----------------------------- FORWARD -----------------------------------
 FORWARD = 1;            % Simulated forward data and save into _Data file
 REF = 1;                % 1: create also the homogeneous data
-TYPE_FWD = 'linear';    % fwd model computation: 'linear','fem'
+TYPE_FWD = 'fem';    % fwd model computation: 'linear','fem'
 geom = 'semi-inf';      % geometry
+
 % ------------------------- RECONSTRUCTION --------------------------------
 RECONSTRUCTION = 1;     % Enable the reconstruction section.
 % ------------------------- EXPERIMENTAL ----------------------------------
 EXPERIMENTAL = 1;       % Enable experimental options below
 EXP_IRF = 1;            % Use the experimental IRF for forward and 
                         % reconstruction.
-EXP_DELTA = 'all';      % Substitute the IRF with delta function on the 
+EXP_DELTA = 'peak';      % Substitute the IRF with delta function on the 
                         % baricenter ('baric') or peak ('peak') of the IRF.
                         % 'all' to use the experimental IRF.                    
 EXP_DATA = 0;           % Load experimental data and use them for 
@@ -43,7 +44,7 @@ DOT.opt.nE = 1.;        % external refractive index
 %==========================================================================
 DOT.grid.x1 = -32;
 DOT.grid.x2 = 32;
-DOT.grid.dx = 4;
+DOT.grid.dx = 2;
 
 DOT.grid.y1 = -29;
 DOT.grid.y2 = 29;           
@@ -58,28 +59,27 @@ DOT.grid.dz = DOT.grid.dx;
 NUM_HETE = 1;
 %--------------------------- INCLUSION 1 ---------------------------------%
 DOT.opt.hete1.type  = {'Mua','Musp'};
-DOT.opt.hete1.geometry = 'sphere';
-DOT.opt.hete1.c     = [0, 0, 05];   % down
+DOT.opt.hete1.geometry = 'Sphere';
+DOT.opt.hete1.c     = [10, 5, 10];   % down
 % DOT.opt.hete1.d     = [0, 0, -1];   % down
 % DOT.opt.hete1.l     = 20;
-DOT.opt.hete1.sigma = 5;
+DOT.opt.hete1.sigma = 4;
 DOT.opt.hete1.distrib = 'OFF';
-DOT.opt.hete1.profile = 'Gaussian';%'Step';%'Gaussian';
-DOT.opt.hete1.val   = [2 * DOT.opt.muaB,2 * DOT.opt.muspB];%2 * DOT.opt.muspB;
-DOT.opt.hete1.path ='../3DMasks/Mask3d_mus1_05-1_56_malignant_3.mat' ;   % down
+DOT.opt.hete1.profile = 'Step';%'Step';%'Gaussian';
+DOT.opt.hete1.val   = [2 * DOT.opt.muaB,2*DOT.opt.muspB];
+DOT.opt.hete1.path ='../../3DMasks/benign_2.mat' ;   % down
 
 %--------------------------- INCLUSION 2 ---------------------------------%
-% DOT.opt.hete2.type  = 'Mua';
-% DOT.opt.hete2.geometry = 'sphere';
-% DOT.opt.hete2.c     = [0, 0, 5];   % down
-% % DOT.opt.hete1.d     = [0, 0, -1];   % down
-% % DOT.opt.hete1.l     = 20;
-% DOT.opt.hete2.sigma = 5;
+% DOT.opt.hete2.type  = {'Musp'};
+% DOT.opt.hete2.geometry = 'Sphere';
+% DOT.opt.hete2.c     = [10, 15, 10];   % down
+% %DOT.opt.hete2.d     = [ 1, 0, 0];   % down
+% % DOT.opt.hete.d     = (M * [0, 0, -1]')';   % down
+% % DOT.opt.hete.l     = 20;
+% DOT.opt.hete2.sigma = 4;
 % DOT.opt.hete2.distrib = 'OFF';
-% DOT.opt.hete2.profile = 'Gaussian';%'Step';%'Gaussian';
-% DOT.opt.hete2.val   = 2 * DOT.opt.muaB;
-% DOT.opt.hete2.path ='../3DMasks/Mask3d_mus1_05-1_56_malignant_3.mat' ;   % down
-
+% DOT.opt.hete2.profile = 'Gaussian';%'Gaussian';
+% DOT.opt.hete2.val   = 2.3 * DOT.opt.muspB;
 
 %==========================================================================
 %%                         Time domain parameters
@@ -91,8 +91,8 @@ DOT.time.noise = 'Poisson';         % 'Poisson','Gaussian','none'
                                     % Gaussian noise is added before
                                     % Poisson noise.
 DOT.time.sigma = 1e-3;              % variance for gaussian noise
-DOT.time.self_norm = false;         % true for self-normalized TPSF
-DOT.time.TotCounts = 1e6;           % total counts for the maximum-energy
+DOT.time.self_norm = true;         % true for self-normalized TPSF
+DOT.time.TotCounts = 1e20;           % total counts for the maximum-energy
                                     % TPSF. The other are consequently
                                     % rescaled
 %==========================================================================

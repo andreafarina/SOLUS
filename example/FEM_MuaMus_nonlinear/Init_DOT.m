@@ -85,7 +85,7 @@ DOT.opt.hete1.path ='../../3DMasks/benign_2.mat' ;   % down
 %%                         Time domain parameters
 %==========================================================================
 DOT.time.dt = (50e3/1024/4);        % time step in picoseconds
-DOT.time.nstep = 600;               % number of temporal steps
+DOT.time.nstep = 400;               % number of temporal steps
 DOT.time.noise = 'Poisson';         % 'Poisson','Gaussian','none'
                                     % if 'Poisson' and sigma>0 a
                                     % Gaussian noise is added before

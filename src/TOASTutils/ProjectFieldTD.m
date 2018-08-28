@@ -5,7 +5,7 @@ function [proj, Area, proj_lifetime] = ProjectFieldTD(hMesh,qvec,mvec,dmask,...
 %            mua,musp,conc,tau,n,dt,nstep,freq,self_norm,fwd,verbosity)
 % March 2017: implemented GPU iterative solver
 USEGPU = 1;
-tol = 1e-8;
+tol = 1e-10;
 
 spacer = ' ------- ';
 disp([spacer mfilename ': setup' spacer]);
@@ -86,15 +86,15 @@ else
     tstart = cputime; 
     % AF initial conditions see toast examples fwd_tpsf.m
     % initial condition
-    q = qvec/dt;
+    q = qvec /dt * 1000;
     %phi = gpuArray(zeros(size(q)));
    % phi = gpuArray(full(q));
     for iq = 1:nQ
-        qg = gpuArray((q(:,iq)));
-        %[phi(:,iq),flag] = bicgstab(K1,q(:,iq),1e-12,100);%,U);%,PP',PP);
-        [phi(:,iq),~] = pcg(K1,qg,tol,100);
+        qg = gpuArray((q(:,iq)));%*1000;
+        %[phi(:,iq),flag] = bicgstab(K1,qg,tol,1000);%,U);%,PP',PP);
+        [phi(:,iq),flag] = pcg(K1,qg,tol,1000);
         %phi(:,iq) = full(qg);
-        %[phi(:,iq),flag] = gmres(K1,q(:,iq),30,1e-12,100);
+        %[phi(:,iq),flag] = gmres(K1,qg,30,tol,1000);
     end
     tmp = mvecT * phi;
     tmp = gather(tmp);
@@ -105,7 +105,7 @@ else
         q = K0 * phi;
         for iq = 1:nQ
             qg = gpuArray(q(:,iq));
-            %[phi(:,iq),flag] = bicgstab(K1,q(:,iq),1e-12,100);%,L);%,U);%,PP',PP);
+            %[phi(:,iq),~] = bicgstab(K1,qg,tol,1000);%,L);%,U);%,PP',PP);
             [phi(:,iq),~] = pcg(K1,qg,tol,100);
             %[phi(:,iq),flag] = gmres(K1,q(:,iq),30,1e-12,100);
         end
@@ -116,10 +116,16 @@ else
     end
     proj = permute(proj,[2 1]);
     
-    proj = gather(proj);
+    proj = gather(proj)/1000;
     % Reset memory on GPU
     gpu.delete;
     %reset(gpu);
+    if (sum(proj(:)<0) > 0)
+        warning([mfilename,spacer,num2str(sum(proj(:)<0)),' elements < 0 set to 0']);
+        proj(proj<0) = 0;
+    end
+    
+    
 end
 
 %% Normalized measurement

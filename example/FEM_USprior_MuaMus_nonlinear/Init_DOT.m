@@ -35,8 +35,8 @@ TOAST2DOT = 0;          % if 1 the function toast2dot is used for conversion
 % ========================================================================= 
 %% ====================== VOLUME DEFINITION ===============================
 %% Background optical properties
-DOT.opt.muaB = 0.01;    % mm-1
-DOT.opt.muspB = 1;      % mm-1
+DOT.opt.muaB = 0.0036;    % mm-1
+DOT.opt.muspB = 1.05;      % mm-1
 DOT.opt.nB = 1.4;       % internal refractive index   
 DOT.opt.nE = 1.;        % external refractive index
 %==========================================================================
@@ -86,7 +86,7 @@ DOT.opt.hete1.path ='../../3DMasks/benign_2.mat' ;   % down
 %%                         Time domain parameters
 %==========================================================================
 DOT.time.dt = (50e3/1024/4);        % time step in picoseconds
-DOT.time.nstep = 600;               % number of temporal steps
+DOT.time.nstep = 400;               % number of temporal steps
 DOT.time.noise = 'Poisson';         % 'Poisson','Gaussian','none'
                                     % if 'Poisson' and sigma>0 a
                                     % Gaussian noise is added before

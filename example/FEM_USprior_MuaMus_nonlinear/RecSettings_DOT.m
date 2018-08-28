@@ -6,7 +6,7 @@ REC.type_fwd = 'fem';    % 'fem' or 'linear'
 % -------------------------------------------------------------------------
 REC.time.roi = [60,400];%[1,20];%[5,250];% ROI in time-step unit. If omitted, the ROI will be 
                         % selected dinamically by the user.
-NUM_TW = 10;            % Number of Time Windows within ROI
+NUM_TW = 20;            % Number of Time Windows within ROI
 % =========================================================================
 %%                        Initial parameter estimates 
 % =========================================================================
@@ -17,8 +17,8 @@ REC.opt.mua0 = 0.0036;              % absorption [mm-1]
 REC.opt.musp0 = 1.05;              % reduced scattering [mm-1]
 REC.opt.nB = 1.4;
 % ---------------------- Solver and regularization ------------------------
-REC.solver.tau = 10;             % regularisation parameter
-REC.solver.type = 'USprior';           % 'born','GN': gauss-newton, 
+REC.solver.tau = 1e-1;             % regularisation parameter
+REC.solver.type = 'gn-USprior';           % 'born','GN': gauss-newton, 
                                   % 'USprior': Simon's strutural prior
                                   % 'LM': Levenberg-Marquardt,
                                   % 'l1': L1-based minimization
@@ -34,4 +34,4 @@ REC.solver.prior.path = '../../3DMasks/benign_2.mat';
 % Pay attention! The jacobian depends on source-detectors configuration,
 % optical properties of the background and number of time-windows.
 REC.solver.prejacobian.load = false;
-REC.solver.prejacobian.path = '../results/precomputed_jacobians/Jf5';
+REC.solver.prejacobian.path = '../results/precomputed_jacobians/J';

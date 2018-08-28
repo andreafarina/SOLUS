@@ -1,4 +1,4 @@
-filename = 'Test_FEM_USprior_MuaMus_nonlinear';% Filename  prefix 
+filename = 'Test_FEM_Mua_Mus_selfnorm_nonlinear';% Filename  prefix 
 session = '201710';
 exp_path = './';%['../data/',session,'/'];
 res_path = './';%['../results/',session,'/'];

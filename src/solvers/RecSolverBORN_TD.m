@@ -25,6 +25,7 @@ Jacobian = @(mua, mus) JacobianTD (grid, Spos, Dpos, dmask, mua, mus, n, A, ...
 %% self normalise (probably useless because input data are normalize)
 % if self_norm == true
 %         data = data * spdiags(1./sum(data,'omitnan')',0,nQM,nQM);
+%         ref = ref * spdiags(1./sum(ref,'omitnan')',0,nQM,nQM);
 % end
 %% Inverse solver
 [proj, Aproj] = ForwardTD(grid,Spos, Dpos, dmask, mua0, mus0, n, ...
@@ -47,7 +48,9 @@ ref = ref(:);
 data = data(:);
 factor = proj./ref;
 factor = factor(:);
-
+if self_norm == true
+    factor = 1;
+end
 
 data = data .* factor;
 ref = proj(:);%ref .* factor;

@@ -33,4 +33,4 @@ REC.solver.prior.path = [];% '../../3DMasks/benign_3.mat';
 % Pay attention! The jacobian depends on source-detectors configuration,
 % optical properties of the background and number of time-windows.
 REC.solver.prejacobian.load = false;
-REC.solver.prejacobian.path = '../results/precomputed_jacobians/Je';
+REC.solver.prejacobian.path = '../results/precomputed_jacobians/J';
