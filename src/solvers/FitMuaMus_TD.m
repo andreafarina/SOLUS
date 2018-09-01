@@ -11,8 +11,6 @@ geom = 'semi-inf';
 weight_type = 'none'; % 'none','rect'
 fract_first = 0.7; fract_last = 0.1;
 self_norm = true;
-mua0 = 0.01;
-mus0 = 1.0;
 data2 = data;%data;%ref;%data;%ref;
 
 nQM = sum(dmask(:));
@@ -79,7 +77,7 @@ opts = optimoptions('lsqcurvefit',...
     'Jacobian','off',...
     ...'Algorithm','levenberg-marquardt',...
     'DerivativeCheck','off',...
-    'MaxIter',100,'Display','iter-detailed','FinDiffRelStep',[1e-3,1e-2,2]);%,'TolFun',1e-10,'TolX',1e-10)
+    'MaxIter',100,'Display','final-detailed','FinDiffRelStep',[1e-3,1e-2,2]);%,'TolFun',1e-10,'TolX',1e-10)
 %% Setup optimization for lsqnonlin
 % opts = optimoptions('lsqnonlin',...
 %     'Jacobian','off',...
@@ -114,9 +112,13 @@ bmus = x(2)*ones(grid.N,1);
 
 
 %% display fit result
-display(['mua = ',num2str(bmua(1))]);
-display(['musp = ',num2str(bmus(1))]);
-display(['t0 = ',num2str(x(3))]);
+fprintf(['<strong>mua = ',num2str(bmua(1)),'</strong>\n']);
+fprintf(['<strong>musp = ',num2str(bmus(1)),'</strong>\n']);
+fprintf(['<strong>t0 = ',num2str(x(3)),'</strong>\n']);
+display(['MuaErr= ',num2str(bmua(1)-mua0)])
+display(['MusErr= ',num2str(bmus(1)-mus0)])
+display(['MuaErr%= ',num2str(((bmua(1)-mua0)./mua0).*100)])
+display(['MusErr%= ',num2str(((bmus(1)-mus0)./mus0).*100)])
 %% extract the amplitude area
 self_norm = 0;
 mask = true(nwin*nQM,1);

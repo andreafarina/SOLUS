@@ -174,8 +174,8 @@ else
     display([char(spe.cromo_label) repmat('=',spe.nCromo,1) num2str(x(2:end-2))]);
     disp([char(spe.cromo_label) repmat('=',spe.nCromo,1) num2str(x(2:end-2).*spe.cromo_factor') repmat(' ',spe.nCromo,1) char(spe.cromo_units)]);
 end
-display(['mua = ',num2str(bmua)]);
-display(['musp = ',num2str(bmus)]);
+fprintf(['<strong>mua = ',num2str(bmua),'</strong>\n']);
+fprintf(['<strong>musp = ',num2str(bmus),'</strong>\n']);
 display(['t0 = ',num2str(x(1))]);
 display(['MuaErr= ',num2str(bmua-mua0)])
 display(['MusErr= ',num2str(bmus-mus0)])

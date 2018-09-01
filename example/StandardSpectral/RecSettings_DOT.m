@@ -24,14 +24,14 @@ mua_ = [0.003807,0.001342,0.001387,0.010060,0.007554,0.003942,0.007613,0.004933]
 musp_ = [1.22842,1.189904,0.913511,0.803037,0.769676,0.7560782,0.702287,0.675179];
 Xr = {mua_,musp_};
 else
-a_ = 1.5221;	b_ = 1.1415;
-conc_ = [1.4492 0.48527 0.97134 0.037411 0.2021];
+a_ = 1.2883;	b_ = 1.2641;
+conc_ = [2.7152 0.78708 0.9948 0.045916 2.220e-14];
 Xr = {conc_,[a_ b_]};
 end
 
 % ---------------------- Solver and regularization ------------------------
-REC.solver.tau = 1e-2;            % regularisation parameter
-REC.solver.type = 'spectral_born';         % 'born','GN': gauss-newton, 
+REC.solver.tau = 0.01;            % regularisation parameter
+REC.solver.type = 'born';         % 'born','GN': gauss-newton, 
                                   % 'USprior': Simon's strutural prior
                                   % 'LM': Levenberg-Marquardt,
                                   % 'l1': L1-based minimization
