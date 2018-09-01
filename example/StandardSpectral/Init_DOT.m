@@ -2,7 +2,7 @@
 %%                              OPTIONS 
 %==========================================================================
 % ----------------------------- FORWARD -----------------------------------
-FORWARD = 0;            % Simulated forward data and save into _Data file
+FORWARD = 1;            % Simulated forward data and save into _Data file
 REF = 1;                % 1: create also the homogeneous data
 TYPE_FWD = 'linear';    % fwd model computation: 'linear','fem'
 geom = 'semi-inf';      % geometry
@@ -15,7 +15,7 @@ EXP_IRF = 1;            % Use the experimental IRF for forward and
 EXP_DELTA = 'all';      % Substitute the IRF with delta function on the 
                         % baricenter ('baric') or peak ('peak') of the IRF.
                         % 'all' to use the experimental IRF.                    
-EXP_DATA = 1;           % Load experimental data and use them for 
+EXP_DATA = 0;           % Load experimental data and use them for 
                         % reconstruction
 % -------------------------------------------------------------------------
 %DOT.TYPE = 'pointlike'; % 'pointlike','linesources' or 'pattern'
@@ -34,7 +34,7 @@ LOAD_FWD_TEO = 0;       % if 0: save the raw TPSF(un-noisy) in a _FwdTeo.m file.
                         % if 1: load the raw TPSF for speed up
 % -------------------------------------------------------------------------
 TOAST2DOT = 0;          % if 1 the function toast2dot is used for conversion 
-SPECTRA = 1;
+SPECTRA = 0;
 DOT.spe.cromo_label = {'Hb','HbO2','Lipid','H2O','Collagen'};
 DOT.spe.active_cromo = [1,1,1,1,1];
 DOT.spe.cromo_factor = [1,1,10*100*0.91,10*100, 10*100*0.196];
@@ -45,8 +45,8 @@ mua_ = [0.003807,0.001342,0.001387,0.010060,0.007554,0.003942,0.007613,0.004933]
 musp_ = [1.22842,1.189904,0.913511,0.803037,0.769676,0.7560782,0.702287,0.675179];
 Xd = {mua_,musp_};
 else
-a_ = 1.5221;	b_ = 1.1415;
-conc_ = [1.4492 0.48527 0.97134 0.037411 0.2021];
+a_ = 1.2883;	b_ = 1.2641;
+conc_ = [2.7152 0.78708 0.9948 0.045916 2.220e-14];
 Xd = {conc_,[a_ b_]};
 end
 % ========================================================================= 
@@ -112,7 +112,7 @@ DOT.opt.hete1.path ='../3DMasks/Mask3D_Mask_malignant_4.mat' ;   % down
 %==========================================================================
 DOT.time.dt = (50e3/4096/6)*4;        % time step in picoseconds
 DOT.time.nstep = 4096/4;               % number of temporal steps
-DOT.time.noise = 'none';         % 'Poisson','Gaussian','none'
+DOT.time.noise = 'poisson';         % 'Poisson','Gaussian','none'
                                     % if 'Poisson' and sigma>0 a
                                     % Gaussian noise is added before
                                     % Poisson noise.
@@ -139,6 +139,10 @@ DOT.radiometry.qeff = 0.05;     % Quantum efficiency
 if size(DOT.time.TotCounts,2)<DOT.radiometry.nL
     DOT.time.TotCounts = repmat(DOT.time.TotCounts(1),1,DOT.radiometry.nL);
     DOT.radiometry.power = repmat(DOT.radiometry.power(1),1,DOT.radiometry.nL);
+    warning('backtrace','off'),warning('verbose','off')
+    warning(['Power will be set to ' num2str(DOT.radiometry.power(1)) ' for any wavelenght'])
+    warning(['AcqTime will be set to ' num2str(DOT.radiometry.acqtime(1)) ' for any wavelenght'])
+    warning('backtrace','on'),warning('verbose','on')
 end
 %==========================================================================
 %%                   Cutting of counts
