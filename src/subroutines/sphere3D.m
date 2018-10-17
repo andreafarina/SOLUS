@@ -78,7 +78,10 @@ case 'STEP'
     param = getfield(DOT.opt, var);  
     switch upper(distrib)
     case 'ON',      add = intensity./length(indx);    
-    case 'OFF',     param(indx) = param(indx) + (intensity-back);
+    case 'OFF',     
+        param = reshape(param,DOT.grid.N,DOT.radiometry.nL);
+        param(indx,:) = param(indx,:) + (intensity-back);
+        param = reshape(param,Nx,Ny,Nz,DOT.radiometry.nL);
     end
 end
 
