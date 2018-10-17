@@ -616,7 +616,8 @@ if RECONSTRUCTION == 1
             if REC.opt.conc0(ic)==REC.opt.hete1.conc(ic)
                 mask = ones(size(mask));
             else
-                mask = REC.opt.Mua(:,:,:,1)./REC.opt.muaB(1);
+                mask = abs(1-REC.opt.Mua(:,:,:,1)./REC.opt.muaB(1));
+                mask = mask*sign(REC.opt.hete1.conc(ic)-REC.opt.concB(ic))+1;
             end
             REC.opt.Conc(:,:,:,ic) = mask.*REC.opt.concB(ic);
             fh=figure(900+ic);fh.NumberTitle = 'off';fh.Name = [REC.spe.cromo_label{ic} ' Map'];
@@ -639,14 +640,16 @@ if RECONSTRUCTION == 1
         else
             REC.opt.HbTot = zeros(REC.grid.dim);REC.opt.So2 = zeros(REC.grid.dim);
         end
-        mask = REC.opt.Musp(:,:,:,1)./REC.opt.muspB(1);
+        mask = abs(1-REC.opt.Musp(:,:,:,1)./REC.opt.muspB(1));
+        mask = mask*sign(REC.opt.hete1.a-REC.opt.aB)+1;
         if REC.opt.aB==REC.opt.hete1.a, mask = ones(size(mask)); end
         REC.opt.a = mask.*REC.opt.aB;
         fh=figure(900+ic+3);fh.NumberTitle = 'off';fh.Name = ('a Map');
         ShowRecResults(REC.grid,REC.opt.a,...
             REC.grid.z1,REC.grid.z2,REC.grid.dz,1,'auto');%,0.,0.64);
         suptitle('a');
-        mask = REC.opt.Musp(:,:,:,1)./REC.opt.muspB(1);
+        mask = abs(1-REC.opt.Musp(:,:,:,1)./REC.opt.muspB(1));
+        mask = mask*sign(REC.opt.hete1.b-REC.opt.bB)+1;
         if REC.opt.bB==REC.opt.hete1.b, mask = ones(size(mask)); end
         REC.opt.b = mask.*REC.opt.bB;
         fh=figure(900+ic+4);fh.NumberTitle = 'off';fh.Name = ('b Map');
@@ -906,20 +909,21 @@ if RECONSTRUCTION == 1
                 PlotMus = reshape(REC.opt.bmusp,[REC.grid.dim REC.radiometry.nL]);
                 PlotMua = PlotMua(:,:,:,inl);
                 PlotMus = PlotMus(:,:,:,inl);
-                fh=figure(500+inl);fh.NumberTitle = 'off';fh.Name = ['Recon Mua. Wave: ' num2str(REC.radiometry.lambda(inl))];
+                fh=figure(500+inl);fh.NumberTitle = 'off';fh.Name = ['Recon Mua. Wave ' num2str(REC.radiometry.lambda(inl))];
                 ShowRecResults(REC.grid,PlotMua,...
                     REC.grid.z1,REC.grid.z2,REC.grid.dz,1,'auto',0.00,0.05);
                 suptitle('Recon Mua');
+                %savefig(fh,['./figures/' fh.Name '.fig'])
                 % ---------------------------- display musp -------------------------------
-                fh=figure(600+inl);fh.NumberTitle = 'off';fh.Name = ['Recon Mus. Wave: ' num2str(REC.radiometry.lambda(inl))];
+                fh=figure(600+inl);fh.NumberTitle = 'off';fh.Name = ['Recon Mus. Wave ' num2str(REC.radiometry.lambda(inl))];
                 ShowRecResults(REC.grid,PlotMus,...
                     REC.grid.z1,REC.grid.z2,REC.grid.dz,1,'auto');%,0.,0.64);
                 suptitle('Recon Mus');
-                
+                %savefig(fh,['./figures/' fh.Name '.fig'])
                 drawnow;
                 tilefigs;
                 disp('recon: finished')
-                fh = figure(700+inl);fh.NumberTitle = 'off';fh.Name = ['PlotHete. Wave: ' num2str(REC.radiometry.lambda(inl))];
+                fh = figure(700+inl);fh.NumberTitle = 'off';fh.Name = ['PlotHete. Wave ' num2str(REC.radiometry.lambda(inl))];
                 subplot(1,2,1),PlotHeteQM(REC,PlotMua,REC.opt.mua0(inl)),
                 title('Recon Mua');
                 subplot(1,2,2),PlotHeteQM(REC,PlotMus,REC.opt.musp0(inl)),
@@ -935,6 +939,7 @@ if RECONSTRUCTION == 1
                 ShowRecResults(REC.grid,Conc,...
                     REC.grid.z1,REC.grid.z2,REC.grid.dz,1,'auto');%,0.,0.64);
                 suptitle(['Recon ' REC.spe.cromo_label{ic}]);
+                %savefig(fh,['./figures/' fh.Name '.fig'])
             end
             if REC.spe.active_cromo(strcmpi(REC.spe.cromo_label,'hb'))
                 REC.opt.HbTot = REC.opt.bConc(:,strcmpi(REC.spe.cromo_label,'hb'))+...
@@ -944,10 +949,12 @@ if RECONSTRUCTION == 1
                 ShowRecResults(REC.grid,reshape(REC.opt.HbTot,REC.grid.dim),...
                     REC.grid.z1,REC.grid.z2,REC.grid.dz,1,'auto');%,0.,0.64);
                 suptitle('HbTot');
+                %savefig(fh,['./figures/' fh.Name '.fig'])
                 fh=figure(800+ic+2);fh.NumberTitle = 'off';fh.Name = 'So2 Map';
                 ShowRecResults(REC.grid,reshape(REC.opt.So2,REC.grid.dim),...
                     REC.grid.z1,REC.grid.z2,REC.grid.dz,1,'auto');%,0.,0.64);
                 suptitle('So2');
+                %savefig(fh,['./figures/' fh.Name '.fig'])
             else
                 REC.opt.HbTot = zeros(prod(REC.grid.dim),1);REC.opt.So2 = zeros(prod(REC.grid.dim),1);
             end
@@ -955,10 +962,12 @@ if RECONSTRUCTION == 1
             ShowRecResults(REC.grid,reshape(REC.opt.bA,REC.grid.dim),...
                 REC.grid.z1,REC.grid.z2,REC.grid.dz,1,'auto');%,0.,0.64);
             suptitle('Recon a');
+            %savefig(fh,['./figures/' fh.Name '.fig'])
             fh=figure(800+ic+4);fh.NumberTitle = 'off';fh.Name = ('Recon b Map');
             ShowRecResults(REC.grid,reshape(REC.opt.bbB,REC.grid.dim),...
                 REC.grid.z1,REC.grid.z2,REC.grid.dz,1,'auto');%,0.,0.64);
             suptitle('Recon b');
+            %savefig(fh,['./figures/' fh.Name '.fig'])
         end
         
     end
