@@ -1,4 +1,4 @@
-function subplot1(M,N,varargin);
+function [H]=subplot1(M,N,varargin);
 %-------------------------------------------------------------------------
 % subplot1 function         An mproved subplot function
 % Input  : - If more than one input argumenst are given,
@@ -109,6 +109,14 @@ switch MoveFoc
  case 1
     %--- move focus to subplot # ---
     H    = get(gcf,'Children');
+    iHn = 1;
+    for iH = 1:numel(H)
+        if(strcmpi(H(iH).Type,'axes'))
+           Hn(iHn) = H(iH); 
+           iHn = iHn+1;
+        end
+    end
+    H = Hn;
     Ptot = length(H);
     if (length(M)==1),
        M    = Ptot - M + 1; 
@@ -169,7 +177,7 @@ switch MoveFoc
 
 %       subplot(M,N,Pi);
 %       hold on;
-       axes('position',[Xstart,Ystart,Xbox,Ybox]);
+       H(Pi)=axes('position',[Xstart,Ystart,Xbox,Ybox]);
        %set(gca,'position',[Xstart,Ystart,Xbox,Ybox]);
        set(gca,'FontSize',FontS); 
        box on;
@@ -226,3 +234,4 @@ switch MoveFoc
  otherwise
     error('Unknown MoveFoc option');
 end
+if(~exist('H','var')), H = []; end

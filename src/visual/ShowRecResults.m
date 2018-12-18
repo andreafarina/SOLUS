@@ -38,28 +38,53 @@ if ((nargin < 7)||strcmpi(scale,'auto'))
   cmax = max(Data_dummy(:));
 end
 clim = [cmin-eps cmax+eps];
+H=subplot1(ceil(sqrt(Nsub/1.5)),ceil(1.5*sqrt(Nsub/1.5)),'Gap',[0.001 0.001],'Min',[0.05 0.07],'Max',[1.01 0.98],'XTickL', 'All', 'YTickL', 'Margin','YScale','linear','FontS',18);
 for i=1:step:N
            % Data(:,:,i) = Data(:,:,i)';
-            subplot(ceil(sqrt(Nsub/1.5)),ceil(1.5*sqrt(Nsub/1.5)),l),
+%            subplot(ceil(sqrt(Nsub/1.5)),ceil(1.5*sqrt(Nsub/1.5)),l),
+                    subplot1(i);
                     if strcmpi(scale,'adaptive')
                      imagesc(x,y,Data(:,:,i)')
                      set(gca,'ydir','normal'),
-                     xlabel('x(mm)'),ylabel('y(mm)'),axis('image')
+                     if rem(i,ceil(1.5*sqrt(Nsub/1.5)))==1
+                         ylabel('y(mm)'),
+                     end
+                     if rem(i/ceil(1.5*sqrt(Nsub/1.5)),ceil(sqrt(Nsub/1.5)))==0
+                         xlabel('x(mm)'),
+                     end
+                     axis('image')
                     else
                      imagesc(x,y,Data(:,:,i)',clim)
                      set(gca,'ydir','normal'),
-                     xlabel('x(mm)'),ylabel('y(mm)'),axis('image')
+                     if rem(i,ceil(1.5*sqrt(Nsub/1.5)))==1
+                         ylabel('y(mm)'),
+                     end
+                     if i/ceil(1.5*sqrt(Nsub/1.5))>(ceil(sqrt(Nsub/1.5))-1)
+                         xlabel('x(mm)'),
+                     end
+                     axis('image')
                     end
                      %pcolor(Data(:,:,i)'), shading interp
               %axis image%,axis xy
             
             %end
             %title(['mu_a at z = ' num2str(REC.grid.z(i))]);axis square;colorbar
-            %title(['z = ' num2str(z(i))]);%axis square;
+            title(['z = ' num2str(z(i)) ' mm']);%axis square;
             
             %xlabel('x'),ylabel('y')
            l = l+1;
+           cm = colorbar;
+           %set(cm, 'YTickLabel', cellstr(num2str(reshape(get(cm, 'YTick'),[],1),'%0.4f')) )
 end
+ExSub = numel(H)-N;
+for ie = 1:(N-ExSub-1)
+    set(H(ie),'XTickLabel',[]);
+end
+for ie = (N-ExSub):(N-1)
+    axes(H(ie))
+    xlabel('x(mm)')
+end
+delete(H(i+1:end))
 % subplot(ceil(sqrt(Nsub/1.5)),ceil(1.5*sqrt(Nsub/1.5)),N+2);
 % imagesc((mean(clim,2))*ones(1,1),clim),colorbar,
 % axis image,axis xy;
