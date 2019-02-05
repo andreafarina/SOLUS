@@ -37,7 +37,7 @@ if ((nargin < 7)||strcmpi(scale,'auto'))
   cmin = min(Data_dummy(:));
   cmax = max(Data_dummy(:));
 end
-clim = [cmin-eps cmax+eps];
+clim = double([cmin * (1-eps) cmax * (1+eps)]);
 H=subplot1(ceil(sqrt(Nsub/1.5)),ceil(1.5*sqrt(Nsub/1.5)),'Gap',[0.001 0.001],'Min',[0.05 0.07],'Max',[1.01 0.98],'XTickL', 'All', 'YTickL', 'Margin','YScale','linear','FontS',18);
 for i=1:step:N
            % Data(:,:,i) = Data(:,:,i)';
