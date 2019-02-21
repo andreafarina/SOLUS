@@ -32,12 +32,13 @@ if ((nargin < 7)||strcmpi(scale,'auto'))
 end
 clim = [cmin-eps cmax+eps];
 for i=1:step:N
-           % Data(:,:,i) = Data(:,:,i)';
+            Data(:,:,i) = flipud(Data(:,:,i)');
             subplot(ceil(sqrt(Nsub/1.5)),ceil(1.5*sqrt(Nsub/1.5)),l),
                     if strcmpi(scale,'adaptive')
                      imagesc(x,y,Data(:,:,i)')
                      set(gca,'ydir','normal'),
                      xlabel('x(mm)'),ylabel('y(mm)')
+                     colorbar
                     else
                      imagesc(x,y,Data(:,:,i)',clim)
                      set(gca,'ydir','normal'),

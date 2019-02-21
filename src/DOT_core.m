@@ -560,8 +560,10 @@ end
 % ---------------------------- display mua --------------------------------
 drawnow;
 figure(304);
+% ShowRecResults(REC.grid,reshape(REC.opt.bmua,REC.grid.dim),...
+%    REC.grid.z1,REC.grid.z2,REC.grid.dz,1,'auto',0.00,0.05);
 ShowRecResults(REC.grid,reshape(REC.opt.bmua,REC.grid.dim),...
-   REC.grid.z1,REC.grid.z2,REC.grid.dz,1,'auto',0.00,0.05);
+   REC.grid.z1,REC.grid.z2,REC.grid.dz,1,'user',0.0099,0.0101);
 suptitle('Recon Mua');
 % ---------------------------- display musp -------------------------------
 % figure(305);
