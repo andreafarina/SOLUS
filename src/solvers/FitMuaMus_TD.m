@@ -65,7 +65,11 @@ proj(mask) = [];
 figure(1002);semilogy([proj,data]),legend('proj','ref')
 sd = sqrt(ref);%%ones(size(proj));%proj(:);
 %sd = ones(size(data));
+<<<<<<< HEAD
 data = data./sd;
+=======
+data = ref./sd;
+>>>>>>> 601f76d0bf4879d27e7741946f367a2a80e5bb98
 
 
 %% solution vector

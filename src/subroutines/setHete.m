@@ -38,7 +38,11 @@ end
 
 for itype = 1: size(hete.type,2)
     if isfield(hete, 'randinhom') 
+<<<<<<< HEAD
         fprintf('Setting pesudo-inhomogeneities for %s \n', hete.type{itype});
+=======
+        disp(sprintf('Setting pesudo-inhomogeneities for %s', hete.type{itype}));
+>>>>>>> 601f76d0bf4879d27e7741946f367a2a80e5bb98
         if hete.randinhom(1) ~= 0  &&  hete.randinhom(2) ~= 0
             [DOT.opt.(hete.type{itype}), ~] = AddPseudoInhom(DOT.opt.(hete.type{itype}),...
                                                              [DOT.grid.Nx, DOT.grid.Ny, DOT.grid.Nz ] , ...

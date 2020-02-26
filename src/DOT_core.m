@@ -197,7 +197,11 @@ drawnow;
 %==========================================================================
 %disp('Forwar model computation');
 nmeas = sum(DOT.dmask(:));
+<<<<<<< HEAD
 if FORWARD == 1  
+=======
+if FORWARD == 1
+>>>>>>> 601f76d0bf4879d27e7741946f367a2a80e5bb98
     DataCW = ForwardCW_multi_wave(DOT.grid,DOT.Source.Pos, DOT.Detector.Pos, DOT.dmask, ...
         DOT.opt.muaB, DOT.opt.muspB, DOT.opt.Mua, ...
         DOT.opt.Musp, DOT.A, geom, 'born',DOT.radiometry);
@@ -237,11 +241,19 @@ if FORWARD == 1
     if DOT.TD == 1
         DOT.time.time = (1:DOT.time.nstep) * DOT.time.dt;
         if LOAD_FWD_TEO == 0
+<<<<<<< HEAD
                 DataTD = ForwardTD_multi_wave(DOT.grid,DOT.Source.Pos, DOT.Detector.Pos, DOT.dmask,...
                     DOT.opt.muaB, DOT.opt.muspB,DOT.opt.nB, DOT.opt.Mua,...
                     DOT.opt.Musp, DOT.A, DOT.time.dt,...
                     length(DOT.time.time), DOT.time.self_norm, geom, TYPE_FWD,DOT.radiometry);
                 save([rdir,filename,'_', 'FwdTeo'],'DataTD');
+=======
+            DataTD = ForwardTD_multi_wave(DOT.grid,DOT.Source.Pos, DOT.Detector.Pos, DOT.dmask,...
+                DOT.opt.muaB, DOT.opt.muspB,DOT.opt.nB, DOT.opt.Mua,...
+                DOT.opt.Musp, DOT.A, DOT.time.dt,...
+                length(DOT.time.time), DOT.time.self_norm, geom, TYPE_FWD,DOT.radiometry);
+            save([rdir,filename,'_', 'FwdTeo'],'DataTD');
+>>>>>>> 601f76d0bf4879d27e7741946f367a2a80e5bb98
             if REF == 1
                 [MuaB,MuspB]=applyGrid(DOT.grid,DOT.opt.muaB,DOT.opt.muspB);
                 RefTD = ForwardTD_multi_wave(DOT.grid,DOT.Source.Pos, DOT.Detector.Pos, DOT.dmask,...
@@ -304,9 +316,13 @@ if FORWARD == 1
         for inl = 1:DOT.radiometry.nL
             meas_set = (1:nmeas)+(inl-1)*nmeas;
             DataTD_single_wave = DataTD(:,meas_set);
+<<<<<<< HEAD
             if REF == 1
             RefTD_single_wave = RefTD(:,meas_set);
             end
+=======
+            RefTD_single_wave = RefTD(:,meas_set);
+>>>>>>> 601f76d0bf4879d27e7741946f367a2a80e5bb98
             sdTD_single_wave = ones(size(DataTD_single_wave));
             if ~strcmpi(DOT.time.noise,'none')
                 [DataTD_single_wave,~] = AddNoise(DataTD_single_wave,'gaussian',DOT.time.sigma);
@@ -843,6 +859,7 @@ if RECONSTRUCTION == 1
                         REC.time.dt,REC.time.nstep,REC.time.twin,...
                         REC.time.self_norm,REC.Data,...
                         REC.time.irf.data,REC.ref,REC.sd,1,REC.radiometry,REC.spe);
+<<<<<<< HEAD
                 case 'components_fit'
                     if ~isempty(REC.solver.prior.path)
                         REC.solver.prior.refimage = ...
@@ -859,6 +876,8 @@ if RECONSTRUCTION == 1
                         REC.Source.Pos,REC.Detector.Pos,REC.dmask,REC.time.dt,REC.time.nstep,...
                         REC.time.twin,REC.time.self_norm,REC.Data,...
                         REC.time.irf.data,REC.ref,REC.sd,REC.type_fwd,REC.radiometry,REC.spe, REC.opt.hete1.geometry);
+=======
+>>>>>>> 601f76d0bf4879d27e7741946f367a2a80e5bb98
                 case 'cg'
                     
                 case 'l1'

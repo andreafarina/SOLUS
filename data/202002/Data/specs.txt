@@ -1,0 +1,17 @@
+
+IRF = SOLs0211
+HOMO = SOLm1246 / SOLm1245, Bulk: 10/0.1
+HETE = SOLm1247, Bulk: 10/0.1 Inc: 10/0.05
+        SOLm1248, Bulk: 10/0.1 Inc: 10/0.1
+        SOLm1249, Bulk: 10/0.1 Inc: 10/0.2
+        SOLm1250, Bulk: 10/0.1 Inc: 10/0.4
+        SOLm1251, Bulk: 10/0.1 Inc: 10/0.6
+        
+        SOLm1252, Bulk: 10/0.1 Inc: 15/0.1
+        SOLm1253, Bulk: 10/0.1 Inc: 5/0.1
+
+HOMO = SOLm1254, Bulk: 10/0.2
+HETE = SOLm1255, Bulk: 10/0.2 Inc: 10/0.2
+        SOLm1256, Bulk: 10/0.2 Inc: 10/0.4
+
+        
