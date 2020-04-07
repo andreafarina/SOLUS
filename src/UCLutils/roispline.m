@@ -1,4 +1,4 @@
-function mask=roispline(I,kind,tension)
+function [mask, cor]=roispline(I,kind,tension)
 
 % function [mask,perimeter,area]=roispline(I,str,tension)
 %

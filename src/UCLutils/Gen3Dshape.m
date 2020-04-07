@@ -2,16 +2,16 @@
 clear;
 close all;
 
-CROP = 0;   % enables autocropping of the 2D image to get a better approximation 
+CROP = 1;   % enables autocropping of the 2D image to get a better approximation 
             % of the position of the inclusion with respect to the US
             % probe. Preferably set to 1 with dicoms
 SAVE_3D = 1;   % saves 3D image
 SAVE_2D = 1;     % save segmented image
 SAVE_JPG = 1; % save images for display
-FORMAT = 'ELSE'; % or ELSE for other formats (jpg, png)
+FORMAT = 'DICOM'; % or ELSE for other formats (jpg, png)
 
 
-loadname = 'Bmode_FieldII.jpg';
+loadname = 'DICOMimages/Mdicom2.dcm';
 savename3D = [loadname(1: end - 4), '_3D.mat'];
 savename2D = [loadname(1: end - 4), '_SEGMENTED.mat'];
 savenameJPG = [loadname(1: end - 4), '.jpg'];
@@ -69,8 +69,9 @@ else
     delta = 0.07; %mm/px FIELDII
 end
 
-segmented = pointSplineSegs(im);
-
+[segmented, cor] = pointSplineSegs(im);
+close all
+sgm = snake_fitting(im, cor);
 %% Extrusion
 disp('Extrusion...');
 mask3D = retrieve_ellipsoid(segmented);
