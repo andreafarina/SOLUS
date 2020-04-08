@@ -3,7 +3,7 @@ function sgm = snake_fitting(im, cor)
 % points and tries to fit a better contour to the inclusion
 
 
-load to_load
+%load to_load
 im = double(rgb2gray(im));
 im = im/max(im(:));
 cor = cor(:, 1:end);
