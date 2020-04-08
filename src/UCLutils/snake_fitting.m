@@ -3,22 +3,28 @@ function sgm = snake_fitting(im, cor)
 % points and tries to fit a better contour to the inclusion
 
 
-%load to_load
+load to_load
 im = double(rgb2gray(im));
 im = im/max(im(:));
 cor = cor(:, 1:end);
 cor0 = cor;
 npoints = 400;
-nparam = 40;
-points = Lee_spline(cor, npoints);
+nparam = 2*(numel(cor)-1);
+points0 = Lee_spline(cor, npoints);
 param = Lee_spline(cor, nparam+1);
 param = param(:,1:end-1);
 param0 = param;
-dstruct = setDomain(im);
+
 order = 1;
 %options = optimoptions('fminunc','Algorithm','trust-region','SpecifyObjectiveGradient',true);
 %param = fminunc(@Loss2, param0, options);
-dStep = 1; 
+dStep = 0.15; 
+
+sigma_p = [0.5];
+max_i_sigma = numel(sigma_p);
+i_sigma = 1;
+dstruct = setDomain(im, param0, sigma_p(i_sigma));
+dstruct.points0 = points0;
 k = 1;
 max_k = 30;
 while k <= max_k
@@ -38,6 +44,14 @@ while k <= max_k
     else
         k = max_k + 1;
         disp('breaking cycle');
+    end
+    
+    if k >=max_k && i_sigma < max_i_sigma
+        k = 1;
+        i_sigma = i_sigma + 1;
+        dstruct = setDomain(im, param0, sigma_p(i_sigma));
+        dstruct.points0 = points0;
+        disp('refining sigma')
     end
         %param = param - dStep* (dUp/max(abs(dUp(:))));
     drawfitting(param, npoints, im);
@@ -95,25 +109,60 @@ end
 
 
 
-function d = setDomain(im)
+function d = setDomain(im,cor, sigma_p)
     [gx,gy] = imgradientxy(im);
     [gx2,~] = imgradientxy(gx);
     [~, gy2] = imgradientxy(gy);
     lap = gx2 + gy2;
-    smlap = zeros(size(lap));
-    for sigma = 20
-        G = mygaussian(sigma, size(im));
-        smlap = smlap+ conv2(lap, G, 'same');
-    end
-    smlap = (smlap)/max(abs(smlap(:)));
     
+    
+    if nargin == 1
+        smlap = zeros(size(lap));
+        for sigma = 10
+            G = mygaussian(sigma, size(im));
+            smlap = smlap+ conv2(lap, G, 'same');
+        end
+        smlap = (smlap)/max(abs(smlap(:)));
+        prc1 = 40;
+        prc2 = 60;
+        roi_idx = 1:1:numel(smlap);
+    elseif nargin ==3
+        minx = min(cor(1,:));
+        maxx = max(cor(1,:));
+        miny = min(cor(2,:));
+        maxy = max(cor(2,:));
+        semix = (maxx-minx)/2;
+        semiy = (maxy-miny)/2;
+        minx = floor(minx - 0.2 * min(semix,semiy));
+        maxx = ceil(maxx + 0.2 * min(semix,semiy));
+        miny = floor(miny - 0.2 * min(semix,semiy));
+        maxy = ceil(maxy + 0.2 * min(semix,semiy));
+
+        smlap = zeros(size(lap));
+        for sigma = [sigma_p] * min(semix, semiy) 
+            G = mygaussian(sigma, size(im));
+            smlap_ = conv2(lap, G, 'same');
+            smlap = smlap+ smlap_/sum(abs(smlap_(:))); 
+        end
+        smlap = (smlap)/max(abs(smlap(:)));
+        
+        [xx, yy] = meshgrid(1:size(smlap',1), 1:size(smlap',2));
+        roi_idx = zeros(size(smlap));
+        roi_idx(xx>=minx & xx<=maxx & yy>= miny & yy <= maxy) = 1;
+        roi_idx = logical(roi_idx(:));
+        prc1 = 30;
+        prc2 = 70;
+    end
+        
     dist = zeros(size(smlap));
-    for i=prctile(smlap(:), 40):0.001:prctile(smlap(:), 60)
+    for i=prctile(smlap(roi_idx), prc1):0.001:prctile(smlap(roi_idx), prc2)
         dist = dist + double( bwdist(smlap >= i).^2+ bwdist(smlap <= i).^2 ); 
     end
     d.smlap = smlap;
-    %dist = 1./(1+abs(smlap));
-    d.dist = (dist /  max(dist(:))).^(1/2); %double(bwdist(smlap.* (smlap>prctile(smlap(:), 20))));% bwdist(abs(smlap).* (abs(smlap)>=1e-3)).^2; %dist - min(dist(:))) / (max(double(dist(:))) - min(dist(:)));    
+    dist = dist - min(dist(:));
+    dist = dist/ max(dist(:));
+    d.dist = dist;
+
 end
 
 function g = mygaussian(sigma, siz)
@@ -184,6 +233,7 @@ end
 function L = Loss(points, d,param, cor0)
     d.dist = d.dist;
     idx = sub2ind(size(d.dist),round(points(2,:)),round(points(1,:)));
+    idx0 = sub2ind(size(d.dist),round(d.points0(2,:)),round(d.points0(1,:)));
     eim = d.dist(idx);
     Eim = sum(eim(:));  
 
@@ -191,22 +241,24 @@ function L = Loss(points, d,param, cor0)
     Regu = sum(regu(1,:).^2 + regu(2,:).^2 );
     
     a = 1;
-    b = 2;
+    b = 0.5;
     ab = a + b;
     a = a / ab;
     b = b / ab;
-    eint1 = circshift(points,1,2) - points; 
-    eint1 = (eint1(1,:).^2 + eint1(2,:).^2)/numel(idx);
+    eint0 = circshift(d.points0,1,2) - d.points0;
+    eint0 = sum( a *( eint0(1,:).^2 + eint0(2,:).^2)/numel(idx0) );
+    eint1 = (circshift(points,1,2) - points) /numel(idx); 
+    eint1 = a*(eint1(1,:).^2 + eint1(2,:).^2);
     eint2 = 0.5 * (circshift(points,1,2) - 2 *  points + circshift(points,-1,2))/ numel(idx)^2;
     eint2 =b * ( eint1(1,:).^2 + eint2(2,:).^2);      
-    Eint = sum(eint1 + eint2);
+    Eint = (sum(eint1 + eint2)) - eint0;
     
     
     centre = mean(cor0(:,:),2);
     dist2 = sqrt((cor0(1,:)  - centre(1)).^2 + (cor0(2,:)  - centre(2)).^2);
     Eext = 1/sum(dist2);
     
-    L = Eint + 0 * Eext + Eim + 0 * Regu;
+    L = 0.0001*Eint + 0 * Eext + Eim + 0 * Regu;
   
 end
 

@@ -5,13 +5,13 @@ close all;
 CROP = 1;   % enables autocropping of the 2D image to get a better approximation 
             % of the position of the inclusion with respect to the US
             % probe. Preferably set to 1 with dicoms
-SAVE_3D = 1;   % saves 3D image
-SAVE_2D = 1;     % save segmented image
-SAVE_JPG = 1; % save images for display
+SAVE_3D = 0;   % saves 3D image
+SAVE_2D = 0;     % save segmented image
+SAVE_JPG = 0; % save images for display
 FORMAT = 'DICOM'; % or ELSE for other formats (jpg, png)
 
 
-loadname = 'DICOMimages/Mdicom2.dcm';
+loadname = 'DICOMimages/Mdicom3.dcm';
 savename3D = [loadname(1: end - 4), '_3D.mat'];
 savename2D = [loadname(1: end - 4), '_SEGMENTED.mat'];
 savenameJPG = [loadname(1: end - 4), '.jpg'];
@@ -78,7 +78,7 @@ mask3D = retrieve_ellipsoid(segmented);
 
 
 %% SAVE
-mask3D = logical(mask3D(:,:,1:500));
+mask3D = logical(mask3D(:,:,1:min(500, size(mask3D,3))));
 if SAVE_3D == 1
     save(savename3D, 'mask3D', 'delta');
 end
