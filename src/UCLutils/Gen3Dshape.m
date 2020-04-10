@@ -71,7 +71,7 @@ end
 
 [segmented, cor] = pointSplineSegs(im);
 close all
-sgm = snake_fitting(im, cor);
+[sgm, cor_updated ] = snake_fitting(im, cor);
 %% Extrusion
 disp('Extrusion...');
 mask3D = retrieve_ellipsoid(segmented);
