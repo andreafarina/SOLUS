@@ -799,7 +799,7 @@ if RECONSTRUCTION == 1
                             priormask3D(REC.solver.prior.path,REC.grid);
                     else
                         disp('No prior is provided in RECSettings_DOT. Reference mua will be used');
-                        REC.solver.prior.refimage = REC.opt.Mua;
+                        REC.solver.prior.refimage = REC.opt.Mua(:,:,:,1);
                     end
                     REC.solver.prior.refimage =  double(REC.solver.prior.refimage)*10 + 0.1;
                     original_path = REC.solver.prejacobian.path;
