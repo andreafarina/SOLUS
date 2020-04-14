@@ -20,7 +20,7 @@ if contains(lower(REC.solver.type),'spectral')
     if any(strcmpi(REC.solver.variables,'mua'))
         for inc = 1:REC.spe.nCromo
             fprintf(['<strong>------- Chromo ',REC.spe.cromo_label{inc},'-------</strong>\n'])
-            Q.cromo(inl) = QuantifyX(REC.grid,REC.opt.concB(inc),REC.opt.bConc(:,inc),...
+            Q.cromo(inc) = QuantifyX(REC.grid,REC.opt.concB(inc),REC.opt.bConc(:,inc),...
                 ref_true,REC.opt.hete1.c,REC.opt.Conc(:,:,:,inc));
         end
     end
