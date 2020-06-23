@@ -9,13 +9,13 @@ geom = 'semi-inf';      % geometry
 % ------------------------- RECONSTRUCTION --------------------------------
 RECONSTRUCTION = 1;     % Enable the reconstruction section.
 % ------------------------- EXPERIMENTAL ----------------------------------
-EXPERIMENTAL = 1;       % Enable experimental options below
+EXPERIMENTAL = 1;       % Enable experimental options below ERA 1
 EXP_IRF = 1;            % Use the experimental IRF for forward and 
                         % reconstruction.
 EXP_DELTA = 'all';      % Substitute the IRF with delta function on the 
                         % baricenter ('baric') or peak ('peak') of the IRF.
                         % 'all' to use the experimental IRF.                    
-EXP_DATA = 0;           % Load experimental data and use them for 
+EXP_DATA = 0;           % Load experimental data and use them for  ERA 0
                         % reconstruction
 % -------------------------------------------------------------------------
 %DOT.TYPE = 'pointlike'; % 'pointlike','linesources' or 'pattern'
@@ -34,10 +34,11 @@ LOAD_FWD_TEO = 0;       % if 0: save the raw TPSF(un-noisy) in a _FwdTeo.m file.
                         % if 1: load the raw TPSF for speed up
 % -------------------------------------------------------------------------
 TOAST2DOT = 0;          % if 1 the function toast2dot is used for conversion 
-SPECTRA = 0;
+SPECTRA = 1; 
 DOT.spe.cromo_label = {'Hb','HbO2','Lipid','H2O','Collagen'};
 DOT.spe.active_cromo = [1,1,1,1,1];
-DOT.spe.cromo_factor = [1,1,10*100*0.91,10*100, 10*100*0.196];
+DOT.spe.cromo_factor = [1,1,10*100*0.91,10*100,10*100*0.196];
+%DOT.spe.cromo_factor = [1,1,1,1,1];
 DOT.spe.cromo_units = {'microM','microM','mg/cm^3','mg/cm^3','mg/cm^3'};
 DOT.spe.ForceConstitSolution = 0;
 if SPECTRA == 0
@@ -46,14 +47,18 @@ musp_ = [1.22842,1.189904,0.913511,0.803037,0.769676,0.7560782,0.702287,0.675179
 Xd = {mua_,musp_};
 else
 a_ = 1.2883;	b_ = 1.2641;
-conc_ = [2.7152 0.78708 0.9948 0.045916 2.220e-14];
+conc_ = [2.7152 0.78708 0.9948 0.045916 2.220e-14]; 
+% a_ = 1.6;	b_ = 0.94; % a (mm-1), b(adimensionale) %Birads4
+% conc_ = [1.89 12.32 0.5750 0.3293 0.0854]; %Birads4
+% a_ = 1.234;	b_ = 0.50; %Birads2
+% conc_ = [1.45 9.38 0.8186 0.1172 0.0453]; %Birads2
 Xd = {conc_,[a_ b_]};
 end
 % ========================================================================= 
 %% ====================== VOLUME DEFINITION ===============================
 %% Background optical properties
-% DOT.opt.muaB = 0.01;    % mm-1
-% DOT.opt.muspB = 1;      % mm-1
+% DOT.opt.muaB = 0.01;    % mm-1 %era commentato
+% DOT.opt.muspB = 1;      % mm-1 %era commentato
 DOT.opt.nB = 1.4;       % internal refractive index   
 DOT.opt.nE = 1.;        % external refractive index
 %==========================================================================
@@ -77,10 +82,10 @@ NUM_HETE = 1;
 %--------------------------- INCLUSION 1 ---------------------------------%
 DOT.opt.hete1.type  = {'Mua','Musp'};
 DOT.opt.hete1.geometry = 'sphere';
-DOT.opt.hete1.c     = [0, -5, 15];   % down
+DOT.opt.hete1.c     = [0, -5, 15];   % down 
 % DOT.opt.hete1.d     = [0, 0, -1];   % down
 % DOT.opt.hete1.l     = 20;
-DOT.opt.hete1.sigma = 5;
+DOT.opt.hete1.sigma = 5; 
 DOT.opt.hete1.distrib = 'OFF';
 DOT.opt.hete1.profile = 'Gaussian';%'Step';%'Gaussian';
 % DOT.opt.hete1.val   = 5 * DOT.opt.muaB;
@@ -89,8 +94,16 @@ muap_ = [0.037321,0.021343,0.010411,0.015747,0.023087,0.051566,0.029411,0.019642
 muspp_ = [0.371159,0.314731,0.214725,0.208025,0.222794,0.297037,0.220381,0.189757];
 Xp = {muap_,muspp_};
 else
-a_ = (1+10/100)*1.5453;	b_ = 1; % a (mm-1), b(adimensionale)
+a_ = (1+10/100)*1.5453;	b_ = 1; % a (mm-1), b(adimensionale) 
 concp_ = 2.*[0.40855	0.71424 0.48844	0.5868	0.37051];
+% a_ = 1.6;	b_ = 0.94; % a (mm-1), b(adimensionale) %Birads4
+% concp_ = [9.26 26.83 0.2706 0.5104 0.2927]; %Birads4 maligna
+% a_ = 1.6;	b_ = 0.94; % a (mm-1), b(adimensionale) %Birads4
+% concp_ = [9.8 19.16 0.2935 0.466 0.1692]; %Birads4 benigna
+% a_ = 1.234; b_ = 0.50; %Birads2
+% concp_ = [8.82 23.89 0.5142 0.2983 0.2526]; %Birads2 maligna 
+% a_ = 1.234;	b_ = 0.50; % a (mm-1), b(adimensionale) %Birads2
+% concp_ = [9.36 16.22 0.5371 0.2539 0.1291]; %Birads2 benigna
 Xp = {concp_,[a_ b_]};
 end
 DOT.opt.hete1.path ='../3DMasks/Mask3D_Mask_malignant_4.mat' ;   % down
@@ -112,31 +125,36 @@ DOT.opt.hete1.path ='../3DMasks/Mask3D_Mask_malignant_4.mat' ;   % down
 %==========================================================================
 DOT.time.dt = (50e3/4096/6)*4;        % time step in picoseconds
 DOT.time.nstep = 4096/4;               % number of temporal steps
-DOT.time.noise = 'poisson';         % 'Poisson','Gaussian','none'
+DOT.time.noise = 'Poisson';         % 'Poisson','Gaussian','none'
                                     % if 'Poisson' and sigma>0 a
                                     % Gaussian noise is added before
                                     % Poisson noise.
 DOT.time.sigma = 1e-3;              % variance for gaussian noise
 DOT.time.self_norm = false;         % true for self-normalized TPSF
-DOT.time.TotCounts = 1e6;           % total counts for the maximum-energy
+%DOT.time.TotCounts = 1e6;           % total counts for the maximum-energy
                                     % TPSF. The other are consequently
                                     % rescaled
+DOT.time.TotCounts = [1e6,1e6,1e6,1e6,1e6,1e6,1e6,1e6];
 %==========================================================================
 %%                         Radiometry
 %==========================================================================
-DOT.radiometry.power = [1];    % (mW) laser input power %AAA
+%DOT.radiometry.power = [1];    % (mW) laser input power %AAA
+[P] = xlsread('D:\programs\DOT\SOLUS\src\experimental\LaserPower.xlsx','B1:B8'); 
+DOT.radiometry.power = P;
 DOT.radiometry.timebin = ...
     DOT.time.dt;                % (ps) width of the time bin
-DOT.radiometry.acqtime = 1;     % (s) acquisition time %AAA
+%DOT.radiometry.acqtime = 1;     % (s) acquisition time %AAA  
+DOT.radiometry.acqtime = 5;    % (s)
 DOT.radiometry.opteff = 0.9;    % Typical efficiency of the optical path
-DOT.radiometry.lambda = [635,670,830,915,940,980,1030,1065];
+DOT.radiometry.lambda = [635,670,830,915,940,980,1030,1065]; 
 DOT.radiometry.lambda0 = 635;
 DOT.radiometry.lambda = DOT.radiometry.lambda;
 DOT.radiometry.nL = numel(DOT.radiometry.lambda);
                                 % (just for calculation of input photons)
-DOT.radiometry.area = 4;        % mm^2
+%DOT.radiometry.area = 4;        % mm^2  
+DOT.radiometry.area = 5.1083;      % mm^2
 DOT.radiometry.qeff = 0.05;     % Quantum efficiency
-if size(DOT.time.TotCounts,2)<DOT.radiometry.nL
+if size(DOT.time.TotCounts,2)<DOT.radiometry.nL 
     DOT.time.TotCounts = repmat(DOT.time.TotCounts(1),1,DOT.radiometry.nL);
     DOT.radiometry.power = repmat(DOT.radiometry.power(1),1,DOT.radiometry.nL);
     warning('backtrace','off'),warning('verbose','off')
@@ -159,4 +177,5 @@ end
 %                   RADIOMETRY==0, the count-rate for each delay is cut to 
 %                         DOT.time.TotCounts in any case.  
 CUT_COUNTS = 1;         
-NumDelays = 1;      % number of delays
+%NumDelays = 1;      % number of delays  
+NumDelays = 3;

@@ -4,8 +4,8 @@
 % Andrea Farina 12/16
 %==========================================================================
 
-function [bmua,bmus] = RecSolverBORN_TD(solver,grid,mua0,mus0, n, A,...
-    Spos,Dpos,dmask, dt, nstep, twin, self_norm, data, irf, ref, sd, fwd_type)
+function [bmua,bmus,reg_par] = RecSolverBORN_TD(solver,grid,mua0,mus0, n, A,...
+    Spos,Dpos,dmask, dt, nstep, twin, self_norm, data, irf, ref, sd, fwd_type, inl)
 %global factor
 %ref = 0;
 %% Jacobain options
@@ -13,7 +13,8 @@ LOAD_JACOBIAN = solver.prejacobian.load;      % Load a precomputed Jacobian
 geom = 'semi-inf';
 %% REGULARIZATION PARAMETER CRITERION
 NORMDIFF = 'sd';   % 'ref', 'sd'
-REGU = 'external'; % 'lcurve', 'gcv', 'external'
+%REGU = 'external'; % 'lcurve', 'gcv', 'external'
+REGU = 'external'; 
 BACKSOLVER = 'tikh'; % 'tikh', 'tsvd', 'discrep','simon', 'gmres', 'pcg', 'lsqr'
 % -------------------------------------------------------------------------
 nQM = sum(dmask(:));
@@ -53,6 +54,7 @@ if self_norm == true
 end
 
 data = data .* factor;
+
 ref = proj(:);%ref .* factor;
 %% data scaling
 sd = sd(:).*(factor);
@@ -63,7 +65,7 @@ if ref == 0 %#ok<BDSCI>
 end
 %% mask for excluding zeros
 mask = ((ref(:).*data(:)) == 0) | ...
-    (isnan(ref(:))) | (isnan(data(:)));
+    (isnan(ref(:))) | (isnan(data(:))) | (isinf(data(:)));
 %mask = false(size(mask));
 
 
@@ -142,9 +144,11 @@ if (~strcmpi(REGU,'lcurve')&&(~strcmpi(REGU,'gcv')))
     alpha = solver.tau * s(1);
 end
 if ~exist('alpha','var')
-    figure(403);
+    fig = figure(403);
+    fig.Name = ['Lambda' num2str(inl)];
     if strcmpi(REGU,'lcurve')
        alpha = l_curve(U,s,dphi);%,BACKSOLVER);  % L-curve (Regu toolbox)
+       savefig(fig, [fig.Name '.fig'])
     elseif strcmpi(REGU,'gcv')
         alpha = gcv(U,s,dphi);%,BACKSOLVER)
     end
@@ -226,7 +230,7 @@ x = x + dx;
 %x = exp(logx);
 x = x.*x0;
 [bmua,bmus] = XtoMuaMus(x,mua0,mus0,type_jac);
-
+reg_par = alpha;
 
 end
 

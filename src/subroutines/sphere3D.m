@@ -24,10 +24,10 @@ function [DOT,hete] = sphere3D(DOT, hete)
 %%--
 c    = hete.c;
 for itype = 1:size(hete.type,2)
-var  = hete.type{itype};
-back = eval(['DOT.opt.',lower(hete.type{itype}),'B']);
+var  = hete.type{itype}; %modifico il tipo di inclusione Mua in assorbimento e Musp in scattering
+back = eval(['DOT.opt.',lower(hete.type{itype}),'B']); %il muaB (e nel ciclo successivo il muspB) per il background calcolato dalle concentrazioni in TranslateXVar
 sigma= hete.sigma;
-intensity = hete.val((1:DOT.radiometry.nL)+(itype-1)*DOT.radiometry.nL);
+intensity = hete.val((1:DOT.radiometry.nL)+(itype-1)*DOT.radiometry.nL); %val ha gli 8 valori di assorbimento e gli 8 di scattering per l'inclusione calcolati in TranslateXVar
 shape     = hete.profile;
 distrib   = hete.distrib;
 
@@ -39,7 +39,7 @@ if isfield(DOT,'grid'),
     Y = reshape(Y,DOT.grid.N,[]);
     Z = reshape(Z,DOT.grid.N,[]);
     M = [X-c(1) Y-c(2) Z-c(3)];
-    add = zeros(DOT.grid.N,DOT.radiometry.nL);
+    add = zeros(DOT.grid.N,DOT.radiometry.nL); %posso creare questa con 5 colonne per le conc, 1 colonna per a e una per b
     Nx = DOT.grid.Nx;
     Ny = DOT.grid.Ny;
     Nz = DOT.grid.Nz;
@@ -59,7 +59,7 @@ switch upper(shape)
 %% ---------------------- profil de concentration gaussien ---------------%       
 case 'GAUSSIAN'        
     %-- selection des indices --%
-    indx = find(dist2 < 9*sigma*sigma);
+    indx = find(dist2 < 9*sigma*sigma); %in valore assoluto tutti gli indici dei numeri di dist2 diversi da zero minori di 9*sigma*sigma
     %-- update concentration --%
     param = getfield(DOT.opt, var);    
     switch upper(distrib)
@@ -67,7 +67,9 @@ case 'GAUSSIAN'
         add(indx,:) = add(indx,:) + exp(-dist2(indx,1)/sigma/sigma);
         add = add.*intensity./sum(add,1);   
     case 'OFF'
-        add(indx,:) = add(indx,:) + (intensity-back).*exp(-dist2(indx,1)/sigma/sigma);
+        add(indx,:) = add(indx,:) + (intensity-back).*exp(-dist2(indx,1)/sigma/sigma); 
+        %qui si crea l'inclusione togliendo per ogni valore di assorbimento
+        %e scattering i valori quelli del background
     end   
     
 %% --------------------- profil de concentration creneau -----------------%       

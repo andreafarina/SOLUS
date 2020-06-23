@@ -4,8 +4,8 @@
 % SOLUS SOURCES - DETECTOR POSITIONS
 ys = [10 -10];
 xs = [19.5 6.5 -6.5 -19.5];
-%ys = linspace(5,50,8);
-zs = 0;
+%ys = linspace(5,50,8); %non c'era, lascialo commentato
+zs = 5;
 
 [xxs,yys,zzs] = ndgrid(xs,ys,zs);
 

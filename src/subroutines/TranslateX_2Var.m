@@ -14,7 +14,7 @@ DOT.spe.ext_coeff0 = DOT.spe.ext_coeffB;
 REC.spe.ext_coeff0 = DOT.spe.ext_coeffB;
 switch SPECTRA
     case 0
-        DOT.opt.muaB = Xd{mua_pos}; DOT.opt.muspB = Xd{musp_pos};
+        DOT.opt.muaB = Xd{mua_pos}; DOT.opt.muspB = Xd{musp_pos}; 
         REC.opt.mua0 = Xr{mua_pos}; REC.opt.musp0 = Xr{musp_pos};
         DOT.opt.hete1.val = [];
         for in = 1:numel(Xp)

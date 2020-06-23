@@ -77,6 +77,7 @@ disp(['Results path: ',rdir]);
 % Load the structure EXP containing all the data for analyzing experimental
 % data. This structure is created with the routine 'CreateExperiment.m'.
 %==========================================================================
+
 if (EXPERIMENTAL == 1)
     load([exp_path,'EXP_',exp_file])
     % Select measurements by dmask
@@ -118,7 +119,8 @@ end
 %==========================================================================
 DOT.grid = setGrid(DOT);
 
-[DOT.opt.Mua, DOT.opt.Musp] = applyGrid(DOT.grid,DOT.opt.muaB,DOT.opt.muspB);
+[DOT.opt.Mua, DOT.opt.Musp] = applyGrid(DOT.grid,DOT.opt.muaB,DOT.opt.muspB); 
+%[DOT.opt.conc, DOT.opt.a, DOT.opt.b] = applyGrid2(DOT.grid,DOT.opt.concB,DOT.opt.aB,DOT.opt.bB);
 
 %==========================================================================
 %%                      Set Heterogeneities
@@ -188,6 +190,7 @@ figure(11)
 subplot(1,2,1),PlotHeteQM(DOT,squeeze(DOT.opt.Mua(:,:,:,1)),DOT.opt.muaB(1)),title('Mua');
 subplot(1,2,2),PlotHeteQM(DOT,squeeze(DOT.opt.Musp(:,:,:,1)),DOT.opt.muspB(1)),title('Musp');
 drawnow;
+savefig('figure(11).fig')
 
 %==========================================================================
 % The structure DOT contains all geometrical parameters needed also for
@@ -236,7 +239,8 @@ if FORWARD == 1
     %==========================================================================
     if DOT.TD == 1
         DOT.time.time = (1:DOT.time.nstep) * DOT.time.dt;
-        if LOAD_FWD_TEO == 0
+%         writecell(DOT.opt.hete1.sigma,filename,'Sheet','Data','Range','F2');
+if LOAD_FWD_TEO == 0
                 DataTD = ForwardTD_multi_wave(DOT.grid,DOT.Source.Pos, DOT.Detector.Pos, DOT.dmask,...
                     DOT.opt.muaB, DOT.opt.muspB,DOT.opt.nB, DOT.opt.Mua,...
                     DOT.opt.Musp, DOT.A, DOT.time.dt,...
@@ -290,6 +294,7 @@ if FORWARD == 1
                 clear nmax
             end
             drawnow
+            savefig('figure(12).fig')
         end
         clear z inl meas_set
         
@@ -301,6 +306,7 @@ if FORWARD == 1
         end
         %-------------------- Add noise to TD data ------------------------
         sdTD = zeros(size(DataTD));
+        DataTDrimoltiplicato = zeros(size(DataTD));
         for inl = 1:DOT.radiometry.nL
             meas_set = (1:nmeas)+(inl-1)*nmeas;
             DataTD_single_wave = DataTD(:,meas_set);
@@ -352,6 +358,7 @@ if FORWARD == 1
             DataTD(:,meas_set) = DataTD_single_wave;
             RefTD(:,meas_set) = RefTD_single_wave;
             sdTD(:,meas_set) = sdTD_single_wave;
+            DataTDrimoltiplicato(:,meas_set) = DataTD_single_wave./factor;
         end
     end
     
@@ -479,7 +486,10 @@ if RECONSTRUCTION == 1
             end
         end
     end
-    clear DOT
+    teor.muaB = DOT.opt.muaB;
+    teor.muspB = DOT.opt.muspB;
+    teor. hete = DOT.opt.hete1.val;
+    %clear DOT
     
     
     %==========================================================================
@@ -572,7 +582,20 @@ if RECONSTRUCTION == 1
                 clear DataTD sdTD
                 tilefigs;
             end
+            savefig('figure(20).fig')
         end
+        
+            for inl = 1:REC.radiometry.nL
+                figure(21);
+                meas_set = (1:nmeas)+(inl-1)*nmeas;
+                twin_set = (1:2)+(inl-1)*2;
+                REC.time.twin(:,twin_set) = CreateTimeWindows(REC.time.nstep,REC.time.roi(inl,:),'even',NUM_TW);
+                REC.time.nwin(inl) = size(REC.time.twin(:,twin_set),1);
+                subplot(nsub(1),nsub(2),inl)
+                ShowTimeWindows(DataTDrimoltiplicato(:,meas_set),REC.time.twin(:,twin_set),REC.time.dt);
+                title(['Wavelength: ' num2str(REC.radiometry.lambda(inl))]);
+                savefig('figure(21).fig')
+            end
     end
     clear inl shift meas_set
     % % =========================================================================
@@ -589,77 +612,77 @@ if RECONSTRUCTION == 1
     %%              PLOT REFERENCE VALUES IF PRESENT
     %==========================================================================
     % ------------------------ Reference mua ----------------------------------
-    if ~SPECTRA
-        for inl = 1:REC.radiometry.nL
-            PlotMua = squeeze(REC.opt.Mua(:,:,:,inl));
-            PlotMusp = squeeze(REC.opt.Musp(:,:,:,inl));
-            fh=figure(300+inl);
-            fh.Name = ['Wave: ' num2str(REC.radiometry.lambda(inl))];
-            if isfield(REC.opt,'Mua')
-                ShowRecResults(REC.grid,PlotMua,...
-                    REC.grid.z1,REC.grid.z2,REC.grid.dz,1,...
-                    'auto',0,max(PlotMua(:)));
-                suptitle('Mua');
-            end
-            % ------------------------ Reference musp ---------------------------------
-            fh=figure(400+inl);
-            fh.Name = ['Wave: ' num2str(REC.radiometry.lambda(inl))];
-            if isfield(REC.opt,'Musp')
-                ShowRecResults(REC.grid,PlotMusp,...
-                    REC.grid.z1,REC.grid.z2,REC.grid.dz,1,...
-                    'auto',0,max(PlotMusp(:)));
-                suptitle('Mus');
-            end
-        end
-    end
-    if SPECTRA
-        mask = REC.opt.Mua(:,:,:,1)./REC.opt.muaB(1);
-        for ic = (1:REC.spe.nCromo)
-            if REC.opt.conc0(ic)==REC.opt.hete1.conc(ic)
-                mask = ones(size(mask));
-            else
-                mask = abs(1-REC.opt.Mua(:,:,:,1)./REC.opt.muaB(1));
-                mask = mask*sign(REC.opt.hete1.conc(ic)-REC.opt.concB(ic))+1;
-            end
-            REC.opt.Conc(:,:,:,ic) = mask.*REC.opt.concB(ic);
-            fh=figure(900+ic);fh.NumberTitle = 'off';fh.Name = [REC.spe.cromo_label{ic} ' Map'];
-            ShowRecResults(REC.grid,REC.opt.Conc(:,:,:,ic),...
-                REC.grid.z1,REC.grid.z2,REC.grid.dz,1,'auto');%,0.,0.64);
-            suptitle(REC.spe.cromo_label{ic});
-        end
-        if REC.spe.active_cromo(strcmpi(REC.spe.cromo_label,'hb'))
-            REC.opt.HbTot = REC.opt.Conc(:,:,:,strcmpi(REC.spe.cromo_label,'hb'))+...
-                REC.opt.Conc(:,:,:,strcmpi(REC.spe.cromo_label,'hbo2'));
-            REC.opt.So2 = REC.opt.Conc(:,:,:,strcmpi(REC.spe.cromo_label,'hbo2'))./REC.opt.HbTot;
-            fh=figure(900+ic+1);fh.NumberTitle = 'off';fh.Name = 'HbTot Map';
-            ShowRecResults(REC.grid,REC.opt.HbTot,...
-                REC.grid.z1,REC.grid.z2,REC.grid.dz,1,'auto');%,0.,0.64);
-            suptitle('HbTot');
-            fh=figure(900+ic+2);fh.NumberTitle = 'off';fh.Name = 'So2 Map';
-            ShowRecResults(REC.grid,REC.opt.So2,...
-                REC.grid.z1,REC.grid.z2,REC.grid.dz,1,'auto');%,0.,0.64);
-            suptitle('So2');
-        else
-            REC.opt.HbTot = zeros(REC.grid.dim);REC.opt.So2 = zeros(REC.grid.dim);
-        end
-        mask = abs(1-REC.opt.Musp(:,:,:,1)./REC.opt.muspB(1));
-        mask = mask*sign(REC.opt.hete1.a-REC.opt.aB)+1;
-        if REC.opt.aB==REC.opt.hete1.a, mask = ones(size(mask)); end
-        REC.opt.a = mask.*REC.opt.aB;
-        fh=figure(900+ic+3);fh.NumberTitle = 'off';fh.Name = ('a Map');
-        ShowRecResults(REC.grid,REC.opt.a,...
-            REC.grid.z1,REC.grid.z2,REC.grid.dz,1,'auto');%,0.,0.64);
-        suptitle('a');
-        mask = abs(1-REC.opt.Musp(:,:,:,1)./REC.opt.muspB(1));
-        mask = mask*sign(REC.opt.hete1.b-REC.opt.bB)+1;
-        if REC.opt.bB==REC.opt.hete1.b, mask = ones(size(mask)); end
-        REC.opt.b = mask.*REC.opt.bB;
-        fh=figure(900+ic+4);fh.NumberTitle = 'off';fh.Name = ('b Map');
-        ShowRecResults(REC.grid,REC.opt.b,...
-            REC.grid.z1,REC.grid.z2,REC.grid.dz,1,'auto');%,0.,0.64);
-        suptitle('b');
-    end
-    drawnow
+%     if ~SPECTRA
+%         for inl = 1:REC.radiometry.nL
+%             PlotMua = squeeze(REC.opt.Mua(:,:,:,inl));
+%             PlotMusp = squeeze(REC.opt.Musp(:,:,:,inl));
+%             fh=figure(300+inl);
+%             fh.Name = ['Wave: ' num2str(REC.radiometry.lambda(inl))];
+%             if isfield(REC.opt,'Mua')
+%                 ShowRecResults(REC.grid,PlotMua,...
+%                     REC.grid.z1,REC.grid.z2,REC.grid.dz,1,...
+%                     'auto',0,max(PlotMua(:)));
+%                 suptitle('Mua');
+%             end
+%             % ------------------------ Reference musp ---------------------------------
+%             fh=figure(400+inl);
+%             fh.Name = ['Wave: ' num2str(REC.radiometry.lambda(inl))];
+%             if isfield(REC.opt,'Musp')
+%                 ShowRecResults(REC.grid,PlotMusp,...
+%                     REC.grid.z1,REC.grid.z2,REC.grid.dz,1,...
+%                     'auto',0,max(PlotMusp(:)));
+%                 suptitle('Mus');
+%             end
+%         end
+%     end
+%     if SPECTRA
+%         mask = REC.opt.Mua(:,:,:,1)./REC.opt.muaB(1); %rapporto tra mappa assorbimento e mappa background
+%         for ic = (1:REC.spe.nCromo)
+%             if REC.opt.conc0(ic)==REC.opt.hete1.conc(ic) %REC.opt.conc0=concentrazione background, 
+%                 mask = ones(size(mask));                 %REC.opt.hete1.conc=concentrazione lesione
+%             else
+%                 mask = abs(1-REC.opt.Mua(:,:,:,1)./REC.opt.muaB(1)); %tolgo il background
+%                 mask = mask*sign(REC.opt.hete1.conc(ic)-REC.opt.concB(ic))+1;
+%             end
+%             REC.opt.Conc(:,:,:,ic) = mask.*REC.opt.concB(ic); %questa REC.opt.Conc deve andare di pari passo con la DOT.Mua
+%             fh=figure(900+ic);fh.NumberTitle = 'off';fh.Name = [REC.spe.cromo_label{ic} ' Map'];
+%             ShowRecResults(REC.grid,REC.opt.Conc(:,:,:,ic),...
+%                 REC.grid.z1,REC.grid.z2,REC.grid.dz,1,'auto');%,0.,0.64);
+%             suptitle(REC.spe.cromo_label{ic});
+%         end
+%         if REC.spe.active_cromo(strcmpi(REC.spe.cromo_label,'hb'))
+%             REC.opt.HbTot = REC.opt.Conc(:,:,:,strcmpi(REC.spe.cromo_label,'hb'))+...
+%                 REC.opt.Conc(:,:,:,strcmpi(REC.spe.cromo_label,'hbo2'));
+%             REC.opt.So2 = REC.opt.Conc(:,:,:,strcmpi(REC.spe.cromo_label,'hbo2'))./REC.opt.HbTot;
+%             fh=figure(900+ic+1);fh.NumberTitle = 'off';fh.Name = 'HbTot Map';
+%             ShowRecResults(REC.grid,REC.opt.HbTot,...
+%                 REC.grid.z1,REC.grid.z2,REC.grid.dz,1,'auto');%,0.,0.64);
+%             suptitle('HbTot');
+%             fh=figure(900+ic+2);fh.NumberTitle = 'off';fh.Name = 'So2 Map';
+%             ShowRecResults(REC.grid,REC.opt.So2,...
+%                 REC.grid.z1,REC.grid.z2,REC.grid.dz,1,'auto');%,0.,0.64);
+%             suptitle('So2');
+%         else
+%             REC.opt.HbTot = zeros(REC.grid.dim);REC.opt.So2 = zeros(REC.grid.dim);
+%         end
+%         mask = abs(1-REC.opt.Musp(:,:,:,1)./REC.opt.muspB(1));
+%         mask = mask*sign(REC.opt.hete1.a-REC.opt.aB)+1;
+%         if REC.opt.aB==REC.opt.hete1.a, mask = ones(size(mask)); end
+%         REC.opt.a = mask.*REC.opt.aB;
+%         fh=figure(900+ic+3);fh.NumberTitle = 'off';fh.Name = ('a Map');
+%         ShowRecResults(REC.grid,REC.opt.a,...
+%             REC.grid.z1,REC.grid.z2,REC.grid.dz,1,'auto');%,0.,0.64);
+%         suptitle('a');
+%         mask = abs(1-REC.opt.Musp(:,:,:,1)./REC.opt.muspB(1));
+%         mask = mask*sign(REC.opt.hete1.b-REC.opt.bB)+1;
+%         if REC.opt.bB==REC.opt.hete1.b, mask = ones(size(mask)); end
+%         REC.opt.b = mask.*REC.opt.bB;
+%         fh=figure(900+ic+4);fh.NumberTitle = 'off';fh.Name = ('b Map');
+%         ShowRecResults(REC.grid,REC.opt.b,...
+%             REC.grid.z1,REC.grid.z2,REC.grid.dz,1,'auto');%,0.,0.64);
+%         suptitle('b');
+%     end
+%     drawnow
     % =========================================================================
     %%                      Reconstruction Solver
     % =========================================================================
@@ -714,17 +737,19 @@ if RECONSTRUCTION == 1
                 case 'born'
                     REC.solver.prior.refimage = [];
                     original_path = REC.solver.prejacobian.path;
-                    for inl = 1:REC.radiometry.nL
+                    reg_par = zeros(8,1);
+                    for inl = 1:REC.radiometry.nL 
+                        %j=1;
                         if REC.solver.prejacobian.load
                             REC.solver.prejacobian.path=strcat(original_path,num2str(REC.radiometry.lambda(inl)),'.mat');
                         end
                         fprintf(['<strong>------- Wavelength ',num2str(REC.radiometry.lambda(inl)),'-------</strong>\n'])
-                        [REC.opt.bmua(:,inl),REC.opt.bmusp(:,inl)] = RecSolverBORN_TD(REC.solver,...
+                        [REC.opt.bmua(:,inl),REC.opt.bmusp(:,inl),reg_par(inl,1)] = RecSolverBORN_TD(REC.solver,...
                             REC.grid,...
                             REC.opt.mua0(inl),REC.opt.musp0(inl),REC.opt.nB,REC.A,...
                             REC.Source.Pos,REC.Detector.Pos,REC.dmask,REC.time.dt,REC.time.nstep,...
                             REC.time.twin(:,(1:2)+(inl-1)*2),REC.time.self_norm,REC.Data(:,(1:nmeas)+(inl-1)*nmeas),...
-                            REC.time.irf.data(:,inl),REC.ref(:,(1:nmeas)+(inl-1)*nmeas),REC.sd(:,(1:nmeas)+(inl-1)*nmeas),REC.type_fwd);
+                            REC.time.irf.data(:,inl),REC.ref(:,(1:nmeas)+(inl-1)*nmeas),REC.sd(:,(1:nmeas)+(inl-1)*nmeas),REC.type_fwd,inl);
                         if REC.solver.prejacobian.load==0
                             movefile([REC.solver.prejacobian.path,'.mat'],strcat(REC.solver.prejacobian.path,num2str(REC.radiometry.lambda(inl)),'.mat'));
                         end
@@ -752,7 +777,6 @@ if RECONSTRUCTION == 1
                     end
                     REC.solver.prejacobian.path = original_path; clear original_path
                     [bmua,bmusp,REC.opt.bConc,REC.opt.bA,REC.opt.bbB]=FitVoxel(REC.opt.bmua,REC.opt.bmusp,REC.spe);
-                    %REC.opt.bmua = bmua;REC.opt.bmusp = bmusp;
                 case 'spectral_born'
                     REC.solver.prior.refimage = [];
                     [REC.opt.bmua,REC.opt.bmusp,REC.opt.bConc,REC.opt.bA,REC.opt.bbB] = RecSolverBORN_TD_spectral(REC.solver,...
@@ -918,11 +942,12 @@ if RECONSTRUCTION == 1
         end
     end
     clear ROI NW
+    
     % ---------------------------- display mua --------------------------------
     if ~contains(REC.solver.type,'fit')
         drawnow;
         if ~contains(REC.solver.type,'spectral')
-            for inl = 1:REC.radiometry.nL
+             for inl = 1:REC.radiometry.nL
                 PlotMua = reshape(REC.opt.bmua,[REC.grid.dim REC.radiometry.nL]);
                 PlotMus = reshape(REC.opt.bmusp,[REC.grid.dim REC.radiometry.nL]);
                 PlotMua = PlotMua(:,:,:,inl);
@@ -932,11 +957,13 @@ if RECONSTRUCTION == 1
                     REC.grid.z1,REC.grid.z2,REC.grid.dz,1,'auto',0.00,0.05);
                 suptitle('Recon Mua');
                 %savefig(fh,['./figures/' fh.Name '.fig'])
-                % ---------------------------- display musp -------------------------------
+                savefig(fh,[fh.Name '.fig'])
+                % --------------------------- display musp -------------------------------
                 fh=figure(600+inl);fh.NumberTitle = 'off';fh.Name = ['Recon Mus. Wave ' num2str(REC.radiometry.lambda(inl))];
                 ShowRecResults(REC.grid,PlotMus,...
                     REC.grid.z1,REC.grid.z2,REC.grid.dz,1,'auto');%,0.,0.64);
                 suptitle('Recon Mus');
+                savefig(fh,[fh.Name '.fig'])                
                 %savefig(fh,['./figures/' fh.Name '.fig'])
                 drawnow;
                 tilefigs;
@@ -946,9 +973,9 @@ if RECONSTRUCTION == 1
                 title('Recon Mua');
                 subplot(1,2,2),PlotHeteQM(REC,PlotMus,REC.opt.musp0(inl)),
                 title('Recon Mus');
-                
+                savefig(fh,[fh.Name '.fig'])                
                 drawnow;
-            end
+             end
         end
         if contains(REC.solver.type,'spectral')
             for ic = 1:REC.spe.nCromo
@@ -1008,5 +1035,5 @@ if RECONSTRUCTION == 1
         disp(['Quantification will be stored in: ', rdir,filename,'_', 'REC.mat']);
         save([rdir,filename,'_', 'REC'],'Q','-append')
     end
-    clearvars REC
+    %clearvars REC
 end
