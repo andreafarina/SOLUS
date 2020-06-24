@@ -8,7 +8,7 @@ if nargin > 1
     semilogy(irf/max(irf)*max(data(:)),'g')
 end
 ylim([max(data(:))/10000 max(data(:))])%,legend(['data','irf']),
-title('select ROI')
+title('select ROI');
 [x,~] = ginput(2);
 roi = round(x);
 disp(['Used ROI: ',num2str(roi')]);

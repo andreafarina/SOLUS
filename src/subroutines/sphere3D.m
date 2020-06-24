@@ -24,10 +24,10 @@ function [DOT,hete] = sphere3D(DOT, hete)
 %%--
 c    = hete.c;
 for itype = 1:size(hete.type,2)
-var  = hete.type{itype};
-back = eval(['DOT.opt.',lower(hete.type{itype}),'B']);
+var  = hete.type{itype}; %change the inclusion type Mua in absorption and Musp in scattering
+back = eval(['DOT.opt.',lower(hete.type{itype}),'B']); %muaB (and muspB in the next cycle) for backgroung calculated from concentrations in TraslateXVar
 sigma= hete.sigma;
-intensity = hete.val((1:DOT.radiometry.nL)+(itype-1)*DOT.radiometry.nL);
+intensity = hete.val((1:DOT.radiometry.nL)+(itype-1)*DOT.radiometry.nL); %val has the 8 valus of absorption and 8 of scattering for the inclusion calculated in TranslateXVar
 shape     = hete.profile;
 distrib   = hete.distrib;
 
@@ -39,7 +39,7 @@ if isfield(DOT,'grid'),
     Y = reshape(Y,DOT.grid.N,[]);
     Z = reshape(Z,DOT.grid.N,[]);
     M = [X-c(1) Y-c(2) Z-c(3)];
-    add = zeros(DOT.grid.N,DOT.radiometry.nL);
+    add = zeros(DOT.grid.N,DOT.radiometry.nL); %can create this with 5 columns for the conc, 1 column for a and 1 column for b
     Nx = DOT.grid.Nx;
     Ny = DOT.grid.Ny;
     Nz = DOT.grid.Nz;
@@ -59,7 +59,7 @@ switch upper(shape)
 %% ---------------------- profil de concentration gaussien ---------------%       
 case 'GAUSSIAN'        
     %-- selection des indices --%
-    indx = find(dist2 < 9*sigma*sigma);
+    indx = find(dist2 < 9*sigma*sigma); %in absolute value all the indexes of dist2 numbers different from zero less than 9*sigma*sigma
     %-- update concentration --%
     param = getfield(DOT.opt, var);    
     switch upper(distrib)
@@ -67,7 +67,9 @@ case 'GAUSSIAN'
         add(indx,:) = add(indx,:) + exp(-dist2(indx,1)/sigma/sigma);
         add = add.*intensity./sum(add,1);   
     case 'OFF'
-        add(indx,:) = add(indx,:) + (intensity-back).*exp(-dist2(indx,1)/sigma/sigma);
+        add(indx,:) = add(indx,:) + (intensity-back).*exp(-dist2(indx,1)/sigma/sigma); 
+        %here the inclusion is created: for every value of absorption and
+        %scattering i subtract the background values
     end   
     
 %% --------------------- profil de concentration creneau -----------------%       
@@ -78,7 +80,10 @@ case 'STEP'
     param = getfield(DOT.opt, var);  
     switch upper(distrib)
     case 'ON',      add = intensity./length(indx);    
-    case 'OFF',     param(indx) = param(indx) + (intensity-back);
+    case 'OFF',     
+        param = reshape(param,DOT.grid.N,DOT.radiometry.nL);
+        param(indx,:) = param(indx,:) + (intensity-back);
+        param = reshape(param,Nx,Ny,Nz,DOT.radiometry.nL);
     end
 end
 

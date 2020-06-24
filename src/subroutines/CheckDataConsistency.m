@@ -23,13 +23,13 @@ if SPECTRA
         end
     end
 end
-if numel(DOT.opt.muaB)~=numel(DOT.opt.muspB)
+if numel(DOT.opt.muaB)~=numel(DOT.opt.muspB) 
     err_message = '----DOT: Number of Mua and Mus must be the same----';
     iserr = true;
-elseif numel(DOT.opt.muaB)~=DOT.radiometry.nL
+elseif numel(DOT.opt.muaB)~=DOT.radiometry.nL 
     err_message = '----DOT: Check number of Wavelenghts or muaB/muspB----';
     iserr = true;
-elseif numel(REC.opt.mua0)~=numel(REC.opt.musp0)
+elseif numel(REC.opt.mua0)~=numel(REC.opt.musp0) 
     err_message = '----REC: Number of Mua and Mus must be the same----';
     iserr = true;
 elseif numel(REC.opt.mua0)~=DOT.radiometry.nL

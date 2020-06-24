@@ -1,4 +1,4 @@
-function [maskIm] = pointSplineSegs(import)
+function [maskIm, cor] = pointSplineSegs(import)
 %-
 % 
 % Takes an image as input and starts the segmentation routine
@@ -13,7 +13,7 @@ function [maskIm] = pointSplineSegs(import)
  % think of using dicomread(imName) with dicom images...to be checked
 
 disp('Segmentation...');
-maskIm = roispline(uint8(import));
+[maskIm, cor] = roispline(uint8(import));
 
 
 figure;

@@ -123,7 +123,7 @@ case 'STEP'
     end
     switch upper(distrib)
     case 'ON'
-        add(indx,:) = intensity./length(indx);
+        add(indx,:) = repmat(intensity./length(indx),numel(indx),1);
         add = squeeze(reshape(add,Nx,Ny,Nz,DOT.radiometry.nL));
         indx_dummy = indx;
         for inl = 1:DOT.radiometry.nL-1
@@ -132,7 +132,7 @@ case 'STEP'
         param(indx) = param(indx) + add(indx);
     
     case 'OFF'
-        add(indx,:) = (intensity-back);
+        add(indx,:) = repmat((intensity-back),numel(indx),1);
         add = squeeze(reshape(add,Nx,Ny,Nz,DOT.radiometry.nL));
         indx_dummy = indx;
         for inl = 1:DOT.radiometry.nL-1
