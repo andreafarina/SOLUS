@@ -23,11 +23,11 @@ param = param(:,1:end-1);
 param0 = param;
 
 order = 1;
-dStep = 0.15; 
+dStep = 0.1; 
 %drawfitting(param, npoints, im);
-nsigma = 5;
+nsigma = 15;
 minsigma = 0.15;
-maxsigma = 0.6;
+maxsigma = 0.7;
 sigma_p = linspace(maxsigma,minsigma,nsigma);
 i_s = 1;
 % calculate image features
@@ -41,23 +41,28 @@ dstruct.points0 = points0;
 k = 1;
 max_k = 16;
 max_ik = 100;
-alpha0 = 10 * dStep;
+alpha0 = 30*dStep;
+% compute initial loss
+Ln = Loss(forward(param,npoints), dstruct,param, param0);
 while k <= max_k
-    % compute loss
-    L = Loss(forward(param,npoints), dstruct,param, param0);
+    % update loss
+    L = Ln;
     % compute gradient
-    [~, ~, dUp] = computeGradient2(param, dStep, npoints, dstruct, param0,L, order);
-    % updare parameters
+    [~, ~, dUp] = computeGradient2(param, dStep, npoints, dstruct, param0, L, order);
+    dUp = dUp/max(abs(dUp(:)));
+    % update parameters
     alpha = alpha0;
     ik = 1;
-    Ln = L + 1;
-    while Ln >= L && ik <= max_ik 
-        Ln = Loss(forward((param - alpha*sign(dUp)),npoints), dstruct,param, param0);
-        alpha = alpha * 0.8;
+    % compute loss
+    Ln = Loss(forward((param - alpha*(dUp)),npoints), dstruct,param, param0);
+    while Ln > L && ik <= max_ik 
+        alpha = alpha * 0.9;
+        %dUp = dUp;% .* (abs(dUp/L) > 0 );
+        Ln = Loss(forward((param - alpha*(dUp)),npoints), dstruct,param, param0);
         ik = ik + 1;
     end
     if Ln < L % check if line search went well
-        param = param - alpha*sign(dUp); 
+        param = param - alpha*(dUp); 
     else % end minimisation for current smoothing
         k = max_k +1;
     end
@@ -66,9 +71,11 @@ while k <= max_k
         i_s = i_s + 1;
         dstruct.dist = dstruct0dist(:,:,i_s);
         dstruct.points0 = points0;
-        k = 1;
+        Ln = Loss(forward(param,npoints), dstruct,param, param0);
+        k = 0;
     end
     k = k+1;
+%    drawfitting(param, npoints, im);
 end
 
 
@@ -121,17 +128,14 @@ function d = setDomain(im,cor, sigma_p, pp)
     roi_idx = logical(roi_idx(:));
    
     [sigma, add_dist] = findRadius(pp,im);
-    add_dist = conv2(add_dist,mygaussian(2, size(add_dist)), 'same');
+    add_dist = conv2fft(add_dist,mygaussian(2, size(add_dist)));
     G = mygaussian(sigma_p.*sigma, size(im));
     d.dist = zeros(size(im,1), size(im,2), numel(sigma_p));
     prc1 = 0;
     prc2 = 10;
     % calculate smoothed images via fft2
-    padsize = ceil([size(lap,1), size(lap,2)]);
-    lap_pad = padarray(repmat(lap, [1,1,numel(sigma_p)]),padsize);    
-    smlappad = abs(ifftshift(ifft2(fftshift(fft2(lap_pad)).*fftshift(fft2(padarray(G(:,:,:), padsize))))));
-    smlap3 = smlappad(padsize(1):end - padsize(1)-1,padsize(2):end - padsize(2)-1,:);
-    for i_sigma = 1: numel(sigma_p)      
+    smlap3 = conv2fft(lap, G);
+    for i_sigma = 1:numel(sigma_p)      
         %smlapc = abs(conv2(lap, G(:,:,i_sigma), 'same'));
         smlap = smlap3(:,:,i_sigma);
         i = prctile(smlap(roi_idx), prc1);
@@ -143,6 +147,15 @@ function d = setDomain(im,cor, sigma_p, pp)
     end    
     d.lap = lap;
 %    imagesc(sum(d.dist(:,:,3)));
+
+end
+
+function smlap3 = conv2fft(lap, G)
+    
+    padsize = ceil([size(lap,1), size(lap,2)]);
+    lap_pad = padarray(repmat(lap, [1,1,size(G,3)]),padsize);    
+    smlappad = abs(ifftshift(ifft2(fftshift(fft2(lap_pad)).*fftshift(fft2(padarray(G(:,:,:), padsize))))));
+    smlap3 = smlappad(padsize(1):end - padsize(1)-1,padsize(2):end - padsize(2)-1,:);
 
 end
 
@@ -176,6 +189,10 @@ function  [dL,d2L, dUp] = computeGradient2(param, dStep, npoints, domain, cor0, 
 
         L = L(:);
         dL = 0 * param(:);
+        if order ==2
+                d2L = zeros(numel(dL),numel(dL));
+        end
+        
         sizparam = size(param);
         for i = 1:numel(dL)
             dparam = 0*param(:);
@@ -185,13 +202,12 @@ function  [dL,d2L, dUp] = computeGradient2(param, dStep, npoints, domain, cor0, 
             dL(i) = Loss(dpoints, domain,reshape(dparam,sizparam), cor0) - L;
             %dL(i) = dL(i)/dStep;
             if order ==2
-                d2L = zeros(numel(dL),numel(dL));
                 for j = 1:numel(dL)
                     ddparam = 0*param(:);
                     ddparam(j) = dStep;
-                    ddparam = param(:) + dparam + ddparam;
+                    ddparam = dparam + ddparam;
                     ddpoints = forward(reshape(ddparam, size(param)), npoints);
-                    d2L(i,j) = 0.5 * (Loss(ddpoints, domain,reshape(ddparam, size(param)), cor0) - dL(i));
+                    d2L(i,j) = 0.5 * (Loss(ddpoints, domain,reshape(ddparam, sizparam), cor0) - dL(i));
                     d2L(i,j) = d2L(i,j)/dStep; 
                 end
             end
@@ -208,6 +224,7 @@ end
 
 
 function L = Loss(points, d,~,~)%param, cor0)
+
     Eim = 0;
     idx = sub2ind(size(d.dist),round(points(2,:)),round(points(1,:)));
     %idx0 = sub2ind(size(d.dist),round(d.points0(2,:)),round(d.points0(1,:)));
@@ -237,8 +254,7 @@ function L = Loss(points, d,~,~)%param, cor0)
         
 %     centre = mean(cor0(:,:),2);
 %     dist2 = sqrt((cor0(1,:)  - centre(1)).^2 + (cor0(2,:)  - centre(2)).^2);
-%     Eext = 1/sum(dist2);
-    
+%     Eext = 1/sum(dist2);    
     L = 0.05*Eint + Eim ;% 0 * Eext +0 * Regu;
   
 end
