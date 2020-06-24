@@ -5,7 +5,7 @@
 %==========================================================================
 
 function [bmua,bmus,reg_par] = RecSolverBORN_TD(solver,grid,mua0,mus0, n, A,...
-    Spos,Dpos,dmask, dt, nstep, twin, self_norm, data, irf, ref, sd, fwd_type, inl)
+    Spos,Dpos,dmask, dt, nstep, twin, self_norm, data, irf, ref, sd, fwd_type, lambda)
 %global factor
 %ref = 0;
 %% Jacobain options
@@ -145,10 +145,9 @@ if (~strcmpi(REGU,'lcurve')&&(~strcmpi(REGU,'gcv')))
 end
 if ~exist('alpha','var')
     fig = figure(403);
-    fig.Name = ['Lambda' num2str(inl)];
+    fig.Name = ['Lambda' num2str(lambda)];
     if strcmpi(REGU,'lcurve')
        alpha = l_curve(U,s,dphi);%,BACKSOLVER);  % L-curve (Regu toolbox)
-       savefig(fig, [fig.Name '.fig'])
     elseif strcmpi(REGU,'gcv')
         alpha = gcv(U,s,dphi);%,BACKSOLVER)
     end
