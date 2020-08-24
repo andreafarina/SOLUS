@@ -33,7 +33,60 @@ if contains(lower(REC.solver.type),'spectral')
              ref_true,REC.opt.hete1.c,REC.opt.b);
     end
 end
+
+%% FIGURE OF MERIT SOLUS
+for nlambda = 1:REC.radiometry.nL
+    for n_mu = 1:2
+    % extract data
+    if n_mu ==  1
+        mu = reshape( REC.opt.bmua(:,nlambda), REC.grid.dim);
+        mu0 = REC.opt.mua0(nlambda);
+        muin0 = REC.opt.hete1.val(nlambda);
+        target_mu = REC.opt.Mua(:,:,:,nlambda);
+        coeff = 'mua';
+    else
+        mu = reshape( REC.opt.bmusp(:,nlambda), REC.grid.dim);
+        mu0 = REC.opt.musp0(nlambda);
+        muin0 = REC.opt.hete1.val(nlambda + REC.radiometry.nL);
+        target_mu = REC.opt.Musp(:,:,:,nlambda);
+        coeff = 'musp';
+    end
+    % get region
+    if mean(target_mu) >= mu0
+        char_target = logical(target_mu > 0.5*(max(target_mu(:)) + min(target_mu(:))) );
+    else
+        char_target = logical(target_mu < 0.5*(max(target_mu(:)) + min(target_mu(:))));
+    end
+    idx_incl = identify_inclusion(mu(:));
+    % get sensitivity
+    [C,  CNR] = recon_sensitivity(mu(:), idx_incl);
+    [C_vol,  CNR_vol] = recon_sensitivity(mu(:), idx_incl, 'volume', sum(char_target(:)));
+    % get localisation
+    [displ, brd, brdRMS] = recon_localisation(mu, char_target, REC.grid, REC.grid.dim, idx_incl);
+    if isrow(displ)
+        displ = displ';
+    end
+    if isrow(brd)
+        brd = brd';
+    end
+    if isrow(brdRMS)
+        brdRMS = brdRMS';
+    end
+    % get accuracy
+    acc = recon_accuracy(mu, muin0, idx_incl);
+    acc_vol = recon_accuracy(mu, muin0, idx_incl, 'volume', sum(char_target(:)));
+
+    cmd = sprintf('Q.SOLUS_FigMerit.%s', coeff);
+    cmd_end = sprintf('(:,%g)',REC.radiometry.lambda(nlambda));
+    for i_field = {'C','C_vol', 'CNR','CNR_vol', 'displ',...
+            'brd','brdRMS', 'acc', 'acc_vol'}
+        eval([cmd,'.',  char(i_field), cmd_end,'=', char(i_field),';' ])                
+    end
+    end
 end
+
+end
+
 
 
 % 
