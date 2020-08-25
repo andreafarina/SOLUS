@@ -1,4 +1,4 @@
-function [contrast,  CNR] = recon_sensitivity(mu_recon, incl_idx,str_norm, vol_target)
+function [contrast,  CNR] = recon_sensitivity(mu_recon, incl_idx,str_norm, vol_target, mu0)
 
 % [contrast,  CNR] = recon_sensitivity(mu_recon, incl_idx,str_norm, vol_target)
 % retrieves the sensisitivity figure of merit in the quantification of the inclusion,
@@ -24,13 +24,13 @@ function [contrast,  CNR] = recon_sensitivity(mu_recon, incl_idx,str_norm, vol_t
         incl = mu_recon(bin_incl_idx);
         bulk = mu_recon(bin_bulk_idx);
         
-        if strcompi(str_norm,'volume') && nargin > 3
+        if strcompi(str_norm,'volume') && nargin > 4
             vol_norm = sum(incl_idx(:))/vol_target;
         else
             vol_norm = 1;
         end
 
-        diff_mean = mean(incl)*vol_norm - mean(bulk);
+        diff_mean = mu0 + ( (mean(incl)- mu0)*vol_norm) - mean(bulk);
         
         contrast = diff_mean/ mean(bulk);
         CNR = diff_mean/std(bulk);

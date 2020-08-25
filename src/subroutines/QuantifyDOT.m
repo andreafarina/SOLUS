@@ -60,7 +60,7 @@ for nlambda = 1:REC.radiometry.nL
     idx_incl = identify_inclusion(mu(:));
     % get sensitivity
     [C,  CNR] = recon_sensitivity(mu(:), idx_incl);
-    [C_vol,  CNR_vol] = recon_sensitivity(mu(:), idx_incl, 'volume', sum(char_target(:)));
+    [C_vol,  CNR_vol] = recon_sensitivity(mu(:), idx_incl, 'volume', sum(char_target(:)), mu0);
     % get localisation
     [displ, brd, brdRMS] = recon_localisation(mu, char_target, REC.grid, REC.grid.dim, idx_incl);
     if isrow(displ)
@@ -74,7 +74,7 @@ for nlambda = 1:REC.radiometry.nL
     end
     % get accuracy
     acc = recon_accuracy(mu, muin0, idx_incl);
-    acc_vol = recon_accuracy(mu, muin0, idx_incl, 'volume', sum(char_target(:)));
+    acc_vol = recon_accuracy(mu, muin0, idx_incl, 'volume', sum(char_target(:)), mu0);
 
     cmd = sprintf('Q.SOLUS_FigMerit.%s', coeff);
     cmd_end = sprintf('(:,%g)',REC.radiometry.lambda(nlambda));

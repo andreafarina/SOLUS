@@ -1,4 +1,4 @@
-function err = recon_accuracy(mu_recon, target, idx, str_norm, vol_target)
+function err = recon_accuracy(mu_recon, target, idx, str_norm, vol_target, mu0)
 
 % err = recon_accuracy(mu_recon, target, idx)
 % retrieves the relative error in the quantification of the inclusion,
@@ -15,14 +15,14 @@ function err = recon_accuracy(mu_recon, target, idx, str_norm, vol_target)
         idx = identify_inclusion(mu_recon(:));
     end
     
-    if strcompi(str_norm,'volume') && nargin > 4
+    if strcompi(str_norm,'volume') && nargin > 5
         vol_norm = sum(idx(:))/vol_target;
         
     else
         vol_norm = 1;
     end
     
-    err = mean(mu_recon(idx))*vol_norm - target;
+    err = mu0 + ( mean(mu_recon(idx)-mu0)*vol_norm) - target;
     err = err/target;
     return
 end
