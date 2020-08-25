@@ -35,6 +35,7 @@ if contains(lower(REC.solver.type),'spectral')
 end
 
 %% FIGURE OF MERIT SOLUS
+%load /scratch0/NOT_BACKED_UP/gdisciac/SOLUS_spectralfitUCL_bis/SOLUS/example/example_200202_series/dtprior/ex_bulk10_0.1_incl10_0.05/Test_Standard_REC.mat
 for nlambda = 1:REC.radiometry.nL
     for n_mu = 1:2
     % extract data
@@ -77,7 +78,7 @@ for nlambda = 1:REC.radiometry.nL
     acc_vol = recon_accuracy(mu, muin0, idx_incl, 'volume', sum(char_target(:)), mu0);
 
     cmd = sprintf('Q.SOLUS_FigMerit.%s', coeff);
-    cmd_end = sprintf('(:,%g)',REC.radiometry.lambda(nlambda));
+    cmd_end = sprintf('(:,%g)',nlambda);
     for i_field = {'C','C_vol', 'CNR','CNR_vol', 'displ',...
             'brd','brdRMS', 'acc', 'acc_vol'}
         eval([cmd,'.',  char(i_field), cmd_end,'=', char(i_field),';' ])                

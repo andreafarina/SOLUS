@@ -14,8 +14,13 @@ function err = recon_accuracy(mu_recon, target, idx, str_norm, vol_target, mu0)
     if nargin < 3
         idx = identify_inclusion(mu_recon(:));
     end
+    if nargin < 4
+       str_norm = 'else'; 
+       mu0 = 0;
+    end
+
     
-    if strcompi(str_norm,'volume') && nargin > 5
+    if strcmpi(str_norm,'volume') && nargin > 5
         vol_norm = sum(idx(:))/vol_target;
         
     else
