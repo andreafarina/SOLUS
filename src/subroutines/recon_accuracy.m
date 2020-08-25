@@ -10,7 +10,7 @@ function err = recon_accuracy(mu_recon, target, idx, str_norm, vol_target, mu0)
 % str_norm: string, if set to "volume", computes the results taking into
 % account the volume mismatch
 % vol_target: volume of the target in number of voxel
-
+% mu0: reference value for which the jacobian was calculated
     if nargin < 3
         idx = identify_inclusion(mu_recon(:));
     end

@@ -9,6 +9,7 @@ function [contrast,  CNR] = recon_sensitivity(mu_recon, incl_idx,str_norm, vol_t
 % str_norm: string, if set to "volume", computes the results taking into
 % account the volume mismatch
 % vol_target: volume of the target in number of voxel
+% mu0: reference value for which the jacobian was calculated
 
 
 
