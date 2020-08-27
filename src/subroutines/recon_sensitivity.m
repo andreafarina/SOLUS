@@ -38,8 +38,8 @@ function [contrast,  CNR] = recon_sensitivity(mu_recon, incl_idx,str_norm, vol_t
         diff_mean = (mu0 + (mean(incl)- mu0)*vol_norm) - mean(bulk);       
         contrast = diff_mean/ mean(bulk);
         
-        vol_norm = 1;
-        diff_mean = (mu0 + (mean(incl)- mu0)*vol_norm) - mean(bulk);   
+        %vol_norm = 1;
+        %iff_mean = (mu0 + (mean(incl)- mu0)*vol_norm) - mean(bulk);   
         CNR = diff_mean/std(bulk);
 
 end
