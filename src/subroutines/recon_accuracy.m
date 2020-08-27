@@ -18,10 +18,13 @@ function err = recon_accuracy(mu_recon, target, idx, str_norm, vol_target, mu0)
        str_norm = 'else'; 
        mu0 = 0;
     end
+    
+    bin_incl_idx = false(numel(mu_recon),1);
+    bin_incl_idx(idx) = true;
 
     
     if strcmpi(str_norm,'volume') && nargin > 5
-        vol_norm = sum(idx(:))/vol_target;
+        vol_norm = sum(bin_incl_idx(:))/vol_target;
         
     else
         vol_norm = 1;

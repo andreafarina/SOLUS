@@ -35,7 +35,7 @@ if contains(lower(REC.solver.type),'spectral')
 end
 
 %% FIGURE OF MERIT SOLUS
-%load /scratch0/NOT_BACKED_UP/gdisciac/SOLUS_spectralfitUCL_bis/SOLUS/example/example_200202_series/dtprior/ex_bulk10_0.1_incl10_0.05/Test_Standard_REC.mat
+load /scratch0/NOT_BACKED_UP/gdisciac/SOLUS_spectralfitUCL_bis/SOLUS/example/example_200202_series/free/ex_bulk10_0.1_incl10_0.05/Test_Standard_REC.mat
 for nlambda = 1:REC.radiometry.nL
     for n_mu = 1:2
     % extract data
@@ -53,7 +53,7 @@ for nlambda = 1:REC.radiometry.nL
         coeff = 'musp';
     end
     % get region
-    if mean(target_mu) >= mu0
+    if mean(target_mu(:)) >= mu0
         char_target = logical(target_mu > 0.5*(max(target_mu(:)) + min(target_mu(:))) );
     else
         char_target = logical(target_mu < 0.5*(max(target_mu(:)) + min(target_mu(:))));

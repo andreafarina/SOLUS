@@ -30,14 +30,16 @@ function [contrast,  CNR] = recon_sensitivity(mu_recon, incl_idx,str_norm, vol_t
         bulk = mu_recon(bin_bulk_idx);
         
         if strcmpi(str_norm,'volume') && nargin > 4
-            vol_norm = sum(incl_idx(:))/vol_target;
+            vol_norm = sum(bin_incl_idx(:))/vol_target;
         else
             vol_norm = 1;
         end
 
-        diff_mean = mu0 + ( (mean(incl)- mu0)*vol_norm) - mean(bulk);
-        
+        diff_mean = (mu0 + (mean(incl)- mu0)*vol_norm) - mean(bulk);       
         contrast = diff_mean/ mean(bulk);
+        
+        vol_norm = 1;
+        diff_mean = (mu0 + (mean(incl)- mu0)*vol_norm) - mean(bulk);   
         CNR = diff_mean/std(bulk);
 
 end
