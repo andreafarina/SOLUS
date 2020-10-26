@@ -142,7 +142,7 @@ DOT.time.TotCounts = 1e20*ones(1,8);  % total counts for the maximum-energy
 %==========================================================================
 %%                         Radiometry
 %==========================================================================
-[P] = xlsread('D:\programs\DOT\SOLUS\src\experimental\LaserPower.xlsx','B2:B9'); 
+[P] = xlsread([getenv('DOTSRC'),filesep,'experimental',filesep,'LaserPower.xlsx'],'B2:B9'); 
 DOT.radiometry.power = P;
 DOT.radiometry.timebin = ...
     DOT.time.dt;                % (ps) width of the time bin
