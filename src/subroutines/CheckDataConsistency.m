@@ -11,16 +11,6 @@ if SPECTRA
             err_message = '----PERT: Number of chromophors must be equal to incput concentations----';
             iserr = true;
         end
-    elseif isfield(Vars,'absorption')
-        if numel(absorption)~=DOT.radiometry.nL
-            err_message = '----PERT: Number of chromophors must be equal to incput concentations----';
-            iserr = true;
-        end
-    elseif isfield(Vars,'scattering')
-        if numel(scattering)~=DOT.radiometry.nL
-            err_message = '----PERT: Number of chromophors must be equal to incput concentations----';
-            iserr = true;
-        end
     end
 end
 if numel(DOT.opt.muaB)~=numel(DOT.opt.muspB) 

@@ -20,6 +20,7 @@ switch SPECTRA
         for in = 1:numel(Xp)
             DOT.opt.hete1.val = [DOT.opt.hete1.val Xp{in}];
         end
+        DOT.opt.aB = [];DOT.opt.bB = [];DOT.opt.concB = [];
     case 1
         
         ab = Xd{ab_pos};

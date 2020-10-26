@@ -6,7 +6,7 @@
 % N. Ducros - Departamento di Fisica - Politecnico di Milano - 06/07/09
 %==========================================================================
 
-function [DOT,hete] = setHete(DOT,hete)
+function [DOT,hete] = setHete(DOT,hete,solver)
 
 %==========================================================================
 %%                           OPTIONS
@@ -23,15 +23,15 @@ switch upper(hete.geometry)
     
     case 'SPHERE'
     disp('+++ Sphere')
-    [DOT, hete] = sphere3D(DOT, hete);
-    
+        [DOT, hete] = sphere3D(DOT, hete, solver);
+
     case 'CYLINDER'
     disp('+++ Cylinder')
-    [DOT, hete] = cylinder3D(DOT, hete);
+    [DOT, hete] = cylinder3D(DOT, hete, solver);
     
     case 'USIMAGE'
     disp('+++ Distance Transform');
-    [DOT,~] = prior3D(DOT, hete);
+    [DOT,~] = prior3D(DOT, hete, solver);
     
 
 end

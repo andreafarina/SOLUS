@@ -119,15 +119,14 @@ end
 %==========================================================================
 DOT.grid = setGrid(DOT);
 
-[DOT.opt.Mua, DOT.opt.Musp] = applyGrid(DOT.grid,DOT.opt.muaB,DOT.opt.muspB); 
-
+[DOT.opt.Mua, DOT.opt.Musp,DOT.opt.Conc, DOT.opt.A, DOT.opt.B] = applyGrid(DOT.grid,DOT.opt.muaB,DOT.opt.muspB,REC.solver.type,DOT.opt.concB,DOT.opt.aB,DOT.opt.bB);
 %==========================================================================
 %%                      Set Heterogeneities
 %==========================================================================
 %--------------------------- INCLUSIONS ---------------------------------%
 for i = 1:NUM_HETE
     h_string = ['hete',num2str(i)];
-    [DOT,DOT.opt.(h_string)] = setHete(DOT,DOT.opt.(h_string));
+    [DOT,DOT.opt.(h_string)] = setHete(DOT,DOT.opt.(h_string),REC.solver.type);
 end
 
 % Map optical properties to mesh and QM
@@ -156,11 +155,11 @@ if DOT.TD == 1
         switch lower(EXP_DELTA)
             case 'peak'
                 EXP.irf.data = zeros(size(EXP.irf.data));
-                peak_pos = (0:DOT.radiometry.nL-1).*(size(EXP.irf.data,1)) + [EXP.irf.peak.pos];
+                peak_pos = (0:DOT.radiometry.nL-1).*(size(EXP.irf.data,1)) + [EXP.irf.peak(1:DOT.radiometry.nL).pos];
                 EXP.irf.data(peak_pos) = 1;
             case 'baric'
                 EXP.irf.data = zeros(size(EXP.irf.data));
-                baric_pos = (0:DOT.radiometry.nL-1).*(size(EXP.irf.data,1)) + [EXP.irf.peak.pos];
+                baric_pos = (0:DOT.radiometry.nL-1).*(size(EXP.irf.data,1)) + [EXP.irf.baric(1:DOT.radiometry.nL).pos];
                 EXP.irf.data(baric_pos) = 1;
         end
         for inl = 1:DOT.radiometry.nL
@@ -206,7 +205,7 @@ if FORWARD == 1
         [DataCW(:,inl),sdCW(:,inl)] = AddNoise(DataCW(:,inl),'gaussian',DOT.sigma);
     end
     if REF == 1
-        [MuaB,MuspB]=applyGrid(DOT.grid,DOT.opt.muaB,DOT.opt.muspB);
+        [MuaB,MuspB] = applyGrid(DOT.grid,DOT.opt.muaB,DOT.opt.muspB,REC.solver.type,DOT.opt.concB,DOT.opt.aB,DOT.opt.bB);
         RefCW  = ForwardCW_multi_wave(DOT.grid,DOT.Source.Pos, DOT.Detector.Pos, DOT.dmask,...
             DOT.opt.muaB, DOT.opt.muspB, MuaB,...
             MuspB, DOT.A, geom, 'homo',DOT.radiometry);
@@ -236,7 +235,6 @@ if FORWARD == 1
     %==========================================================================
     if DOT.TD == 1
         DOT.time.time = (1:DOT.time.nstep) * DOT.time.dt;
-%         writecell(DOT.opt.hete1.sigma,filename,'Sheet','Data','Range','F2');
 if LOAD_FWD_TEO == 0
                 DataTD = ForwardTD_multi_wave(DOT.grid,DOT.Source.Pos, DOT.Detector.Pos, DOT.dmask,...
                     DOT.opt.muaB, DOT.opt.muspB,DOT.opt.nB, DOT.opt.Mua,...
@@ -244,7 +242,7 @@ if LOAD_FWD_TEO == 0
                     length(DOT.time.time), DOT.time.self_norm, geom, TYPE_FWD,DOT.radiometry);
                 save([rdir,filename,'_', 'FwdTeo'],'DataTD');
             if REF == 1
-                [MuaB,MuspB]=applyGrid(DOT.grid,DOT.opt.muaB,DOT.opt.muspB);
+                [MuaB,MuspB] = applyGrid(DOT.grid,DOT.opt.muaB,DOT.opt.muspB,REC.solver.type,DOT.opt.concB,DOT.opt.aB,DOT.opt.bB);
                 RefTD = ForwardTD_multi_wave(DOT.grid,DOT.Source.Pos, DOT.Detector.Pos, DOT.dmask,...
                     DOT.opt.muaB, DOT.opt.muspB,DOT.opt.nB, ...
                     MuaB,MuspB, ...
@@ -614,49 +612,30 @@ if RECONSTRUCTION == 1
         end
     end
     if SPECTRA
-        mask = REC.opt.Mua(:,:,:,1)./REC.opt.muaB(1); 
-        for ic = (1:REC.spe.nCromo)
-            if REC.opt.conc0(ic)==REC.opt.hete1.conc(ic)  
-                mask = ones(size(mask));                 
-            else
-                mask = abs(1-REC.opt.Mua(:,:,:,1)./REC.opt.muaB(1)); 
-                mask = mask*sign(REC.opt.hete1.conc(ic)-REC.opt.concB(ic))+1;
-            end
-            REC.opt.Conc(:,:,:,ic) = mask.*REC.opt.concB(ic); 
+        for ic = 1:REC.spe.nCromo
+            PlotConc = squeeze(REC.opt.Conc(:,:,:,ic));
             fh=figure(900+ic);fh.NumberTitle = 'off';fh.Name = [REC.spe.cromo_label{ic} ' Map'];
-            ShowRecResults(REC.grid,REC.opt.Conc(:,:,:,ic),...
-                REC.grid.z1,REC.grid.z2,REC.grid.dz,1,'auto');%,0.,0.64);
+            ShowRecResults(REC.grid,PlotConc,...
+                REC.grid.z1,REC.grid.z2,REC.grid.dz,1,'auto',0,max(PlotConc(:)));%,0.,0.64);
             suptitle(REC.spe.cromo_label{ic});
         end
-        if REC.spe.active_cromo(strcmpi(REC.spe.cromo_label,'hb'))
-            REC.opt.HbTot = REC.opt.Conc(:,:,:,strcmpi(REC.spe.cromo_label,'hb'))+...
+        REC.opt.HbTot = REC.opt.Conc(:,:,:,strcmpi(REC.spe.cromo_label,'hb'))+...
                 REC.opt.Conc(:,:,:,strcmpi(REC.spe.cromo_label,'hbo2'));
-            REC.opt.So2 = REC.opt.Conc(:,:,:,strcmpi(REC.spe.cromo_label,'hbo2'))./REC.opt.HbTot;
-            fh=figure(900+ic+1);fh.NumberTitle = 'off';fh.Name = 'HbTot Map';
-            ShowRecResults(REC.grid,REC.opt.HbTot,...
-                REC.grid.z1,REC.grid.z2,REC.grid.dz,1,'auto');%,0.,0.64);
-            suptitle('HbTot');
-            fh=figure(900+ic+2);fh.NumberTitle = 'off';fh.Name = 'So2 Map';
-            ShowRecResults(REC.grid,REC.opt.So2,...
-                REC.grid.z1,REC.grid.z2,REC.grid.dz,1,'auto');%,0.,0.64);
-            suptitle('So2');
-        else
-            REC.opt.HbTot = zeros(REC.grid.dim);REC.opt.So2 = zeros(REC.grid.dim);
-        end
-        mask = abs(1-REC.opt.Musp(:,:,:,1)./REC.opt.muspB(1));
-        mask = mask*sign(REC.opt.hete1.a-REC.opt.aB)+1;
-        if REC.opt.aB==REC.opt.hete1.a, mask = ones(size(mask)); end
-        REC.opt.a = mask.*REC.opt.aB;
+        REC.opt.So2 = REC.opt.Conc(:,:,:,strcmpi(REC.spe.cromo_label,'hbo2'))./REC.opt.HbTot;
+        fh=figure(900+ic+1);fh.NumberTitle = 'off';fh.Name = 'HbTot Map';
+        ShowRecResults(REC.grid,REC.opt.HbTot,...
+            REC.grid.z1,REC.grid.z2,REC.grid.dz,1,'auto');%,0.,0.64);
+        suptitle('HbTot');
+        fh=figure(900+ic+2);fh.NumberTitle = 'off';fh.Name = 'So2 Map';
+        ShowRecResults(REC.grid,REC.opt.So2,...
+            REC.grid.z1,REC.grid.z2,REC.grid.dz,1,'auto');%,0.,0.64);
+        suptitle('So2');
         fh=figure(900+ic+3);fh.NumberTitle = 'off';fh.Name = ('a Map');
-        ShowRecResults(REC.grid,REC.opt.a,...
+        ShowRecResults(REC.grid,REC.opt.A,...
             REC.grid.z1,REC.grid.z2,REC.grid.dz,1,'auto');%,0.,0.64);
         suptitle('a');
-        mask = abs(1-REC.opt.Musp(:,:,:,1)./REC.opt.muspB(1));
-        mask = mask*sign(REC.opt.hete1.b-REC.opt.bB)+1;
-        if REC.opt.bB==REC.opt.hete1.b, mask = ones(size(mask)); end
-        REC.opt.b = mask.*REC.opt.bB;
         fh=figure(900+ic+4);fh.NumberTitle = 'off';fh.Name = ('b Map');
-        ShowRecResults(REC.grid,REC.opt.b,...
+        ShowRecResults(REC.grid,REC.opt.B,...
             REC.grid.z1,REC.grid.z2,REC.grid.dz,1,'auto');%,0.,0.64);
         suptitle('b');
     end
@@ -761,14 +740,17 @@ if RECONSTRUCTION == 1
                         REC.opt.mua0,REC.opt.musp0,REC.opt.nB,REC.A,...
                         REC.Source.Pos,REC.Detector.Pos,REC.dmask,REC.time.dt,REC.time.nstep,...
                         REC.time.twin,REC.time.self_norm,REC.Data,...
-                        REC.time.irf.data,REC.ref,REC.sd,REC.type_fwd,REC.radiometry,REC.spe);
-                case 'spectral_usprior'
+                        REC.time.irf.data,REC.ref,REC.sd,REC.type_fwd,REC.radiometry,REC.spe,REC.opt.conc0,REC.opt.a0,REC.opt.b0);
+                case {'spectral_usprior','spectral_tk1'}
                     if ~isempty(REC.solver.prior.path)
                         REC.solver.prior.refimage = ...
                             priormask3D(REC.solver.prior.path,REC.grid);
                     else
                         disp('No prior is provided in RECSettings_DOT. Reference mua will be used');
                         REC.solver.prior.refimage = REC.opt.Mua;
+                    end
+                    if strcmpi(REC.solver.type,'spectral_tk1')
+                        REC.solver.prior.refimage = ones(size(REC.opt.Mua(:,:,:,1)));
                     end
                     [REC.opt.bmua,REC.opt.bmusp,REC.opt.bConc,REC.opt.bA,REC.opt.bbB] = RecSolverBORN_TD_USPrior_spectral(REC.solver,...
                         REC.grid,...
@@ -794,7 +776,7 @@ if RECONSTRUCTION == 1
                     
                     
                     %% @Simon: US prior inversion
-                case 'usprior'
+                case {'usprior','tk1'}
                     if ~isempty(REC.solver.prior.path)
                         REC.solver.prior.refimage = ...
                             priormask3D(REC.solver.prior.path,REC.grid);
@@ -803,6 +785,9 @@ if RECONSTRUCTION == 1
                         REC.solver.prior.refimage = REC.opt.Mua(:,:,:,1);
                     end
                     REC.solver.prior.refimage =  double(REC.solver.prior.refimage)*10 + 0.1;
+                    if strcmpi(REC.solver.type,'tk1')
+                        REC.solver.prior.refimage = ones(size(REC.opt.Mua(:,:,:,1)));
+                    end
                     original_path = REC.solver.prejacobian.path;
                     for inl = 1:REC.radiometry.nL
                         if REC.solver.prejacobian.load
@@ -919,6 +904,11 @@ if RECONSTRUCTION == 1
         end
     end
     clear ROI NW
+    
+    if REMOVE_VOXELS
+        [REC.opt.bmua, REC.opt.bmusp, REC.opt.bConc] = remove_voxels(REC.opt.bmua, REC.opt.bmusp, REC.opt.bConc,...
+                                                                REC.grid.dim, REC.opt.mua0, REC.opt.musp0, REC.opt.conc0);
+    end
     
     % ---------------------------- display mua --------------------------------
     if ~contains(REC.solver.type,'fit')

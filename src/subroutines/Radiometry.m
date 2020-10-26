@@ -13,7 +13,8 @@ function RealFactor = Radiometry(radiometry)
 % RealFactor: is the multiplication factor for converting 
 %             TPSF units to photon-counts unit
 
-lambda = [635; 670; 830; 915; 940; 980; 1030; 1065];
+% lambda = [635; 670; 830; 915; 940; 980; 1030; 1065];
+lambda = radiometry.lambda';
 responsivity670 = 1.8e-6;
 PDE670 = 0.08351;
 const = responsivity670/PDE670;
@@ -32,6 +33,7 @@ end
 % unitary parameters
 Area = radiometry.area; %mm2
 power = radiometry.power'; 
+% power = radiometry.power(1);
 TaqUnitary = 1; %s Acquisition Time unitary
 LambdaUnitary = radiometry.lambda; %Wavelength (nm) (just for calculation of input photons)
 dtUnitary = 1;  % (ps) Unitary bin for the temporal axis
@@ -42,6 +44,7 @@ c=3E8; % m/s
 mW_2_W=1E-3;
 %mm2_2_m2=1E-6;
 nm_2_m=1E-9;
+m2_2_mm2=1e6;
 
 phE = h*c./(LambdaUnitary*nm_2_m); % (J) photon energy 
 phN = power*mW_2_W*TaqUnitary./phE; % Number of Injected Photons
@@ -52,5 +55,5 @@ RealFactor = phN.*responsivity.*dtUnitary; % Note: you need to divide for
 RealFactor = Area*RealFactor.*... 
     radiometry.timebin.*...
     radiometry.acqtime;
-
+RealFactor = RealFactor.*m2_2_mm2;%need to get the same unit of measurement of RealFactor before the hardware SOLUS
 RealFactor = RealFactor'; 

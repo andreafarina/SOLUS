@@ -5,7 +5,8 @@
 %==========================================================================
 
 function [bmua,bmus,bconc,bA,bB] = RecSolverBORN_TD_spectral(solver,grid,mua0,mus0, n, A,...
-    Spos,Dpos,dmask, dt, nstep, twin, self_norm, data, irf, ref, sd, fwd_type,radiometry,spe)
+    Spos,Dpos,dmask, dt, nstep, twin, self_norm, data, irf, ref, sd, fwd_type,radiometry,spe,conc0,a0,b0)
+
 %global factor
 %ref = 0;
 %% Jacobain options
@@ -82,7 +83,7 @@ if ref == 0 %#ok<BDSCI>
 end
 %% mask for excluding zeros
 mask = ((ref(:).*data(:)) == 0) | ...
-    (isnan(ref(:))) | (isnan(data(:)));
+    (isnan(ref(:))) | (isnan(data(:))) | (isinf(data(:)));
 %mask = false(size(mask));
 
 
@@ -165,13 +166,14 @@ if (~strcmpi(REGU,'lcurve')&&(~strcmpi(REGU,'gcv')))
     alpha = solver.tau * s(1);
 end
 if ~exist('alpha','var')
-    figure(403);
+    fh = figure(403);
+    fh.NumberTitle = 'off'; fh.Name = 'L-curve';
     if strcmpi(REGU,'lcurve')
         alpha = l_curve(U,s,dphi);%,BACKSOLVER);  % L-curve (Regu toolbox)
     elseif strcmpi(REGU,'gcv')
         alpha = gcv(U,s,dphi);%,BACKSOLVER)
     end
-    
+    savefig(fh,[fh.Name '.fig'])
 end
 disp(['alpha = ' num2str(alpha)]);
 disp('Solving...')
@@ -248,7 +250,7 @@ x = x + dx;
 %logx = logx + dx;
 %x = exp(logx);
 x = x.*x0;
-[bmua,bmus,bconc,bAB] = XtoMuaMus_spectral(x,mua0,mus0,type_jac,spe);
+[bmua,bmus,bconc,bAB] = XtoMuaMus_spectral(x,mua0,mus0,type_jac,spe,conc0,a0,b0);
 bA = bAB(:,1);bB = bAB(:,2);
 
 end

@@ -128,6 +128,9 @@ CNR2 =(muROI - muBack)./...
     sqrt(sum(W(:))./numel(W).*(std(dxROI(:)).^2) + ...
      sum(Wback(:))./numel(W).*(std(dxBack(:)).^2));
 
+CNR3 =(muROI - muBack)./...
+    sqrt(sum(Wback(:))./numel(W).*(std(dxBack(:)).^2));
+
 Q.COM.rec = COM_REC;
 Q.COV.rec = COV_REC;
 Q.max.rec = mxm;
@@ -135,6 +138,7 @@ Q.volumeG.rec = TOT_VOL_REC;
 Q.volume.rec = DxVolRec;
 Q.cnr = max(dx_rec3d(:))./std(dx_rec3d(:));
 Q.cnr2 = CNR2;
+Q.cnr3 = CNR3;
 disp(['CNR2 = ',num2str(CNR2)]);
 if ref_true == 1
     Q.COM.true = COM_TRUE;

@@ -14,7 +14,11 @@ function [L,C3D] = StructuredLaplacianPrior(refimage,bx,by,bz)
 nvox = bx*by*bz;
 [gx,gy,gz] = gradient(refimage);
 gg = sqrt(gx.^2+gy.^2+gz.^2);
-kappa = exp(- 5*gg/max(gg(:))); % factor 5 makes quite an extreme setting..
+Mgg = max(gg(:));
+if Mgg==0
+    Mgg = 1; % to manage a flat mask
+end
+kappa = exp(- 5*gg/Mgg); % factor 5 makes quite an extreme setting..
 kap3D = spdiags(reshape(kappa,[],1),0:0,nvox,nvox);
 kapsqrt = spdiags(reshape(sqrt(kappa),[],1),0:0,nvox,nvox);
 % form sparse Laplacian 
