@@ -1,4 +1,3 @@
-% % % function [contrast,  CNR] = recon_sensitivity(mu_recon, incl_idx,str_norm, vol_target, mu0)
 function [contrast,  CNR] = recon_sensitivity(mu_recon, incl_idx,str_norm, vol_target, mu0)
 
 % [contrast,  CNR] = recon_sensitivity(mu_recon, incl_idx,str_norm, vol_target)
