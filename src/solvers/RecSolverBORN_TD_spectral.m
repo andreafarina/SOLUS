@@ -14,7 +14,7 @@ LOAD_JACOBIAN = solver.prejacobian.load;      % Load a precomputed Jacobian
 geom = 'semi-inf';
 %% REGULARIZATION PARAMETER CRITERION
 NORMDIFF = 'sd';   % 'ref', 'sd'
-REGU = 'external'; % 'lcurve', 'gcv', 'external'
+REGU = 'lcurve'; % 'lcurve', 'gcv', 'external'
 BACKSOLVER = 'tikh'; % 'tikh', 'tsvd', 'discrep','simon', 'gmres', 'pcg', 'lsqr'
 % -------------------------------------------------------------------------
 nQM = sum(dmask(:));
@@ -175,7 +175,7 @@ if ~exist('alpha','var')
     end
     savefig(fh,[fh.Name '.fig'])
 end
-disp(['alpha = ' num2str(alpha)]);
+disp(['alpha = ' num2str(alpha), 'tau = ',num2str(alpha/s(1))]);
 disp('Solving...')
 switch lower(BACKSOLVER)
     case 'tikh'

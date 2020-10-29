@@ -30,7 +30,7 @@ Xr = {conc_,[a_ b_]};
 end
 
 % ---------------------- Solver and regularization ------------------------
-REC.solver.tau = 0;            % regularisation parameter
+REC.solver.tau = 1e-15;            % regularisation parameter
 REC.solver.type = 'spectral_born';          % 'born','GN': gauss-newton, 
                                   % 'tk1': first order Tichonov regul
                                   % 'USprior': Simon's strutural prior

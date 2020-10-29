@@ -116,13 +116,13 @@ DOT.opt.hete1.path ='../3DMasks/Mask3d_mus1_05-1_56_malignant_3.mat' ;   % down
 %==========================================================================
 DOT.time.dt = (50e3/4096/6)*4;   % time step in picoseconds
 DOT.time.nstep = 1024;           % number of temporal steps
-DOT.time.noise = 'none';         % 'Poisson','Gaussian','none'
+DOT.time.noise = 'Poisson';         % 'Poisson','Gaussian','none'
                                  % if 'Poisson' and sigma>0 a
                                  % Gaussian noise is added before
                                  % Poisson noise.
 DOT.time.sigma = 1e-3;              % variance for gaussian noise
 DOT.time.self_norm = false;         % true for self-normalized TPSF
-DOT.time.TotCounts = 1e20*ones(1,8);  % total counts for the maximum-energy
+DOT.time.TotCounts = 1e6*ones(1,8);  % total counts for the maximum-energy
                                       % TPSF. The other are consequently
                                       % rescaled
 %==========================================================================

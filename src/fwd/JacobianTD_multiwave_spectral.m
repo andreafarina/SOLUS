@@ -14,35 +14,47 @@ switch lower(type)
         J = zeros(nTW*nQM*radiometry.nL,nV*spe.nCromo+nV*2);
         ishift = nV*spe.nCromo;
 end
+lambda = radiometry.lambda;
 if contains(lower(type),'mua')
-    for inl = 1:radiometry.nL
+    ext_coeff0 = spe.ext_coeff0;
+    Ja = zeros(nTW*nQM,nV*spe.nCromo,radiometry.nL);
+    parfor inl = 1:radiometry.nL
         twin_set = (1:2)+(inl-1)*2;
-        meas_set = (1:nTW*nQM)+(inl-1)*nTW*nQM;
         disp('-------');
         fprintf('<strong>Absorption operations</strong>\n');
-        fprintf(['<strong>------- Wavelength ',num2str(radiometry.lambda(inl)),'-------</strong>\n'])
-        ext_coeff_mat = [];
-        for ic = 1:spe.nCromo
-            ext_coeff_mat = [ext_coeff_mat spdiags(repmat(spe.ext_coeff0(inl,ic),nV,1),0,nV,nV)];
-        end
-        J(meas_set,(1:nV*spe.nCromo)) = JacobianTD(grid,Spos, Dpos, dmask, muaB(inl), muspB(inl), n, ...
+        fprintf(['<strong>------- Wavelength ',num2str(lambda(inl)),'-------</strong>\n'])
+        
+        ext_coeff_mat = kron(ext_coeff0(inl,:),speye(nV));
+        
+        %J(meas_set,(1:nV*spe.nCromo))
+        J_ = JacobianTD(grid,Spos, Dpos, dmask, muaB(inl), muspB(inl), n, ...
             A, dt, nstep, twin(:,twin_set), irf(:,inl), geom,'mua','linear')*ext_coeff_mat;
-        clear ext_coeff_mat
+        %clear ext_coeff_mat
+        Ja(:,:,inl) = J_;
     end
+    J(:,(1:nV*spe.nCromo)) = reshape(permute(Ja,[1,3,2]),nTW*nQM*radiometry.nL,[]);
+    clear Ja
 end
 if contains(lower(type),'d')
-    for inl = 1:radiometry.nL
+    b0 = spe.opt.b0;
+    a0 = spe.opt.a0;
+    lambda0 = radiometry.lambda0;
+    Js = zeros(nTW*nQM,nV*2,radiometry.nL);
+    parfor inl = 1:radiometry.nL
         twin_set = (1:2)+(inl-1)*2;
-        meas_set = (1:nTW*nQM)+(inl-1)*nTW*nQM;
         disp('-------');
         fprintf('<strong>Scattering operations</strong>\n');
-        fprintf(['<strong>------- Wavelength ',num2str(radiometry.lambda(inl)),'-------</strong>\n'])
+        fprintf(['<strong>------- Wavelength ',num2str(lambda(inl)),'-------</strong>\n'])
         dD = -1/(3*(muspB(inl))^2);
-        J(meas_set,ishift+(1:nV*2)) = JacobianTD(grid,Spos, Dpos, dmask, muaB(inl), muspB(inl), n, ...
-            A, dt, nstep, twin(:,twin_set), irf(:,inl), geom,'d','linear')*...
-            [spdiags(repmat(dD.*(radiometry.lambda(inl)./radiometry.lambda0).^(-spe.opt.b0),nV,1),0,nV,nV) spdiags(...
-            repmat(-dD.*(spe.opt.a0.*(radiometry.lambda(inl)./radiometry.lambda0).^(-spe.opt.b0))*log(radiometry.lambda(inl)./radiometry.lambda0),nV,1),0,nV,nV)];
+        %Js(meas_set,ishift+(1:nV*2))
+        Bmat = kron([(lambda(inl)./lambda0).^(-b0),...
+            (-a0.*(lambda(inl)./lambda0).^(-b0))*log(lambda(inl)./lambda0)],speye(nV));
+        
+        J_= JacobianTD(grid,Spos, Dpos, dmask, muaB(inl), muspB(inl), n, ...
+            A, dt, nstep, twin(:,twin_set), irf(:,inl), geom,'d','linear')*dD*Bmat;...
+        Js(:,:,inl) = J_;
     end
+    J(:,ishift+(1:nV*2)) = reshape(permute(Js,[1,3,2]),nTW*nQM*radiometry.nL,[]);
 end
 end
 
