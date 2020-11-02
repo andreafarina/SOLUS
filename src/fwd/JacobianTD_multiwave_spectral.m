@@ -24,13 +24,10 @@ if contains(lower(type),'mua')
         fprintf('<strong>Absorption operations</strong>\n');
         fprintf(['<strong>------- Wavelength ',num2str(lambda(inl)),'-------</strong>\n'])
         
-        ext_coeff_mat = kron(ext_coeff0(inl,:),speye(nV));
-        
         %J(meas_set,(1:nV*spe.nCromo))
-        J_ = JacobianTD(grid,Spos, Dpos, dmask, muaB(inl), muspB(inl), n, ...
-            A, dt, nstep, twin(:,twin_set), irf(:,inl), geom,'mua','linear')*ext_coeff_mat;
+        Ja(:,:,inl) = JacobianTD(grid,Spos, Dpos, dmask, muaB(inl), muspB(inl), n, ...
+            A, dt, nstep, twin(:,twin_set), irf(:,inl), geom,'mua','linear')*kron(ext_coeff0(inl,:),speye(nV));
         %clear ext_coeff_mat
-        Ja(:,:,inl) = J_;
     end
     J(:,(1:nV*spe.nCromo)) = reshape(permute(Ja,[1,3,2]),nTW*nQM*radiometry.nL,[]);
     clear Ja
@@ -47,12 +44,10 @@ if contains(lower(type),'d')
         fprintf(['<strong>------- Wavelength ',num2str(lambda(inl)),'-------</strong>\n'])
         dD = -1/(3*(muspB(inl))^2);
         %Js(meas_set,ishift+(1:nV*2))
-        Bmat = kron([(lambda(inl)./lambda0).^(-b0),...
-            (-a0.*(lambda(inl)./lambda0).^(-b0))*log(lambda(inl)./lambda0)],speye(nV));
-        
-        J_= JacobianTD(grid,Spos, Dpos, dmask, muaB(inl), muspB(inl), n, ...
-            A, dt, nstep, twin(:,twin_set), irf(:,inl), geom,'d','linear')*dD*Bmat;...
-        Js(:,:,inl) = J_;
+        Js(:,:,inl)= JacobianTD(grid,Spos, Dpos, dmask, muaB(inl), muspB(inl), n, ...
+            A, dt, nstep, twin(:,twin_set), irf(:,inl), geom,'d','linear')*dD*...
+            kron([(lambda(inl)./lambda0).^(-b0),(-a0.*(lambda(inl)./lambda0).^(-b0))*...
+            log(lambda(inl)./lambda0)],speye(nV));
     end
     J(:,ishift+(1:nV*2)) = reshape(permute(Js,[1,3,2]),nTW*nQM*radiometry.nL,[]);
 end
