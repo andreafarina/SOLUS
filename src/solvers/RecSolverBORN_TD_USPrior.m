@@ -121,9 +121,10 @@ siz_prior = size(solver.prior.refimage);
 %solver.prior(solver.prior == max(solver.prior(:))) = 1.1*min(solver.prior(:)); 
 %solver.prior = solver.prior .* (1 + 0.01*randn(size(solver.prior)));
 [L,~] = StructuredLaplacianPrior(solver.prior.refimage,siz_prior(1),siz_prior(2),siz_prior(3));
+
 %% Solver
 disp('Calculating singolar values');
-s = svd(J);
+s = svds(J,1);
 alpha = solver.tau*s(1) %#ok<NOPRT>
 %dx = [J;(alpha)*speye(nsol)]\[dphi;zeros(nsol,1)];
 %dx = [J;(alpha)*L]\[dphi;zeros(3*nsol,1)];

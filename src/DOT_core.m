@@ -589,55 +589,96 @@ if RECONSTRUCTION == 1
     %==========================================================================
     % ------------------------ Reference mua ----------------------------------
     if ~SPECTRA
-        for inl = 1:REC.radiometry.nL
-            PlotMua = squeeze(REC.opt.Mua(:,:,:,inl));
-            PlotMusp = squeeze(REC.opt.Musp(:,:,:,inl));
-            fh=figure(300+inl);
-            fh.Name = ['Wave: ' num2str(REC.radiometry.lambda(inl))];
-            if isfield(REC.opt,'Mua')
-                ShowRecResults(REC.grid,PlotMua,...
-                    REC.grid.z1,REC.grid.z2,REC.grid.dz,1,...
-                    'auto',0,max(PlotMua(:)));
-                suptitle('Mua');
-            end
-            % ------------------------ Reference musp ---------------------------------
-            fh=figure(400+inl);
-            fh.Name = ['Wave: ' num2str(REC.radiometry.lambda(inl))];
-            if isfield(REC.opt,'Musp')
-                ShowRecResults(REC.grid,PlotMusp,...
-                    REC.grid.z1,REC.grid.z2,REC.grid.dz,1,...
-                    'auto',0,max(PlotMusp(:)));
-                suptitle('Mus');
-            end
-        end
+          Nr = ceil(sqrt(REC.radiometry.nL));Nc = round(sqrt(REC.radiometry.nL));
+          nfig = 300;res_fact = [4,4,1];
+          fh = figure(nfig);
+          for inl = 1:REC.radiometry.nL
+              SubPlotMap(REC.opt.Mua(:,:,:,inl),...
+                [num2str(REC.radiometry.lambda(inl)) ' nm'],nfig,Nr,Nc,inl,res_fact);
+          end
+          fh.NumberTitle = 'off';fh.Name = 'Simulated Absorption';
+    % ------------------------ Reference musp ----------------------------------          
+         nfig = 400; 
+         fh = figure(nfig);
+         for inl = 1:REC.radiometry.nL
+              SubPlotMap(REC.opt.Musp(:,:,:,inl),...
+                [num2str(REC.radiometry.lambda(inl)) ' nm'],nfig,Nr,Nc,inl,res_fact);
+         end
+         fh.NumberTitle = 'off';fh.Name = 'Simulated Scattering'; 
+    %%    
+        
+%         for inl = 1:REC.radiometry.nL
+%             PlotMua = squeeze(REC.opt.Mua(:,:,:,inl));
+%             PlotMusp = squeeze(REC.opt.Musp(:,:,:,inl));
+%             fh=figure(300+inl);
+%             fh.Name = ['Wave: ' num2str(REC.radiometry.lambda(inl))];
+%             if isfield(REC.opt,'Mua')
+%                 ShowRecResults(REC.grid,PlotMua,...
+%                     REC.grid.z1,REC.grid.z2,REC.grid.dz,1,...
+%                     'auto',0,max(PlotMua(:)));
+%                 suptitle('Mua');
+%             end
+%             % ------------------------ Reference musp ---------------------------------
+%             fh=figure(400+inl);
+%             fh.Name = ['Wave: ' num2str(REC.radiometry.lambda(inl))];
+%             if isfield(REC.opt,'Musp')
+%                 ShowRecResults(REC.grid,PlotMusp,...
+%                     REC.grid.z1,REC.grid.z2,REC.grid.dz,1,...
+%                     'auto',0,max(PlotMusp(:)));
+%                 suptitle('Mus');
+%             end
+%         end
     end
     if SPECTRA
+        %% plot conc
+        Nr = 3; Nc = 3;res_fact = [4 4 1];
+        nfig = 900;
+        fh = figure(nfig)
         for ic = 1:REC.spe.nCromo
-            PlotConc = squeeze(REC.opt.Conc(:,:,:,ic));
-            fh=figure(900+ic);fh.NumberTitle = 'off';fh.Name = [REC.spe.cromo_label{ic} ' Map'];
-            ShowRecResults(REC.grid,PlotConc,...
-                REC.grid.z1,REC.grid.z2,REC.grid.dz,1,'auto',0,max(PlotConc(:)));%,0.,0.64);
-            suptitle(REC.spe.cromo_label{ic});
+            SubPlotMap(REC.opt.Conc(:,:,:,ic),...
+                [REC.spe.cromo_label{ic} ' Map'],nfig,Nr,Nc,ic,res_fact);
         end
+        % Hbtot and SO2
         REC.opt.HbTot = REC.opt.Conc(:,:,:,strcmpi(REC.spe.cromo_label,'hb'))+...
                 REC.opt.Conc(:,:,:,strcmpi(REC.spe.cromo_label,'hbo2'));
         REC.opt.So2 = REC.opt.Conc(:,:,:,strcmpi(REC.spe.cromo_label,'hbo2'))./REC.opt.HbTot;
-        fh=figure(900+ic+1);fh.NumberTitle = 'off';fh.Name = 'HbTot Map';
-        ShowRecResults(REC.grid,REC.opt.HbTot,...
-            REC.grid.z1,REC.grid.z2,REC.grid.dz,1,'auto');%,0.,0.64);
-        suptitle('HbTot');
-        fh=figure(900+ic+2);fh.NumberTitle = 'off';fh.Name = 'So2 Map';
-        ShowRecResults(REC.grid,REC.opt.So2,...
-            REC.grid.z1,REC.grid.z2,REC.grid.dz,1,'auto');%,0.,0.64);
-        suptitle('So2');
-        fh=figure(900+ic+3);fh.NumberTitle = 'off';fh.Name = ('a Map');
-        ShowRecResults(REC.grid,REC.opt.A,...
-            REC.grid.z1,REC.grid.z2,REC.grid.dz,1,'auto');%,0.,0.64);
-        suptitle('a');
-        fh=figure(900+ic+4);fh.NumberTitle = 'off';fh.Name = ('b Map');
-        ShowRecResults(REC.grid,REC.opt.B,...
-            REC.grid.z1,REC.grid.z2,REC.grid.dz,1,'auto');%,0.,0.64);
-        suptitle('b');
+        SubPlotMap(REC.opt.HbTot,'HbTot Map',nfig,Nr,Nc,ic+1,res_fact);
+        SubPlotMap(REC.opt.HbTot,'So2 Map',nfig,Nr,Nc,ic+2,res_fact);
+        
+        % a b scattering
+        SubPlotMap(REC.opt.A,'a Map',nfig,Nr,Nc,ic+3,res_fact);
+        SubPlotMap(REC.opt.B,'b Map',nfig,Nr,Nc,ic+4,res_fact);
+        
+        fh.NumberTitle = 'off';fh.Name = 'Simulated';
+            %%
+%         for ic = 1:REC.spe.nCromo
+%             PlotConc = squeeze(REC.opt.Conc(:,:,:,ic));
+%             fh=figure(900+ic);fh.NumberTitle = 'off';fh.Name = [REC.spe.cromo_label{ic} ' Map'];
+%             ShowRecResults(REC.grid,PlotConc,...
+%                 REC.grid.z1,REC.grid.z2,REC.grid.dz,1,'auto',0,max(PlotConc(:)));%,0.,0.64);
+%             suptitle(REC.spe.cromo_label{ic});
+%         end
+        
+        %% detailed visualization
+%         REC.opt.HbTot = REC.opt.Conc(:,:,:,strcmpi(REC.spe.cromo_label,'hb'))+...
+%                 REC.opt.Conc(:,:,:,strcmpi(REC.spe.cromo_label,'hbo2'));
+%         REC.opt.So2 = REC.opt.Conc(:,:,:,strcmpi(REC.spe.cromo_label,'hbo2'))./REC.opt.HbTot;
+%         fh=figure(900+ic+1);fh.NumberTitle = 'off';fh.Name = 'HbTot Map';
+%         ShowRecResults(REC.grid,REC.opt.HbTot,...
+%             REC.grid.z1,REC.grid.z2,REC.grid.dz,1,'auto');%,0.,0.64);
+%         suptitle('HbTot');
+%         fh=figure(900+ic+2);fh.NumberTitle = 'off';fh.Name = 'So2 Map';
+%         ShowRecResults(REC.grid,REC.opt.So2,...
+%             REC.grid.z1,REC.grid.z2,REC.grid.dz,1,'auto');%,0.,0.64);
+%         suptitle('So2');
+%         fh=figure(900+ic+3);fh.NumberTitle = 'off';fh.Name = ('a Map');
+%         ShowRecResults(REC.grid,REC.opt.A,...
+%             REC.grid.z1,REC.grid.z2,REC.grid.dz,1,'auto');%,0.,0.64);
+%         suptitle('a');
+%         fh=figure(900+ic+4);fh.NumberTitle = 'off';fh.Name = ('b Map');
+%         ShowRecResults(REC.grid,REC.opt.B,...
+%             REC.grid.z1,REC.grid.z2,REC.grid.dz,1,'auto');%,0.,0.64);
+%         suptitle('b');
     end
     drawnow
     % =========================================================================
@@ -909,76 +950,117 @@ if RECONSTRUCTION == 1
         [REC.opt.bmua, REC.opt.bmusp, REC.opt.bConc] = remove_voxels(REC.opt.bmua, REC.opt.bmusp, REC.opt.bConc,...
                                                                 REC.grid.dim, REC.opt.mua0, REC.opt.musp0, REC.opt.conc0);
     end
-    
+%% =============================== DISPLAY RESULTS ===========================================    
     % ---------------------------- display mua --------------------------------
     if ~contains(REC.solver.type,'fit')
-        drawnow;
-        if ~contains(REC.solver.type,'spectral')
-             for inl = 1:REC.radiometry.nL
-                PlotMua = reshape(REC.opt.bmua,[REC.grid.dim REC.radiometry.nL]);
-                PlotMus = reshape(REC.opt.bmusp,[REC.grid.dim REC.radiometry.nL]);
-                PlotMua = PlotMua(:,:,:,inl);
-                PlotMus = PlotMus(:,:,:,inl);
-                fh=figure(500+inl);fh.NumberTitle = 'off';fh.Name = ['Recon Mua. Wave ' num2str(REC.radiometry.lambda(inl))];
-                ShowRecResults(REC.grid,PlotMua,...
-                    REC.grid.z1,REC.grid.z2,REC.grid.dz,1,'auto',0.00,0.05);
-                suptitle('Recon Mua');
-                % --------------------------- display musp -------------------------------
-                fh=figure(600+inl);fh.NumberTitle = 'off';fh.Name = ['Recon Mus. Wave ' num2str(REC.radiometry.lambda(inl))];
-                ShowRecResults(REC.grid,PlotMus,...
-                    REC.grid.z1,REC.grid.z2,REC.grid.dz,1,'auto');%,0.,0.64);
-                suptitle('Recon Mus');
-                %savefig(fh,['./figures/' fh.Name '.fig'])
-                drawnow;
-                tilefigs;
-                disp('recon: finished')
-                fh = figure(700+inl);fh.NumberTitle = 'off';fh.Name = ['PlotHete. Wave ' num2str(REC.radiometry.lambda(inl))];
-                subplot(1,2,1),PlotHeteQM(REC,PlotMua,REC.opt.mua0(inl)),
-                title('Recon Mua');
-                subplot(1,2,2),PlotHeteQM(REC,PlotMus,REC.opt.musp0(inl)),
-                title('Recon Mus');
-                drawnow;
-             end
-        end
-        if contains(REC.solver.type,'spectral')
-            for ic = 1:REC.spe.nCromo
-                Conc=reshape(REC.opt.bConc(:,ic),REC.grid.dim);
-                fh=figure(800+ic);fh.NumberTitle = 'off';fh.Name = ['Recon ' REC.spe.cromo_label{ic} ' Map'];
-                ShowRecResults(REC.grid,Conc,...
-                    REC.grid.z1,REC.grid.z2,REC.grid.dz,1,'auto');%,0.,0.64);
-                suptitle(['Recon ' REC.spe.cromo_label{ic}]);
-                %savefig(fh,['./figures/' fh.Name '.fig'])
-            end
-            if REC.spe.active_cromo(strcmpi(REC.spe.cromo_label,'hb'))
-                REC.opt.HbTot = REC.opt.bConc(:,strcmpi(REC.spe.cromo_label,'hb'))+...
-                    REC.opt.bConc(:,strcmpi(REC.spe.cromo_label,'hbo2'));
-                REC.opt.So2 = REC.opt.bConc(:,strcmpi(REC.spe.cromo_label,'hbo2'))./REC.opt.HbTot;
-                fh=figure(800+ic+1);fh.NumberTitle = 'off';fh.Name = 'HbTot Map';
-                ShowRecResults(REC.grid,reshape(REC.opt.HbTot,REC.grid.dim),...
-                    REC.grid.z1,REC.grid.z2,REC.grid.dz,1,'auto');%,0.,0.64);
-                suptitle('HbTot');
-                %savefig(fh,['./figures/' fh.Name '.fig'])
-                fh=figure(800+ic+2);fh.NumberTitle = 'off';fh.Name = 'So2 Map';
-                ShowRecResults(REC.grid,reshape(REC.opt.So2,REC.grid.dim),...
-                    REC.grid.z1,REC.grid.z2,REC.grid.dz,1,'auto');%,0.,0.64);
-                suptitle('So2');
-                %savefig(fh,['./figures/' fh.Name '.fig'])
-            else
-                REC.opt.HbTot = zeros(prod(REC.grid.dim),1);REC.opt.So2 = zeros(prod(REC.grid.dim),1);
-            end
-            fh=figure(800+ic+3);fh.NumberTitle = 'off';fh.Name = ('Recon a Map');
-            ShowRecResults(REC.grid,reshape(REC.opt.bA,REC.grid.dim),...
-                REC.grid.z1,REC.grid.z2,REC.grid.dz,1,'auto');%,0.,0.64);
-            suptitle('Recon a');
-            %savefig(fh,['./figures/' fh.Name '.fig'])
-            fh=figure(800+ic+4);fh.NumberTitle = 'off';fh.Name = ('Recon b Map');
-            ShowRecResults(REC.grid,reshape(REC.opt.bbB,REC.grid.dim),...
-                REC.grid.z1,REC.grid.z2,REC.grid.dz,1,'auto');%,0.,0.64);
-            suptitle('Recon b');
-            %savefig(fh,['./figures/' fh.Name '.fig'])
-        end
         
+        if ~contains(REC.solver.type,'spectral')
+          Nr = ceil(sqrt(REC.radiometry.nL));Nc = round(sqrt(REC.radiometry.nL));
+          nfig = 500;res_fact = [4,4,1];
+          fh = figure(nfig);
+          for inl = 1:REC.radiometry.nL
+              SubPlotMap(reshape(REC.opt.bmua(:,inl),REC.grid.dim),...
+                [num2str(REC.radiometry.lambda(inl)) ' nm'],nfig,Nr,Nc,inl,res_fact);
+          end
+          fh.NumberTitle = 'off';fh.Name = 'Reconstructed Absorption';
+    %    ------------------------ Reference musp ----------------------------------          
+         nfig = 600; 
+         fh = figure(nfig);
+         for inl = 1:REC.radiometry.nL
+              SubPlotMap(reshape(REC.opt.bmusp(:,inl),REC.grid.dim),...
+                [num2str(REC.radiometry.lambda(inl)) ' nm'],nfig,Nr,Nc,inl,res_fact);
+         end
+         fh.NumberTitle = 'off';fh.Name = 'Reconstructed Scattering';
+%             
+%              for inl = 1:REC.radiometry.nL
+%                 PlotMua = reshape(REC.opt.bmua,[REC.grid.dim REC.radiometry.nL]);
+%                 PlotMus = reshape(REC.opt.bmusp,[REC.grid.dim REC.radiometry.nL]);
+%                 PlotMua = PlotMua(:,:,:,inl);
+%                 PlotMus = PlotMus(:,:,:,inl);
+%                 fh=figure(500+inl);fh.NumberTitle = 'off';fh.Name = ['Recon Mua. Wave ' num2str(REC.radiometry.lambda(inl))];
+%                 ShowRecResults(REC.grid,PlotMua,...
+%                     REC.grid.z1,REC.grid.z2,REC.grid.dz,1,'auto',0.00,0.05);
+%                 suptitle('Recon Mua');
+%                 % --------------------------- display musp -------------------------------
+%                 fh=figure(600+inl);fh.NumberTitle = 'off';fh.Name = ['Recon Mus. Wave ' num2str(REC.radiometry.lambda(inl))];
+%                 ShowRecResults(REC.grid,PlotMus,...
+%                     REC.grid.z1,REC.grid.z2,REC.grid.dz,1,'auto');%,0.,0.64);
+%                 suptitle('Recon Mus');
+%                 %savefig(fh,['./figures/' fh.Name '.fig'])
+%                 drawnow;
+%                 tilefigs;
+                 disp('recon: finished');
+%                 fh = figure(700+inl);fh.NumberTitle = 'off';fh.Name = ['PlotHete. Wave ' num2str(REC.radiometry.lambda(inl))];
+%                 subplot(1,2,1),PlotHeteQM(REC,PlotMua,REC.opt.mua0(inl)),
+%                 title('Recon Mua');
+%                 subplot(1,2,2),PlotHeteQM(REC,PlotMus,REC.opt.musp0(inl)),
+%                 title('Recon Mus');
+%                 drawnow;
+        end
     end
+    
+    if contains(REC.solver.type,'spectral')
+        %% plot conc
+        Nr = 3; Nc = 3;res_fact = [4 4 1];
+        nfig = 800;
+        fh = figure(nfig);
+        for ic = 1:REC.spe.nCromo
+            SubPlotMap(reshape(REC.opt.bConc(:,ic),REC.grid.dim),...
+                [REC.spe.cromo_label{ic} ' Map'],nfig,Nr,Nc,ic,res_fact);
+        end
+        % Hbtot and SO2
+        REC.opt.HbTot = REC.opt.bConc(:,strcmpi(REC.spe.cromo_label,'hb'))+...
+            REC.opt.bConc(:,strcmpi(REC.spe.cromo_label,'hbo2'));
+        REC.opt.So2 = REC.opt.bConc(:,strcmpi(REC.spe.cromo_label,'hbo2'))./REC.opt.HbTot;
+        SubPlotMap(reshape(REC.opt.HbTot,REC.grid.dim),'HbTot Map',nfig,Nr,Nc,ic+1,res_fact);
+        SubPlotMap(reshape(REC.opt.HbTot,REC.grid.dim),'So2 Map',nfig,Nr,Nc,ic+2,res_fact);
+        
+        % a b scattering
+        SubPlotMap(reshape(REC.opt.bA,REC.grid.dim),'a Map',nfig,Nr,Nc,ic+3,res_fact);
+        SubPlotMap(reshape(REC.opt.bbB,REC.grid.dim),'b Map',nfig,Nr,Nc,ic+4,res_fact);
+        
+        fh.NumberTitle = 'off';fh.Name = 'Reconstructed';
+        
+        
+        
+        %             for ic = 1:REC.spe.nCromo
+        %                 Conc=reshape(REC.opt.bConc(:,ic),REC.grid.dim);
+        %                 fh=figure(800+ic);fh.NumberTitle = 'off';fh.Name = ['Recon ' REC.spe.cromo_label{ic} ' Map'];
+        %                 ShowRecResults(REC.grid,Conc,...
+        %                     REC.grid.z1,REC.grid.z2,REC.grid.dz,1,'auto');%,0.,0.64);
+        %                 suptitle(['Recon ' REC.spe.cromo_label{ic}]);
+        %                 %savefig(fh,['./figures/' fh.Name '.fig'])
+        %             end
+        %             if REC.spe.active_cromo(strcmpi(REC.spe.cromo_label,'hb'))
+        %                 REC.opt.HbTot = REC.opt.bConc(:,strcmpi(REC.spe.cromo_label,'hb'))+...
+        %                     REC.opt.bConc(:,strcmpi(REC.spe.cromo_label,'hbo2'));
+        %                 REC.opt.So2 = REC.opt.bConc(:,strcmpi(REC.spe.cromo_label,'hbo2'))./REC.opt.HbTot;
+        %                 fh=figure(800+ic+1);fh.NumberTitle = 'off';fh.Name = 'HbTot Map';
+        %                 ShowRecResults(REC.grid,reshape(REC.opt.HbTot,REC.grid.dim),...
+        %                     REC.grid.z1,REC.grid.z2,REC.grid.dz,1,'auto');%,0.,0.64);
+        %                 suptitle('HbTot');
+        %                 %savefig(fh,['./figures/' fh.Name '.fig'])
+        %                 fh=figure(800+ic+2);fh.NumberTitle = 'off';fh.Name = 'So2 Map';
+        %                 ShowRecResults(REC.grid,reshape(REC.opt.So2,REC.grid.dim),...
+        %                     REC.grid.z1,REC.grid.z2,REC.grid.dz,1,'auto');%,0.,0.64);
+        %                 suptitle('So2');
+        %                 %savefig(fh,['./figures/' fh.Name '.fig'])
+        %             else
+        %                 REC.opt.HbTot = zeros(prod(REC.grid.dim),1);REC.opt.So2 = zeros(prod(REC.grid.dim),1);
+        %             end
+        %             fh=figure(800+ic+3);fh.NumberTitle = 'off';fh.Name = ('Recon a Map');
+        %             ShowRecResults(REC.grid,reshape(REC.opt.bA,REC.grid.dim),...
+        %                 REC.grid.z1,REC.grid.z2,REC.grid.dz,1,'auto');%,0.,0.64);
+        %             suptitle('Recon a');
+        %             %savefig(fh,['./figures/' fh.Name '.fig'])
+        %             fh=figure(800+ic+4);fh.NumberTitle = 'off';fh.Name = ('Recon b Map');
+        %             ShowRecResults(REC.grid,reshape(REC.opt.bbB,REC.grid.dim),...
+        %                 REC.grid.z1,REC.grid.z2,REC.grid.dz,1,'auto');%,0.,0.64);
+        %             suptitle('Recon b');
+        %             %savefig(fh,['./figures/' fh.Name '.fig'])
+    end
+        
+    
     %% Save reconstruction
     if ~contains(REC.solver.type,'fit')
         disp(['Reconstruction will be stored in: ', rdir,filename,'_', 'REC.mat']);

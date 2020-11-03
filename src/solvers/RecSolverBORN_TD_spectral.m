@@ -157,14 +157,18 @@ J(mask,:) = [];
 
 %% Solver
 %if ~strcmpi((BACKSOLVER),'simon')
-disp('Calculating singolar values');
-[U,s,V]=csvd(J);     % compact SVD (Regu toolbox)
-figure(402);
-picard(U,s,dphi);    % Picard plot (Regu toolbox)
-%end
 if (~strcmpi(REGU,'lcurve')&&(~strcmpi(REGU,'gcv')))
-    alpha = solver.tau * s(1);
+    disp('Calculating larger singular value');
+    s = svds(J,1)
+    alpha = solver.tau * s;
 end
+if (strcmpi(BACKSOLVER,'tikh'))
+    disp('Calculating compact SVD');
+    [U,s,V]=csvd(J);     % compact SVD (Regu toolbox)
+    figure(402);
+    picard(U,s,dphi);    % Picard plot (Regu toolbox)
+end
+
 if ~exist('alpha','var')
     fh = figure(403);
     fh.NumberTitle = 'off'; fh.Name = 'L-curve';
@@ -228,13 +232,13 @@ switch lower(BACKSOLVER)
         disp('lsqr');
         tic;
         if strcmpi(REGU,'external')
-            lambda = sum(sum(J.^2));
-            alpha = alpha * lambda;
+            %lambda = sum(sum(J.^2));
+            %alpha = alpha * lambda;
             disp(['alpha=' num2str(alpha)]);
         end
         
         
-        dx = lsqr([J;alpha*speye(nsol)],[dphi;zeros(nsol,1)],1e-6,200);
+        dx = lsqr([J;alpha*speye(nsol)],[dphi;zeros(nsol,1)],1e-6,1000);
         
         toc;
         
