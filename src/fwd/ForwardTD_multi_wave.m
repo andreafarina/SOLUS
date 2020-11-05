@@ -5,7 +5,7 @@ phi = zeros(nstep,nQM,radiometry.nL);
 Area = zeros(nQM,radiometry.nL);
 
     lambda = radiometry.lambda;
-    parfor inl = 1:radiometry.nL
+    for inl = 1:radiometry.nL
         fprintf(['<strong>------- Wavelength ',num2str(lambda(inl)),'-------</strong>\n'])
         %meas_set = (1:nQM)+(inl-1)*nQM;
         if isempty(Mua)||isempty(Musp)

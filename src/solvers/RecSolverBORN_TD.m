@@ -14,7 +14,7 @@ geom = 'semi-inf';
 %% REGULARIZATION PARAMETER CRITERION
 NORMDIFF = 'sd';   % 'ref', 'sd'
 %REGU = 'external'; % 'lcurve', 'gcv', 'external'
-REGU = 'external'; 
+REGU = 'lcurve'; 
 BACKSOLVER = 'tikh'; % 'tikh', 'tsvd', 'discrep','simon', 'gmres', 'pcg', 'lsqr'
 % -------------------------------------------------------------------------
 nQM = sum(dmask(:));

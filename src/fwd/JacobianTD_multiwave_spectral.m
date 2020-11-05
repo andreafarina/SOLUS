@@ -18,7 +18,7 @@ lambda = radiometry.lambda;
 if contains(lower(type),'mua')
     ext_coeff0 = spe.ext_coeff0;
     Ja = zeros(nTW*nQM,nV*spe.nCromo,radiometry.nL);
-    parfor inl = 1:radiometry.nL
+    for inl = 1:radiometry.nL
         twin_set = (1:2)+(inl-1)*2;
         disp('-------');
         fprintf('<strong>Absorption operations</strong>\n');

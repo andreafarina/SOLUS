@@ -4,15 +4,14 @@
 %==========================================================================
 
 function [bmua,bmus,bconc,bA,bB] = RecSolverBORN_TD_USPrior_spectral(solver,grid,mua0,mus0, n, A,...
-    Spos,Dpos,dmask, dt, nstep, twin, self_norm, data, irf, ref, sd, fwd_type,radiometry,spe)
+    Spos,Dpos,dmask, dt, nstep, twin, self_norm, data, irf, ref, sd, fwd_type,radiometry,spe,conc0,a0,b0)
 %% Jacobain options
 %% Jacobain options
+USEGPU = gpuDeviceCount;
 LOAD_JACOBIAN = solver.prejacobian.load;      % Load a precomputed Jacobian
 geom = 'semi-inf';
 %% REGULARIZATION PARAMETER CRITERION
 NORMDIFF = 'sd';   % 'ref', 'sd'
-REGU = 'external'; % 'lcurve', 'gcv', 'external'
-BACKSOLVER = 'tikh'; % 'tikh', 'tsvd', 'discrep','simon', 'gmres', 'pcg', 'lsqr'
 % -------------------------------------------------------------------------
 nQM = sum(dmask(:));
 nwin = size(twin,1);
@@ -137,23 +136,63 @@ J(mask,:) = [];
 
 %% Structured laplacian prior
 
-siz_prior = size(solver.prior.refimage);
+%siz_prior = size(solver.prior.refimage);
 %solver.prior(solver.prior == max(solver.prior(:))) = 1.1*min(solver.prior(:)); 
 %solver.prior = solver.prior .* (1 + 0.01*randn(size(solver.prior)));
-[L,~] = StructuredLaplacianPrior(solver.prior.refimage,siz_prior(1),siz_prior(2),siz_prior(3));
+%[L,~] = StructuredLaplacianPrior(solver.prior.refimage,siz_prior(1),siz_prior(2),siz_prior(3));
+%% new gradient
+k3d = Kappa(solver.prior.refimage,5);
+[Dy,Dx,Dz] = gradientOperator(permute(grid.dim,[2,1,3])',...
+   [grid.dy,grid.dx,grid.dz],[],'none');
+L = [sqrt(k3d)*Dx;sqrt(k3d)*Dy;sqrt(k3d)*Dz];
+
 %% Solver
 disp('Calculating singular values');
 s = svds(J,1);
-alpha = solver.tau*s(1) %#ok<NOPRT>
-%dx = [J;(alpha)*speye(nsol)]\[dphi;zeros(nsol,1)];
-%dx = [J;(alpha)*L]\[dphi;zeros(3*nsol,1)];
+
 L1 = [];
 for ip = 1:p
      L1 = blkdiag(L1,L);
 end
-disp('Solving...')
+%% case Lcurve or direct solution
+if USEGPU
+    gpu = gpuDevice;
+    disp('Using GPU');
+    J = gpuArray(J);
+    b = gpuArray([full(dphi);zeros(p*3*nsol/p,1)]);
+    %dphiG = gpuArray(dphi);
+    L1 = gpuArray(full(L1));
+end
+
+if numel(solver.tau)>1
+    for i = 1:numel(solver.tau)
+        alpha = solver.tau(i)*s(1); 
+        disp(['Solving for tau = ',num2str(solver.tau(i))]);
+        tic;
+        dx = lsqr([J;alpha*L1],[dphi;zeros(p*3*nsol/p,1)],1e-6,1000);
+        toc;
+        %dx = [J;(alpha)*L]\[dphi;zeros(3*nsol,1)];
+        res(i) = gather(norm(J*dx-dphi)); %#ok<AGROW>
+        prior(i) = gather(norm(L1*dx)); %#ok<AGROW>
+        figure(144),loglog(res,prior,'-o'),title('L-curve');
+        text(res,prior,num2cell(solver.tau(1:i)));xlabel('residual');ylabel('prior');
+    end
+           
+    tau = solver.tau;
+    save('LcurveData','res','prior','tau');
+%     tau_suggested = l_corner(flip(res)',flip(prior)',flip(tau));
+%     disp(['Suggested tau = ',num2str(tau_suggested)]);
+    pause;
+    tau_sel = inputdlg('Choose tau');
+    solver.tau = str2double(tau_sel{1});
+end
+%% final solution
+alpha = solver.tau * s(1);
+disp(['Solving for tau = ',num2str(solver.tau)]);
 dx = lsqr([J;alpha*L1],[dphi;zeros(p*3*nsol/p,1)],1e-6,1000);
-%dx = lsqr([J;alpha*speye(nsol)],[dphi;zeros(nsol,1)],1e-6,100);
+if USEGPU>0
+    dx = gather(dx);
+end
 %==========================================================================
 %%                        Add update to solution
 %==========================================================================
@@ -162,8 +201,9 @@ x = x + dx;
 %logx = logx + dx;
 %x = exp(logx);
 x = x.*x0;
-[bmua,bmus,bconc,bAB] = XtoMuaMus_spectral(x,mua0,mus0,type_jac,spe);
+[bmua,bmus,bconc,bAB] = XtoMuaMus_spectral(x,mua0,mus0,type_jac,spe,conc0,a0,b0);
 bA = bAB(:,1);bB = bAB(:,2);
+
 
 
 end

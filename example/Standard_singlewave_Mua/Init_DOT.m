@@ -34,7 +34,7 @@ LOAD_FWD_TEO = 0;       % if 0: save the raw TPSF(un-noisy) in a _FwdTeo.m file.
                         % if 1: load the raw TPSF for speed up
 % -------------------------------------------------------------------------
 TOAST2DOT = 0;          % if 1 the function toast2dot is used for conversion 
-SPECTRA = 1; 
+SPECTRA = 0; 
 REMOVE_VOXELS = 0; %if 1 the function Voxels_constant removes the most superficial voxels 
                    %(to remove the source-detector configuration pattern in the maps)
 DOT.spe.cromo_label = {'Hb','HbO2','Lipid','H2O','Collagen'};
@@ -43,15 +43,10 @@ DOT.spe.cromo_factor = [1,1,10*100*0.91,10*100,10*100*0.196];
 % DOT.spe.cromo_factor = [1,1,1,1,1];
 DOT.spe.cromo_units = {'microM','microM','mg/cm^3','mg/cm^3','mg/cm^3'};
 DOT.spe.ForceConstitSolution = 0;
-if SPECTRA == 0
-mua_ = [0.00335394973467767,0.00208272121572369,0.00328333490577450,0.0101311816365722,0.0113533356313992,0.00950065021456835,0.00907688587133433,0.00617935497869766];
-musp_ = [1.23400000000000,1.20133635788488,1.07935169073345,1.02799611957338,1.01423383723663,0.993319553161961,0.968909937001070,0.952855880308506];
+mua_ = 0.01;
+musp_ = 1.0;
 Xd = {mua_,musp_};
-else
-a_ = 1.234; b_ = 0.50;
-conc_ = [1.45 9.38 0.8186*10*100*0.91 0.1172*10*100 0.0453*10*100*0.196];
-Xd = {conc_,[a_ b_]};
-end
+
 % ========================================================================= 
 %% ====================== VOLUME DEFINITION ===============================
 %% Background optical properties
@@ -79,7 +74,7 @@ DOT.grid.dz = DOT.grid.dx;
 NUM_HETE = 1;
 %--------------------------- INCLUSION 1 ---------------------------------%
 DOT.opt.hete1.type  = {'Mua'};
-DOT.opt.hete1.geometry = 'sphere';
+DOT.opt.hete1.geometry = 'usimage';%'sphere','usimage','cylinder'
 DOT.opt.hete1.c     = [3, 4, 15];   % down 
 % DOT.opt.hete1.d     = [0, 0, -1];   % down
 % DOT.opt.hete1.l     = 20;
@@ -87,17 +82,11 @@ DOT.opt.hete1.sigma = 5;
 DOT.opt.hete1.distrib = 'OFF';
 DOT.opt.hete1.profile = 'Gaussian';%'Step';%'Gaussian';
 % DOT.opt.hete1.val   = 5 * DOT.opt.muaB;
-if SPECTRA == 0
-muap_=[0.0131844085972107,0.00811400967510129,0.00662420840605220,0.0128323383331261,0.0155414766883930,0.0187324032316907,0.0127792247467340,0.00824432384889349];
-muspp_=[1.23400000000000,1.20133635788488,1.07935169073345,1.02799611957338,1.01423383723663,0.993319553161961,0.968909937001070,0.952855880308506];
-Xp = {muap_,muspp_};
-else
-a_ = 1.634; b_ = 0.80; % a (mm-1), b(adimensionale)
-concp_ = [9.36 16.22 0.5371*10*100*0.91 0.2539*10*100 0.1291*10*100*0.196]; 
-Xp = {concp_};
-end
-% DOT.opt.hete1.path ='../3DMasks/Mask3D_Mask_malignant_4.mat' ;   % down
-DOT.opt.hete1.path ='../../3DMasks/malignant_1.mat' ;   % down
+muap_=0.02;
+muspp_=1.0;
+Xp = {muap_};%,muspp_};
+
+DOT.opt.hete1.path ='../../3DMasks/malignant_4.mat' ;   % down
 
 %--------------------------- INCLUSION 2 ---------------------------------%
 % DOT.opt.hete2.type  = 'Mua';
@@ -122,7 +111,7 @@ DOT.time.noise = 'Poisson';         % 'Poisson','Gaussian','none'
                                  % Poisson noise.
 DOT.time.sigma = 1e-3;              % variance for gaussian noise
 DOT.time.self_norm = false;         % true for self-normalized TPSF
-DOT.time.TotCounts = 1e6*ones(1,8);  % total counts for the maximum-energy
+DOT.time.TotCounts = 1e6;%*ones(1,8);  % total counts for the maximum-energy
                                       % TPSF. The other are consequently
                                       % rescaled
 %==========================================================================
@@ -134,7 +123,7 @@ DOT.radiometry.timebin = ...
     DOT.time.dt;                % (ps) width of the time bin
 DOT.radiometry.acqtime = 1;    % (s) acquisition time
 DOT.radiometry.opteff = 0.9;    % Typical efficiency of the optical path
-DOT.radiometry.lambda = [635,670,830,915,940,980,1030,1065]; 
+DOT.radiometry.lambda = [635];%,670,830,915,940,980,1030,1065]; 
 DOT.radiometry.lambda0 = 635;
 DOT.radiometry.lambda = DOT.radiometry.lambda;
 DOT.radiometry.nL = numel(DOT.radiometry.lambda);
