@@ -4,7 +4,7 @@
 % var       -- string   -- the field you wanna mofify
 % back      -- [1x1]    -- background value of 'var'
 % INTENSITY -- [1x1]    -- maximum value of the inhomogeneous 'var'
-% 
+%
 % No profiles are implemented. We get a binary tridimensional mask.
 %-------------------------------------------------------------------------%
 
@@ -17,12 +17,12 @@ function [DOT, hete] = prior3D(DOT,hete,solver)
 SPE = 0;
 SPE_CONC = 0;
 SPE_SCA = 0;
-sp = 1;
+NumLoops = 1;
 if contains(solver,'spectral')
-    sp = 2;
+    NumLoops = 2;
 end
 
-for is = 1:sp
+for is = 1:NumLoops
     for itype = 1:size(hete.type,2)
         var  = hete.type{itype};
         if is >= 2
@@ -50,8 +50,8 @@ for is = 1:sp
                 intensity = [hete.a hete.b];
             end
         end
-
-
+        
+        
         if isfield(DOT,'grid')
             nx = DOT.grid.Nx;
             ny = DOT.grid.Ny;
@@ -60,8 +60,8 @@ for is = 1:sp
             Nx = DOT.grid.Nx;
             Ny = DOT.grid.Ny;
             Nz = DOT.grid.Nz;
-
-        %-- Regular mesh --%   
+            
+            %-- Regular mesh --%
         else
             M = [DOT.mesh.pos(:,1)-c(1) DOT.mesh.pos(:,2)-c(2) DOT.mesh.pos(:,3)-c(3)];
             add = zeros(DOT.mesh.N,numel(intensity));
@@ -69,30 +69,42 @@ for is = 1:sp
             Ny = DOT.mesh.Ny;
             Nz = DOT.mesh.Nz;
         end
-
+        if SPE
+            if SPE_CONC
+                var = 'Conc';
+            end
+            if SPE_SCA
+                var = 'AB';
+                DOT.opt.AB = cat(4,DOT.opt.A,DOT.opt.B);
+            end
+        end
         %% here!
         smask = load(hete.path);
         fn = fieldnames(smask);
-        mask = smask.(fn{1});
-        delta = smask.(fn{2});
+        delta = smask.(fn{1});
+        mask = smask.(fn{2});
         %% swap fields... in case
         if ~isvector(delta)
             dd = mask;
             mask = delta;
             delta = dd;
         end
-
+        
         prior = priormask3D(hete.path,DOT.grid);
         param = getfield(DOT.opt, var);
         for inl = 1:numel(intensity)
             param(:,:,:,inl) = param(:,:,:,inl) + double(prior).*(intensity(inl)-back(inl));
         end
-        
-        DOT.opt = setfield(DOT.opt, var, param);
+        if strcmpi(var,'AB')
+            DOT.opt = rmfield(DOT.opt,'AB');
+            DOT.opt = setfield(DOT.opt, var(1), param(:,:,:,1));
+            DOT.opt = setfield(DOT.opt, var(2), param(:,:,:,2));
+        else
+            DOT.opt = setfield(DOT.opt, var, param);
+        end
         
     end
 end
-return;
 end
 
 

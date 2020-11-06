@@ -22,18 +22,19 @@ if not(isfield(hete,'geometry')), hete.geometry = 'sphere';   end
 switch upper(hete.geometry)
     
     case 'SPHERE'
-    disp('+++ Sphere')
+        disp('+++ Sphere')
         [DOT, hete] = sphere3D(DOT, hete, solver);
 
     case 'CYLINDER'
-    disp('+++ Cylinder')
-    [DOT, hete] = cylinder3D(DOT, hete, solver);
+        disp('+++ Cylinder')
+        [DOT, hete] = cylinder3D(DOT, hete, solver);
     
     case 'USIMAGE'
-    disp('+++ Distance Transform');
-    [DOT,~] = prior3D(DOT, hete, solver);
+        disp('+++ Distance Transform');
+        [DOT,~] = prior3D(DOT, hete, solver);
     
-
+    otherwise
+        error(['+++ ',hete.geometry,' : type unknown']);
 end
 
 for itype = 1: size(hete.type,2)

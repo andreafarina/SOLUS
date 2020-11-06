@@ -7,7 +7,7 @@ function [bmua,bmus,bconc,bA,bB] = RecSolverBORN_TD_USPrior_spectral(solver,grid
     Spos,Dpos,dmask, dt, nstep, twin, self_norm, data, irf, ref, sd, fwd_type,radiometry,spe,conc0,a0,b0)
 %% Jacobain options
 %% Jacobain options
-USEGPU = gpuDeviceCount;
+USEGPU = 0;%gpuDeviceCount;
 LOAD_JACOBIAN = solver.prejacobian.load;      % Load a precomputed Jacobian
 geom = 'semi-inf';
 %% REGULARIZATION PARAMETER CRITERION
