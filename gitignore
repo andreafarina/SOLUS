@@ -1,0 +1,4 @@
+#ignore output files
+*_Data.mat
+*_REC.mat
+*_FwdTeo.mat
