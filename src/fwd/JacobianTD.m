@@ -14,7 +14,7 @@ switch lower(type_fwd)
         else
             n = grid.N;
         end
-        J = zeros(nwin*Nopt,n);
+        J = sparse(zeros(nwin*Nopt,n));
         t = (1:nstep) * dt;
         t = t';
         

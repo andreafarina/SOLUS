@@ -104,7 +104,7 @@ else
     %fprintf (1,'Calculating Jacobian\n');
     tic;
     J = Jacobian ( mua0, mus0);
-    [jpath,jname,jext] = fileparts(solver.prejacobian.path);
+    [jpath,~, ~] = fileparts(solver.prejacobian.path);
     if ~exist(jpath,'dir')
         mkdir(jpath)
     end
@@ -142,8 +142,7 @@ J(mask,:) = [];
 %[L,~] = StructuredLaplacianPrior(solver.prior.refimage,siz_prior(1),siz_prior(2),siz_prior(3));
 %% new gradient
 k3d = Kappa(solver.prior.refimage,5);
-[Dy,Dx,Dz] = gradientOperator(permute(grid.dim,[2,1,3])',...
-   [grid.dy,grid.dx,grid.dz],[],'none');
+[Dy,Dx,Dz] = gradientOperator(grid.dim,[1,1,1],[],'none');
 L = [sqrt(k3d)*Dx;sqrt(k3d)*Dy;sqrt(k3d)*Dz];
 
 %% Solver
@@ -155,25 +154,28 @@ for ip = 1:p
      L1 = blkdiag(L1,L);
 end
 %% case Lcurve or direct solution
+b = [dphi;zeros(p*3*nsol/p,1)];
 if USEGPU
-    gpu = gpuDevice;
+    gpu = gpuDevice; %#ok<UNRCH>
     disp('Using GPU');
-    J = gpuArray(J);
     b = gpuArray([full(dphi);zeros(p*3*nsol/p,1)]);
-    %dphiG = gpuArray(dphi);
-    L1 = gpuArray(full(L1));
 end
 
 if numel(solver.tau)>1
     for i = 1:numel(solver.tau)
         alpha = solver.tau(i)*s(1); 
         disp(['Solving for tau = ',num2str(solver.tau(i))]);
+        if USEGPU
+            A = [J;alpha*L1]; %#ok<UNRCH>
+            A = gpuArray(A);
+            dx = lsqr(A*1e10,b*1e10,1e-6,1000);
+        end
         tic;
-        dx = lsqr([J;alpha*L1],[dphi;zeros(p*3*nsol/p,1)],1e-6,1000);
+        dx = lsqr([J;alpha*L1],b,1e-6,1000);
         toc;
         %dx = [J;(alpha)*L]\[dphi;zeros(3*nsol,1)];
         res(i) = gather(norm(J*dx-dphi)); %#ok<AGROW>
-        prior(i) = gather(norm(L1*dx)); %#ok<AGROW>
+        prior(i) = gather(norm(L1'*L1*dx)); %#ok<AGROW>
         figure(144),loglog(res,prior,'-o'),title('L-curve');
         text(res,prior,num2cell(solver.tau(1:i)));xlabel('residual');ylabel('prior');
     end
@@ -189,9 +191,14 @@ end
 %% final solution
 alpha = solver.tau * s(1);
 disp(['Solving for tau = ',num2str(solver.tau)]);
-dx = lsqr([J;alpha*L1],[dphi;zeros(p*3*nsol/p,1)],1e-6,1000);
-if USEGPU>0
+if USEGPU > 0
+    %J(abs(J)<1e-3) = 0;
+    A = [sparse(J);alpha*L1];
+    Ag = gpuArray(A);
+    dx = lsqr(Ag*1e10,b*1e10,1e-6,1000);
     dx = gather(dx);
+else
+    dx = lsqr([J;alpha*L1],b,1e-6,1000);
 end
 %==========================================================================
 %%                        Add update to solution

@@ -6,7 +6,7 @@
 function [bmua,bmus] = RecSolverBORN_TD_USPrior(solver,grid,mua0,mus0, n, A,...
     Spos,Dpos,dmask, dt, nstep, twin, self_norm, data, irf, ref, sd, type_fwd)
 %% Jacobain options
-USEGPU = 0;
+USEGPU = 0;%gpuDeviceCount;
 LOAD_JACOBIAN = solver.prejacobian.load;      % Load a precomputed Jacobian
 geom = 'semi-inf';
 % -------------------------------------------------------------------------
@@ -123,8 +123,7 @@ J(mask,:) = [];
 %solver.prior = solver.prior .* (1 + 0.01*randn(size(solver.prior)));
 %[L,~] = StructuredLaplacianPrior(solver.prior.refimage,siz_prior(1),siz_prior(2),siz_prior(3));
 k3d = Kappa(solver.prior.refimage,5);
-[Dy,Dx,Dz] = gradientOperator(permute(grid.dim,[2,1,3])',...
-   [grid.dy,grid.dx,grid.dz],[],'none');
+[Dx,Dy,Dz] = gradientOperator(grid.dim,[1,1,1],[],'none');
 L = [sqrt(k3d)*Dx;sqrt(k3d)*Dy;sqrt(k3d)*Dz];
 %% Solver
 disp('Calculating the larger singular value');
@@ -136,59 +135,55 @@ for ip = 1:p
 end
 
 %% case Lcurve or direct solution
+b = [dphi;zeros(p*3*nsol/p,1)];
+if USEGPU
+    gpu = gpuDevice; %#ok<UNRCH>
+    disp('Using GPU');
+    %J = gpuArray(J);
+    b = gpuArray(b);
+    %dphiG = gpuArray(dphi);
+    %L1 = gpuArray(L1);
+end
+
 if numel(solver.tau)>1
-    if ~USEGPU
     for i = 1:numel(solver.tau)
-        alpha = solver.tau(i)*s(1); %#ok<NOPRT>
+        alpha = solver.tau(i)*s(1); 
         disp(['Solving for tau = ',num2str(solver.tau(i))]);
         tic;
-        dx = lsqr([J;alpha*L1],[dphi;zeros(p*3*nsol/p,1)],1e-6,10000);
+        if USEGPU
+            A = [J;alpha*L1]; %#ok<UNRCH>
+            A = gpuArray(A);
+            dx = lsqr(A*1e10,b*1e10,1e-6,1000);
+        else
+            dx = lsqr([J;alpha*L1],b,1e-6,1000);
+        end
         toc;
         %dx = [J;(alpha)*L]\[dphi;zeros(3*nsol,1)];
-        res(i) = norm(J*dx-dphi); %#ok<AGROW>
-        prior(i) = norm(L1*dx); %#ok<AGROW>
+        res(i) = gather(norm(J*dx-dphi)); %#ok<AGROW>
+        prior(i) = gather(norm(L1'*L1*dx)); %#ok<AGROW>
         figure(144),loglog(res,prior,'-o'),title('L-curve');
         text(res,prior,num2cell(solver.tau(1:i)));xlabel('residual');ylabel('prior');
     end
-    else
-        gpu = gpuDevice;
-        J = gpuArray(J);
-        b = gpuArray([full(dphi);zeros(p*3*nsol/p,1)]);
-        %dphiG = gpuArray(dphi);
-        L1 = gpuArray(full(L1));
-        for i = 1:numel(solver.tau)
-            alpha = solver.tau(i)*s(1);
-            disp(['Solving for tau = ',num2str(solver.tau(i))]);
-            tic;
-            dx = lsqr([J;alpha*L1],b,1e-6,10000);
-            toc;
-            res(i) = gather(norm(J*dx-dphi));
-            prior(i) = gather(norm(L1*dx)); %#ok<AGROW>
-            figure(144),loglog(res,prior,'-o'),title('L-curve');
-            text(res,prior,num2cell(solver.tau(1:i)));xlabel('residual');ylabel('prior');
-        end
-    end
-        
-        
-        
-    
+           
     tau = solver.tau;
     save('LcurveData','res','prior','tau');
-    tau_suggested = l_corner(flip(res)',flip(prior)',flip(tau));
-    disp(['Suggested tau = ',num2str(tau_suggested)]);
+%     tau_suggested = l_corner(flip(res)',flip(prior)',flip(tau));
+%     disp(['Suggested tau = ',num2str(tau_suggested)]);
     pause;
     tau_sel = inputdlg('Choose tau');
     solver.tau = str2double(tau_sel{1});
 end
-    
 %% final solution
 alpha = solver.tau * s(1);
 disp(['Solving for tau = ',num2str(solver.tau)]);
-dx = lsqr([J;alpha*L1],[dphi;zeros(p*3*nsol/p,1)],1e-6,10000);
-if USEGPU>0
+if USEGPU > 0
+    A = [J;alpha*L1];
+    A = gpuArray((A));
+    dx = lsqr(A*1e10,b*1e10,1e-6,1000);
     dx = gather(dx);
+else
+    dx = lsqr([J;alpha*L1],b,1e-6,1000);
 end
-
 
 %==========================================================================
 %%                        Add update to solution
