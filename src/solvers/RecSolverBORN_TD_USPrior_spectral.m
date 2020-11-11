@@ -165,17 +165,18 @@ if numel(solver.tau)>1
     for i = 1:numel(solver.tau)
         alpha = solver.tau(i)*s(1); 
         disp(['Solving for tau = ',num2str(solver.tau(i))]);
+        tic;
         if USEGPU
             A = [J;alpha*L1]; %#ok<UNRCH>
-            A = gpuArray(A);
+            A = gpuArray(sparse(A));
             dx = lsqr(A*1e10,b*1e10,1e-6,1000);
+        else
+            dx = lsqr([J;alpha*L1],b,1e-6,1000);
         end
-        tic;
-        dx = lsqr([J;alpha*L1],b,1e-6,1000);
         toc;
         %dx = [J;(alpha)*L]\[dphi;zeros(3*nsol,1)];
         res(i) = gather(norm(J*dx-dphi)); %#ok<AGROW>
-        prior(i) = gather(norm(L1'*L1*dx)); %#ok<AGROW>
+        prior(i) = gather(norm(L1*dx)); %#ok<AGROW>
         figure(144),loglog(res,prior,'-o'),title('L-curve');
         text(res,prior,num2cell(solver.tau(1:i)));xlabel('residual');ylabel('prior');
     end
@@ -193,9 +194,9 @@ alpha = solver.tau * s(1);
 disp(['Solving for tau = ',num2str(solver.tau)]);
 if USEGPU > 0
     %J(abs(J)<1e-3) = 0;
-    A = [sparse(J);alpha*L1];
-    Ag = gpuArray(A);
-    dx = lsqr(Ag*1e10,b*1e10,1e-6,1000);
+    A = [J;alpha*L1];
+    A = gpuArray(sparse(A));
+    dx = lsqr(A*1e10,b*1e10,1e-6,1000);
     dx = gather(dx);
 else
     dx = lsqr([J;alpha*L1],b,1e-6,1000);
