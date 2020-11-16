@@ -1,5 +1,5 @@
 function J = JacobianTD_multiwave_spectral(grid,Spos, Dpos, dmask, muaB, muspB, n, ...
-    A, dt, nstep, twin, irf, geom,type,type_fwd,radiometry,spe) %#ok<INUSL>
+    A, dt, nstep, twin, irf, geom,type,type_fwd,radiometry,spe,self_norm,logdata) %#ok<INUSL>
 
 nQM = sum(dmask(:));
 nV = grid.N;
@@ -26,7 +26,7 @@ if contains(lower(type),'mua')
         
         %J(meas_set,(1:nV*spe.nCromo))
         Ja(:,:,inl) = JacobianTD(grid,Spos, Dpos, dmask, muaB(inl), muspB(inl), n, ...
-            A, dt, nstep, twin(:,twin_set), irf(:,inl), geom,'mua','linear')*kron(ext_coeff0(inl,:),speye(nV));
+            A, dt, nstep, twin(:,twin_set), irf(:,inl), geom,'mua','linear',self_norm,logdata)*kron(ext_coeff0(inl,:),speye(nV));
         %clear ext_coeff_mat
     end
     J(:,(1:nV*spe.nCromo)) = reshape(permute(Ja,[1,3,2]),nTW*nQM*radiometry.nL,[]);
@@ -45,7 +45,7 @@ if contains(lower(type),'d')
         dD = -1/(3*(muspB(inl))^2);
         %Js(meas_set,ishift+(1:nV*2))
         Js(:,:,inl)= JacobianTD(grid,Spos, Dpos, dmask, muaB(inl), muspB(inl), n, ...
-            A, dt, nstep, twin(:,twin_set), irf(:,inl), geom,'d','linear')*dD*...
+            A, dt, nstep, twin(:,twin_set), irf(:,inl), geom,'d','linear',self_norm,logdata)*dD*...
             kron([(lambda(inl)./lambda0).^(-b0),(-a0.*(lambda(inl)./lambda0).^(-b0))*...
             log(lambda(inl)./lambda0)],speye(nV));
     end

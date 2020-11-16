@@ -105,8 +105,8 @@ DOT.opt.hete1.path ='../../3DMasks/malignant_4.mat' ;   % down
 %==========================================================================
 DOT.time.dt = (50e3/4096/6)*4;   % time step in picoseconds
 DOT.time.nstep = 1024;           % number of temporal steps
-DOT.time.noise = 'Poisson';         % 'Poisson','Gaussian','none'
-rng(222);                                 % if 'Poisson' and sigma>0 a
+DOT.time.noise = 'Poisson';      % 'Poisson','Gaussian','none'
+                                 % if 'Poisson' and sigma>0 a
                                  % Gaussian noise is added before
                                  % Poisson noise.
 DOT.time.sigma = 1e-3;              % variance for gaussian noise

@@ -30,10 +30,10 @@ Xr = {conc_,[a_ b_]};
 end
 
 % ---------------------- Solver and regularization ------------------------
-REC.solver.tau = 0.1;%logspace(-5,0,30);            % regularisation parameter
-REC.solver.type = 'spectral_tk1'; % 'born','GN': gauss-newton, 
+REC.solver.tau = 0.01;%logspace(-5,0,30);            % regularisation parameter
+REC.solver.type = 'spectral_usprior'; % 'tk0','GN': gauss-newton, 
                                   % 'tk1': first order Tichonov regul
-                                  % 'USprior': Simon's strutural prior
+                                  % 'USprior': tk1 + structural prior
                                   % 'LM': Levenberg-Marquardt,
                                   % 'l1': L1-based minimization
                                   % 'fit': fitting homogeneous data

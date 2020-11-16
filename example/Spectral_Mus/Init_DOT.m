@@ -66,7 +66,7 @@ DOT.opt.nE = 1.;        % external refractive index
 %==========================================================================
 DOT.grid.x1 = -32;
 DOT.grid.x2 = 32;
-DOT.grid.dx = 4;
+DOT.grid.dx = 6;
 
 DOT.grid.y1 = -29;
 DOT.grid.y2 = 29;           

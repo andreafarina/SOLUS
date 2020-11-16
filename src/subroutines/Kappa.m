@@ -15,6 +15,6 @@ kap3D = spdiags(reshape(kappa,[],1),0:0,nvox,nvox);
 %% plot
 if VERBOSITY == 1
     figure(180),
-    SubPlotMap(kappa,'Diffusivity Map',180,1,1,1,[4 4 1]);
+    SubPlotMap(kappa,'Diffusivity Map',180,1,1,1,[1 1 1]);
     drawnow
 end

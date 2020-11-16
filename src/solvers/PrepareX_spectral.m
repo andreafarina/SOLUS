@@ -1,4 +1,8 @@
-function [x0,x] = PrepareX0_spectral(spe,n,type)
+function [x0,x] = PrepareX_spectral(spe,n,type,xtransf)
+% Prepare X and X0 depending of the number of unknwons and transformation
+% required
+% E. Ferocino - Polimi - June 2018
+% A. Farina - CNR-IFN, November 2020
 
 switch lower(type)
     case 'mua'
@@ -14,7 +18,6 @@ switch lower(type)
         x0 = [x0 repmat([spe.opt.a0 spe.opt.b0],n,1)];
         x0 = reshape(x0,spe.nCromo*n+n*2,1);
 end
-
 switch lower(xtransf)
     case 'x'
         x = x0;
@@ -27,4 +30,3 @@ switch lower(xtransf)
     otherwise
         disp('Unknown X transform');
 end
-

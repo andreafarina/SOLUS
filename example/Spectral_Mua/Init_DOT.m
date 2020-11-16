@@ -12,7 +12,7 @@ RECONSTRUCTION = 1;     % Enable the reconstruction section.
 EXPERIMENTAL = 1;       % Enable experimental options below
 EXP_IRF = 1;            % Use the experimental IRF for forward and 
                         % reconstruction.
-EXP_DELTA = 'baric';      % Substitute the IRF with delta function on the 
+EXP_DELTA = 'all';      % Substitute the IRF with delta function on the 
                         % baricenter ('baric') or peak ('peak') of the IRF.
                         % 'all' to use the experimental IRF.                    
 EXP_DATA = 0;           % Load experimental data and use them for  ERA 0

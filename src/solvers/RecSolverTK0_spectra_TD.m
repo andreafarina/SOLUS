@@ -4,7 +4,7 @@
 % Andrea Farina 12/16
 %==========================================================================
 
-function [bmua,bmus,bconc,bA,bB] = RecSolverBORN_TD_spectral(solver,grid,mua0,mus0, n, A,...
+function [bmua,bmus,bconc,bA,bB] = RecSolverTK0_spectral_TD(solver,grid,mua0,mus0, n, A,...
     Spos,Dpos,dmask, dt, nstep, twin, self_norm, data, irf, ref, sd, fwd_type,radiometry,spe,conc0,a0,b0)
 
 %global factor
@@ -12,6 +12,10 @@ function [bmua,bmus,bconc,bA,bB] = RecSolverBORN_TD_spectral(solver,grid,mua0,mu
 %% Jacobain options
 LOAD_JACOBIAN = solver.prejacobian.load;      % Load a precomputed Jacobian
 geom = 'semi-inf';
+xtransf = '(x/x0)'; %log(x),x,log(x/x0)
+type_ratio = 'gauss';   % 'gauss', 'born', 'rytov';
+type_ref = 'theor';      % 'theor', 'meas', 'area'
+
 %% REGULARIZATION PARAMETER CRITERION
 NORMDIFF = 'sd';   % 'ref', 'sd'
 REGU = 'lcurve'; % 'lcurve', 'gcv', 'external'
@@ -20,43 +24,23 @@ BACKSOLVER = 'tikh'; % 'tikh', 'tsvd', 'discrep','simon', 'gmres', 'pcg', 'lsqr'
 nQM = sum(dmask(:));
 nwin = size(twin,1);
 % -------------------------------------------------------------------------
-[p,type_jac] = ExtractVariables(solver.variables);
+[p,type_jac] = ExtractVariables_spectral(solver.variables,spe);
+
+% if rytov and born jacobian is normalized to proj
+if strcmpi(type_ratio,'rytov')||strcmpi(type_ratio,'born')
+    logdata = true;
+else
+    logdata = false;
+end
 Jacobian = @(mua, mus) JacobianTD_multiwave_spectral (grid, Spos, Dpos, dmask, mua, mus, n, A, ...
-    dt, nstep, twin, irf, geom,type_jac,fwd_type,radiometry,spe);
-%% self normalise (probably useless because input data are normalize)
-% if self_norm == true
-% %     sh = 0;
-%     for inl = 1:radiometry.nL
-% %       meas_set = sh+(1:nQM);
-%         meas_set = (1:nQM)+(inl-1)*nQM;
-%         data(:,meas_set) = data(:,meas_set)*spdiags(1./sum(data(:,meas_set),1,'omitnan')',0,nQM,nQM);
-% %         sh = sh + nQM;
-%     end
-% end
-%% Inverse solver
-[proj, Aproj] = ForwardTD_multi_wave(grid,Spos, Dpos, dmask, mua0, mus0, n, ...
+    dt, nstep, twin, irf, geom,type_jac,fwd_type,radiometry,spe,self_norm,logdata);
+
+% homogeneous forward model
+[proj, ~] = ForwardTD_multi_wave(grid,Spos, Dpos, dmask, mua0, mus0, n, ...
     [],[], A, dt, nstep, self_norm,...
-    geom, fwd_type,radiometry);
-if numel(irf)>1
-    for inl = 1:radiometry.nL
-        meas_set =(1:nQM)+(inl-1)*nQM;
-        z = convn(proj(:,meas_set),irf(:,inl));
-        nmax = max(nstep,numel(irf(:,inl)));
-        if inl == 1
-            proj(1:nmax,meas_set) = z(1:nmax,:);
-            proj(nmax+1:end,:) = [];
-        else
-            proj(:,meas_set) = z(1:nmax,:);
-        end
-        clear nmax z
-    end
-end
-if self_norm == true
-    for inl = 1:radiometry.nL
-        meas_set = (1:nQM)+(inl-1)*nQM;
-        proj(:,meas_set) = proj(:,meas_set)*spdiags(1./sum(proj(:,meas_set),1,'omitnan')',0,nQM,nQM);
-    end
-end
+    geom, fwd_type,radiometry,irf);
+
+%% Window TPSF for each wavelength
 dummy_proj = zeros(size(twin,1),nQM*radiometry.nL);
 for inl = 1:radiometry.nL
     meas_set = (1:nQM)+(inl-1)*nQM; twin_set = (1:2)+(inl-1)*2;
@@ -65,42 +49,17 @@ for inl = 1:radiometry.nL
     dummy_proj(:,meas_set) = proj_single;
 end
 proj = dummy_proj;
-proj = proj(:);
-ref = ref(:);
-data = data(:);
-factor = proj./ref;
-factor = factor(:);
+clear dummy_proj
 
+[dphi,sd] = PrepareDataFitting(data,ref,sd,type_ratio,type_ref,proj);
 
-data = data .* factor;
-ref = proj(:);%ref .* factor;
-%% data scaling
-sd = sd(:).*(factor);
-%sd = proj(:);%ref(:);%proj(:);
-%sd = ones(size(proj(:)));
-if ref == 0 %#ok<BDSCI>
-    ref = proj(:);
-end
-%% mask for excluding zeros
-mask = ((ref(:).*data(:)) == 0) | ...
-    (isnan(ref(:))) | (isnan(data(:))) | (isinf(data(:)));
-%mask = false(size(mask));
+% creat mask for nan, isinf
+mask = (isnan(dphi(:))) | (isinf(dphi(:)));
+dphi(mask) = [];
 
-
-
-
-ref(mask) = [];
-data(mask) = [];
-
-%sd(mask) = [];
 % solution vector
-x0 = PrepareX0_spectral(spe,grid.N,type_jac);
-x = ones(size(x0));
+[x0,x] = PrepareX_spectral(spe,grid.N,type_jac,xtransf);
 
-if strcmpi(NORMDIFF,'sd'), dphi = (data(:)-ref(:))./sd(~mask); end
-if strcmpi(NORMDIFF,'ref'), dphi = (data(:)-ref(:))./ref(:); end
-%dphi = log(data(:)) - log(ref(:));
-%save('dphi','dphi');
 % ---------------------- Construct the Jacobian ---------------------------
 
 if LOAD_JACOBIAN == true
@@ -134,24 +93,16 @@ if ~isempty(solver.prior.refimage)
     D = [d1(:),d2(:)];
     J = J * D;
 end
-if self_norm == true
-    for inl = 1:radiometry.nL
-        for i=1:nQM
-            sJ = sum(J((1:nwin)+(i-1)*nwin+(inl-1)*nQM*nwin,:),1,'omitnan');
-            sJ = repmat(sJ,nwin,1);
-            sJ = spdiags(proj((1:nwin)+(i-1)*nwin+(inl-1)*nQM*nwin),0,nwin,nwin) * sJ;
-            J((1:nwin)+(i-1)*nwin+(inl-1)*nQM*nwin,:) =...
-                (J((1:nwin)+(i-1)*nwin+(inl-1)*nQM*nwin,:) - sJ)./Aproj(i,inl);
-        end
-    end
-end
 
-if strcmpi(NORMDIFF,'sd'), J = spdiags(1./sd(:),0,numel(sd),numel(sd)) * J;  end % data normalisation
-if strcmpi(NORMDIFF,'ref'), J = spdiags(1./proj(:),0,numel(proj),numel(proj)) * J;  end % data normalisation
 
+% sd jacobian normalization
+J = spdiags(1./sd(:),0,numel(sd),numel(sd)) * J;
 nsol = size(J,2);
-%   parameter normalisation (scale x0)
-J = J * spdiags(x0,0,length(x0),length(x0));
+
+% parameter normalisation (scale x0)
+if ~strcmpi(xtransf,'x')
+    J = J * spdiags(x0,0,length(x0),length(x0));
+end
 
 J(mask,:) = [];
 
@@ -251,9 +202,9 @@ if ~isempty(solver.prior.refimage)
     dx = D * dx;
 end
 x = x + dx;
-%logx = logx + dx;
-%x = exp(logx);
-x = x.*x0;
+
+x = BackTransfX(x,x0,xtransf);
+
 [bmua,bmus,bconc,bAB] = XtoMuaMus_spectral(x,mua0,mus0,type_jac,spe,conc0,a0,b0);
 bA = bAB(:,1);bB = bAB(:,2);
 

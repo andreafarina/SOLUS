@@ -1,9 +1,11 @@
 function [phi,Area]=ForwardTD_multi_wave(grid,SourcePos,DetectorPos, dmask,...
-        muaB,muspB,nB,Mua,Musp,A, dt, nstep, self_norm, geom, TYPE_FWD, radiometry)
+        muaB,muspB,nB,Mua,Musp,A, dt, nstep, self_norm, geom, TYPE_FWD, radiometry,irf)
 nQM = sum(dmask(:));   
 phi = zeros(nstep,nQM,radiometry.nL);
 Area = zeros(nQM,radiometry.nL);
-
+if nargin<17
+    irf = [];
+end
     lambda = radiometry.lambda;
     for inl = 1:radiometry.nL
         fprintf(['<strong>------- Wavelength ',num2str(lambda(inl)),'-------</strong>\n'])
@@ -14,11 +16,16 @@ Area = zeros(nQM,radiometry.nL);
             MuaData = squeeze(Mua(:,:,:,inl));
             MusData = squeeze(Musp(:,:,:,inl));
         end
-        %[phi(:,meas_set),Area(1:nQM,inl)] 
+        %[phi(:,meas_set),Area(1:nQM,inl)]
+        if ~isempty(irf)
+            irf_lambda = irf(:,inl);
+        else
+            irf_lambda = [];
+        end
         [phi_,Area_] = ForwardTD(grid,SourcePos, DetectorPos, dmask,...
             muaB(inl), muspB(inl),nB, MuaData,...
             MusData, A, dt,...
-            nstep, self_norm, geom, TYPE_FWD);
+            nstep, self_norm, geom, TYPE_FWD,irf_lambda);
             phi(:,:,inl) = phi_;
             Area(:,inl) = Area_;
         dummy_phi = phi_;
