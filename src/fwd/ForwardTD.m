@@ -1,8 +1,8 @@
-function [phi, Area] = ForwardTD(grid,Spos, Dpos, dmask, muaB, muspB, n, ...
-    Mua, Musp, A, dt, nstep, self_norm, geom, FWD_TYPE)
+function [phi, Area] = ForwardTD(grid,Spos, Dpos, dmask, muaB, muspB, refind, ...
+    Mua, Musp, A, dt, nstep, self_norm, geom, FWD_TYPE,irf)
 global mesh
 DEBUG = 0;
-v = 0.2999/n;
+v = 0.2999/refind;
 
 Ns = size(Spos,1);
 %Nd = size(Dpos,1);
@@ -12,6 +12,10 @@ t = (1:nstep) * dt;
 t = t';
 DiffB = 1./(3*muspB);
 Diff = 1./(3*Musp);
+
+if nargin<16
+    irf = [];
+end
 switch lower(FWD_TYPE)
     case 'linear'
         % understand homo/hetero
@@ -99,7 +103,7 @@ switch lower(FWD_TYPE)
             musp = ones(mesh.hMesh.NodeCount,1).*muspB;
         end
         [phi,~] = ProjectFieldTD(mesh.hMesh,mesh.qvec,mesh.mvec,...
-            dmask, mua,musp,0,0,n.*ones(size(mesh.opt.mua)),dt,nstep,0,0,'diff',0);
+            dmask, mua,musp,0,0,refind*ones(size(mesh.opt.mua)),dt,nstep,0,0,'diff',0);
         if DEBUG == 1
             row_off = 0;
             for i = 1:Ns
@@ -122,9 +126,12 @@ end
 if nargout > 1
     Area = sum(phi,'omitnan');
 end
+phi = ConvIRF(phi,irf);
+
 if self_norm == true
     Area = sum(phi,'omitnan');
-    phi = bsxfun(@times,phi,1./Area);
+    phi = NormalizeTPSF(phi);
+    %phi = bsxfun(@times,phi,1./Area);
 end
 
 

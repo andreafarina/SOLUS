@@ -153,4 +153,4 @@ end
 %                   RADIOMETRY==0, the count-rate for each delay is cut to 
 %                         DOT.time.TotCounts in any case.  
 CUT_COUNTS = 1;         
-NumDelays = 3;      % number of delays  
+NumDelays = 1;      % number of delays  

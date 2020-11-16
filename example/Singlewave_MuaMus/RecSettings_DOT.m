@@ -17,17 +17,17 @@ NUM_TW = 20;            % Number of Time Windows within ROI
 % --------------------------- Optical properties --------------------------
 REC.solver.variables = {'mua','mus'}; % variables mua,mus.
 REC.opt.mua0 = 0.01;    % absorption [mm-1]
-REC.opt.musp0 = 1.0;      % reduced scattering [mm-1]
+REC.opt.musp0 = 1.0;    % reduced scattering [mm-1]
 REC.opt.nB = 1.4;
 mua_ = 0.01;
 musp_ = 1.0;
 Xr = {mua_,musp_}; 
 
 % ---------------------- Solver and regularization ------------------------
-REC.solver.tau = 0.005;            % regularisation parameter
-REC.solver.type = 'tk1';          % 'born','GN': gauss-newton, 
+REC.solver.tau = 0.003;            % regularisation parameter
+REC.solver.type = 'tk1';          % 'tk0','GN': gauss-newton, 
                                   % 'tk1': first order Tichonov regul
-                                  % 'USprior': Simon's strutural prior
+                                  % 'USprior': tk1+structural prior
                                   % 'LM': Levenberg-Marquardt,
                                   % 'l1': L1-based minimization
                                   % 'fit': fitting homogeneous data

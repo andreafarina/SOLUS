@@ -1,97 +1,56 @@
 %==========================================================================
 % This function contains solvers for DOT or fDOT.
 % Andrea Farina 04/17
+% Andrea Farina 11/2020: simplified normalizations of X, Jac, Data, dphi
 %==========================================================================
 
-function [bmua,bmus] = RecSolverBORN_TD_USPrior(solver,grid,mua0,mus0, n, A,...
+function [bmua,bmus] = RecSolverTK1_TD(solver,grid,mua0,mus0, n, A,...
     Spos,Dpos,dmask, dt, nstep, twin, self_norm, data, irf, ref, sd, type_fwd)
 %% Jacobain options
 USEGPU = 0;%gpuDeviceCount;
 LOAD_JACOBIAN = solver.prejacobian.load;      % Load a precomputed Jacobian
 geom = 'semi-inf';
-% -------------------------------------------------------------------------
-nQM = sum(dmask(:));
-nwin = size(twin,1);
+xtransf = '(x/x0)'; %log(x),x,log(x/x0)
+type_ratio = 'gauss';   % 'gauss', 'born', 'rytov';
+type_ref = 'theor';      % 'theor', 'meas', 'area'
+
 % -------------------------------------------------------------------------
 [p,type] = ExtractVariables(solver.variables);
+
+% if rytov and born jacobian is normalized to proj
+if strcmpi(type_ratio,'rytov')||strcmpi(type_ratio,'born')
+    logdata = true;
+else
+    logdata = false;
+end
 Jacobian = @(mua, mus) JacobianTD (grid, Spos, Dpos, dmask, mua, mus, n, A, ...
-    dt, nstep, twin, irf, geom,type,type_fwd);
-%% self normalise (probably useless because input data are normalize)
-if self_norm == true
-        data = data * spdiags(1./sum(data)',0,nQM,nQM);
-        ref = ref * spdiags(1./sum(ref)',0,nQM,nQM);
-end
-%% Inverse solver
+    dt, nstep, twin, irf, geom,type,type_fwd,self_norm,logdata);
+
 % homogeneous forward model
-[proj, Aproj] = ForwardTD(grid,Spos, Dpos, dmask, mua0, mus0, n, ...
-    [],[], A, dt, nstep, self_norm,...
-    geom, 'linear');
-
-% Convolution with IRF
-if numel(irf)>1
-    z = convn(proj,irf);
-    nmax = max(nstep,numel(irf));
-    proj = z(1:nmax,:);
-    clear nmax z
-end
-    if self_norm == true
-        proj = proj * spdiags(1./sum(proj,'omitnan')',0,nQM,nQM);
-    end
+[proj, ~] = ForwardTD(grid,Spos, Dpos, dmask, mua0, mus0, n, ...
+    [],[], A, dt, nstep, self_norm, geom, 'linear', irf);
     
-
 proj = WindowTPSF(proj,twin);
-proj = proj(:);
-ref = ref(:);
-data = data(:);
 
-factor = proj./ref;
-% load('factor_ref.mat')
-% factor = repmat(factor,[nwin 1]);
+[dphi,sd] = PrepareDataFitting(data,ref,sd,type_ratio,type_ref,proj);
 
-factor = factor(:);
-if self_norm == true
-    factor = 1;
-end
-data = data .* factor;
-ref = proj(:);%ref .* factor;
-%% data scaling
-sd = sd(:).*factor;%sqrt(factor);   % Because of the Poisson noise
-%sd = proj(:);
-%sd = ones(size(proj(:)));
-%% mask for excluding zeros,nan,inf
-mask = ((ref(:).*data(:)) == 0) | ...
-    (isnan(ref(:))) | (isnan(data(:))) | ...
-    (isinf(data(:))) | (isinf(ref(:)));
-%mask = false(size(mask));
+%% creat mask for nan, ising
+mask = (isnan(dphi(:))) | (isinf(dphi(:)));
+dphi(mask) = [];
 
-if ref == 0 %#ok<*BDSCI>
-   ref = proj(:);
-end
-
-ref(mask) = [];
-data(mask) = [];
-
-%sd(mask) = [];
 % solution vector
-x0 = PrepareX0([mua0,1./(3*mus0)],grid.N,type);
-x = ones(size(x0));
+[x0,x] = PrepareX([mua0,1./(3*mus0)],grid.N,type,xtransf);
 
-dphi = (data(:)-ref(:))./sd(~mask);%./ref(:);
-%sd = proj(:);
-%dphi = log(data(:)) - log(ref(:));
-%save('dphi','dphi');
 % ---------------------- Construct the Jacobian ---------------------------
 if LOAD_JACOBIAN == true
     fprintf (1,'Loading Jacobian\n');
     tic;
-    %load([jacdir,jacfile])
     load(solver.prejacobian.path);
     toc;
 else
-    %fprintf (1,'Calculating Jacobian\n');
     tic;
     J = Jacobian ( mua0, mus0);
-    [jpath,jname,jext] = fileparts(solver.prejacobian.path);
+    [jpath,~,~] = fileparts(solver.prejacobian.path);
     if ~exist(jpath,'dir')
         mkdir(jpath)
     end
@@ -99,25 +58,19 @@ else
     toc;
 end
 
-if self_norm == true
-    for i=1:nQM
-        sJ = sum(J((1:nwin)+(i-1)*nwin,:),'omitnan');
-        sJ = repmat(sJ,nwin,1);
-        sJ = spdiags(proj((1:nwin)+(i-1)*nwin),0,nwin,nwin) * sJ;
-        J((1:nwin)+(i-1)*nwin,:) = (J((1:nwin)+(i-1)*nwin,:) - sJ)./Aproj(i);
-    end
+% sd jacobian normalization
+J = spdiags(1./sd(:),0,numel(sd),numel(sd)) * J;
+nsol = size(J,2);
+
+% parameter normalisation (scale x0)
+if ~strcmpi(xtransf,'x')
+    J = J * spdiags(x0,0,length(x0),length(x0));
 end
 
-J = spdiags(1./sd(:),0,numel(sd),numel(sd)) * J;  % data normalisation
-nsol = size(J,2);
-%   parameter normalisation (scale x0)
-J = J * spdiags(x0,0,length(x0),length(x0));
-   
 J(mask,:) = [];
 
 
 %% Structured laplacian prior
-
 %siz_prior = size(solver.prior.refimage);
 %solver.prior(solver.prior == max(solver.prior(:))) = 1.1*min(solver.prior(:)); 
 %solver.prior = solver.prior .* (1 + 0.01*randn(size(solver.prior)));
@@ -190,9 +143,8 @@ end
 %==========================================================================
 
 x = x + dx;
-%logx = logx + dx;
-%x = exp(logx);
-x = x.*x0;
+
+x = BackTransfX(x,x0,xtransf);
 [bmua,bmus] = XtoMuaMus(x,mua0,mus0,type);
 
 

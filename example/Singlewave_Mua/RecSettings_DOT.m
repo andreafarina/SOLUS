@@ -30,10 +30,10 @@ REC.opt.nB = 1.4;
 % end
 
 % ---------------------- Solver and regularization ------------------------
-REC.solver.tau = 0.05;%logspace(-5,0,30);            % regularisation parameter
-REC.solver.type = 'tk1';          % 'born','GN': gauss-newton, 
+REC.solver.tau = 0.005;%logspace(-5,0,30);            % regularisation parameter
+REC.solver.type = 'tk1';          % 'tk0','GN': gauss-newton, 
                                   % 'tk1': first order Tichonov regul
-                                  % 'USprior': Simon's strutural prior
+                                  % 'USprior': tk1+structural prior
                                   % 'LM': Levenberg-Marquardt,
                                   % 'l1': L1-based minimization
                                   % 'fit': fitting homogeneous data

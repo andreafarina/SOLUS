@@ -2,89 +2,51 @@
 % This function contains solvers for DOT or fDOT.
 % To have available all the functionalty install REGU toolbox
 % Andrea Farina 12/16
+% Andrea Farina 11/2020: simplified normalizations of X, Jac, Data, dphi
 %==========================================================================
 
-function [bmua,bmus,reg_par] = RecSolverBORN_TD(solver,grid,mua0,mus0, n, A,...
-    Spos,Dpos,dmask, dt, nstep, twin, self_norm, data, irf, ref, sd, fwd_type, lambda)
-%global factor
-%ref = 0;
+function [bmua,bmus,reg_par] = RecSolverTK0_TD(solver,grid,mua0,mus0, n, A,...
+    Spos,Dpos,dmask, dt, nstep, twin, self_norm, data, irf, ref, sd, type_fwd, lambda)
+
 %% Jacobain options
 LOAD_JACOBIAN = solver.prejacobian.load;      % Load a precomputed Jacobian
 geom = 'semi-inf';
+xtransf = '(x/x0)'; %log(x),x,log(x/x0)
+type_ratio = 'gauss';   % 'gauss', 'born', 'rytov';
+type_ref = 'theor';      % 'theor', 'meas', 'area'
+
 %% REGULARIZATION PARAMETER CRITERION
-NORMDIFF = 'sd';   % 'ref', 'sd'
 %REGU = 'external'; % 'lcurve', 'gcv', 'external'
 REGU = 'lcurve'; 
 BACKSOLVER = 'tikh'; % 'tikh', 'tsvd', 'discrep','simon', 'gmres', 'pcg', 'lsqr'
 % -------------------------------------------------------------------------
-nQM = sum(dmask(:));
-nwin = size(twin,1);
-% -------------------------------------------------------------------------
-[p,type_jac] = ExtractVariables(solver.variables);
-Jacobian = @(mua, mus) JacobianTD (grid, Spos, Dpos, dmask, mua, mus, n, A, ...
-    dt, nstep, twin, irf, geom,type_jac,fwd_type);
-%% self normalise (probably useless because input data are normalize)
-% if self_norm == true
-%         data = data * spdiags(1./sum(data,'omitnan')',0,nQM,nQM);
-%         ref = ref * spdiags(1./sum(ref,'omitnan')',0,nQM,nQM);
-% end
-%% Inverse solver
-[proj, Aproj] = ForwardTD(grid,Spos, Dpos, dmask, mua0, mus0, n, ...
-                [],[], A, dt, nstep, self_norm,...
-                geom, fwd_type);
-if numel(irf)>1
-    z = convn(proj,irf);
-    nmax = max(nstep,numel(irf));
-    proj = z(1:nmax,:);
-    clear nmax z
+[~,type] = ExtractVariables(solver.variables);
+
+% if rytov and born jacobian is normalized to proj
+if strcmpi(type_ratio,'rytov')||strcmpi(type_ratio,'born')
+    logdata = true;
+else
+    logdata = false;
 end
-    if self_norm == true
-        proj = proj * spdiags(1./sum(proj,'omitnan')',0,nQM,nQM);
-    end
+Jacobian = @(mua, mus) JacobianTD (grid, Spos, Dpos, dmask, mua, mus, n, A, ...
+    dt, nstep, twin, irf, geom,type,type_fwd,self_norm,logdata);
+
+% homogeneous forward model
+[proj, ~] = ForwardTD(grid,Spos, Dpos, dmask, mua0, mus0, n, ...
+    [],[], A, dt, nstep, self_norm, geom, 'linear', irf);
     
 proj = WindowTPSF(proj,twin);
 
-proj = proj(:);
-ref = ref(:);
-data = data(:);
-factor = proj./ref;
-factor = factor(:);
-if self_norm == true
-    factor = 1;
-end
+[dphi,sd] = PrepareDataFitting(data,ref,sd,type_ratio,type_ref,proj);
 
-data = data .* factor;
+% creat mask for nan, ising
+mask = (isnan(dphi(:))) | (isinf(dphi(:)));
+dphi(mask) = [];
 
-ref = proj(:);%ref .* factor;
-%% data scaling
-sd = sd(:).*(factor);
-%sd = proj(:);%ref(:);%proj(:);
-%sd = ones(size(proj(:)));
-if ref == 0 %#ok<BDSCI>
-    ref = proj(:);
-end
-%% mask for excluding zeros
-mask = ((ref(:).*data(:)) == 0) | ...
-    (isnan(ref(:))) | (isnan(data(:))) | (isinf(data(:)));
-%mask = false(size(mask));
-
-
-
-
-ref(mask) = [];
-data(mask) = [];
-
-%sd(mask) = [];
 % solution vector
-x0 = PrepareX0([mua0,1./(3*mus0)],grid.N,type_jac);
-x = ones(size(x0));
+[x0,x] = PrepareX([mua0,1./(3*mus0)],grid.N,type,xtransf);
 
-if strcmpi(NORMDIFF,'sd'), dphi = (data(:)-ref(:))./sd(~mask); end
-if strcmpi(NORMDIFF,'ref'), dphi = (data(:)-ref(:))./ref(:); end
-%dphi = log(data(:)) - log(ref(:));
-%save('dphi','dphi');
 % ---------------------- Construct the Jacobian ---------------------------
-
 if LOAD_JACOBIAN == true
     fprintf (1,'Loading Jacobian\n');
     tic;
@@ -95,8 +57,7 @@ else
     %fprintf (1,'Calculating Jacobian\n');
     tic;
     J = Jacobian ( mua0, mus0);
-    
-    [jpath,jname,jext] = fileparts(solver.prejacobian.path);
+    [jpath,~,~] = fileparts(solver.prejacobian.path);
     if ~exist(jpath,'dir')
         mkdir(jpath)
     end
@@ -116,24 +77,19 @@ if ~isempty(solver.prior.refimage)
     D = [d1(:),d2(:)];
     J = J * D;
 end
-if self_norm == true
-    for i=1:nQM
-        sJ = sum(J((1:nwin)+(i-1)*nwin,:),'omitnan');
-        sJ = repmat(sJ,nwin,1);
-        sJ = spdiags(proj((1:nwin)+(i-1)*nwin),0,nwin,nwin) * sJ;
-        J((1:nwin)+(i-1)*nwin,:) = (J((1:nwin)+(i-1)*nwin,:) - sJ)./Aproj(i);
-    end
+
+% sd jacobian normalization
+J = spdiags(1./sd(:),0,numel(sd),numel(sd)) * J;
+nsol = size(J,2);
+
+% parameter normalisation (scale x0)
+if ~strcmpi(xtransf,'x')
+    J = J * spdiags(x0,0,length(x0),length(x0));
 end
 
-if strcmpi(NORMDIFF,'sd'), J = spdiags(1./sd(:),0,numel(sd),numel(sd)) * J;  end % data normalisation
-if strcmpi(NORMDIFF,'ref'), J = spdiags(1./proj(:),0,numel(proj),numel(proj)) * J;  end % data normalisation
-nsol = size(J,2);
-%   parameter normalisation (scale x0)
-J = J * spdiags(x0,0,length(x0),length(x0));
-  
 J(mask,:) = [];
 
-%% Solver 
+%% ====== Solver =======
 disp('Calculating singolar values');
 %if ~strcmpi((BACKSOLVER),'simon')
 [U,s,V]=csvd(J);     % compact SVD (Regu toolbox)
@@ -153,16 +109,14 @@ if ~exist('alpha','var')
     end
     
 end
-disp(['alpha = ' num2str(alpha)]);
+disp(['tau = ' num2str(alpha/s(1))]);
 disp('Solving...')
 switch lower(BACKSOLVER)
     case 'tikh'
         disp('Tikhonov');
-        
         [dx,~] = tikhonov(U,s,V,dphi,alpha);
     case 'tsvd'
         disp('TSVD');
-        
         [dx,~] = tsvd(U,s,V,dphi,alpha);
     case 'discrep'
         disc_value = norm(sd(~mask))*10;
@@ -176,8 +130,7 @@ switch lower(BACKSOLVER)
 %         alpha = solver.tau * s1;
         dx = [J;sqrt(alpha)*speye(nsol)]\[dphi;zeros(nsol,1)];
         %dx = [dx;zeros(nsol,1)];
-   
-    
+  
 %rho
 %cond(J)
 %dx = [dx;zeros(nsol,1)];
@@ -210,8 +163,7 @@ switch lower(BACKSOLVER)
             alpha = alpha * lambda;
             disp(['alpha=' num2str(alpha)]);
         end
-        
-        
+                
         dx = lsqr([J;alpha*speye(nsol)],[dphi;zeros(nsol,1)],1e-6,200);
 
         toc;
@@ -225,10 +177,9 @@ if ~isempty(solver.prior.refimage)
     dx = D * dx;
 end
 x = x + dx;
-%logx = logx + dx;
-%x = exp(logx);
-x = x.*x0;
-[bmua,bmus] = XtoMuaMus(x,mua0,mus0,type_jac);
+
+x = BackTransfX(x,x0,xtransf);
+[bmua,bmus] = XtoMuaMus(x,mua0,mus0,type);
 reg_par = alpha;
 
 end
