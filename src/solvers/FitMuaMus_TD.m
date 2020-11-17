@@ -3,43 +3,43 @@
 % homogeneous phantom using routines in Matlab Optimization Toolbox
 %
 % Andrea Farina 10/15
+% Andrea Farina 11/20 fixed error arising by fitting with fraction
 %==========================================================================
 
 function [bmua,bmus] = FitMuaMus_TD(~,grid,mua0,mus0, n, A,...
-    Spos,Dpos,dmask, dt, nstep, twin, self_norm, data, irf, ref, sd,verbosity)
+    Spos,Dpos,dmask, dt, nstep, twin, self_norm, data, irf, ref, sd, type_fwd)
 geom = 'semi-inf';
-weight_type = 'none'; % 'none','rect'
-fract_first = 0.7; fract_last = 0.1;
-self_norm = true;
-data2 = data;%data;%ref;%data;%ref;
-
+weight_type = 'rect';%'none'; % 'none','rect'
+fract_first = 0.5; fract_last = 0.01;
+data = data;%ref;%data;%ref;
+data2 = data;
 nQM = sum(dmask(:));
 nwin = size(twin,1);
 Jacobian = @(mua, mus) JacobianTD (grid, Spos, Dpos, dmask, mua, mus, n, A, ...
-    dt, nstep, twin, irf, geom);
+    dt, nstep, twin, irf, geom, 'muaD', type_fwd, self_norm,0);
 %% Inverse solver
 [proj, Aproj] = ForwardTD(grid,Spos, Dpos, dmask, mua0, mus0, n, ...
                 [],[], A, dt, nstep, self_norm,...
-                geom,'linear');
-if numel(irf)>1
-    z = convn(proj,irf);
-    nmax = max(nstep,numel(irf));
-    proj = z(1:nmax,:);
-    clear nmax
-    
-    if self_norm == true
-        proj = proj * spdiags(1./sum(proj,'omitnan')',0,nQM,nQM);
+                geom,'linear',irf);
+    proj = WindowTPSF(proj,twin);
+    switch lower(weight_type)
+        case 'none'
+            if self_norm == true
+                proj = NormalizeTPSF(proj);
+            end
+        case 'rect'
+            [ROI,ROI_d] = ThresholdTPSF(data,fract_first,fract_last);
+            data = NormalizeTPSF(data.*ROI_d);
+            data = data(ROI);
+            sd = sd(ROI);
+            ref = ref(ROI);
+            
+            if self_norm == true
+                proj = NormalizeTPSF(proj.*ROI_d);
+            end
+            proj = proj(ROI);
     end
-    clear z
-end
-if self_norm == true
-        data = data * spdiags(1./sum(data,'omitnan')',0,nQM,nQM);
-        ref = ref * spdiags(1./sum(ref,'omitnan')',0,nQM,nQM);
-    end
-proj = WindowTPSF(proj,twin);
-if self_norm == true
-        proj = proj * spdiags(1./sum(proj,'omitnan')',0,nQM,nQM);
-end
+
 proj = proj(:);
 data = data(:);
 ref = ref(:);
@@ -59,12 +59,11 @@ if ref == 0
     ref = proj(:);
 end
 
-ref(mask) = []; %#ok<NASGU>
+ref(mask) = []; 
 data(mask) = [];
 proj(mask) = [];
 figure(1002);semilogy([proj,data]),legend('proj','ref')
-sd = sqrt(ref);%%ones(size(proj));%proj(:);
-%sd = ones(size(data));
+sd = sqrt(ref);
 
 data = data./sd;
 
@@ -99,11 +98,11 @@ opts = optimoptions('lsqcurvefit',...
 %x = fminunc(@objective,x0,opts);
 %x = fminsearch(@objective,x0);
 x0 = x;
-if strcmpi(weight_type,'none')
+%if strcmpi(weight_type,'none')
     x = lsqcurvefit(@forward,x0,[],data,[],[],opts);
-else    
-    x = fminunc(@Loss_func,x0);
-end
+%else    
+%    x = fminunc(@Loss_func,x0);
+%end
 %x = lsqnonlin(@objective2,x0,[],[],opts);
 
 %% Map parameters back to mesh
@@ -113,34 +112,31 @@ bmus = x(2)*ones(grid.N,1);
 
 
 %% display fit result
+% AF: occhio che mua0 e mus0 sono i valori da cui parte il fit e non quelli
+% simulati. Non ha senso calcolare l'errore su quei dati.
 fprintf(['<strong>mua = ',num2str(bmua(1)),'</strong>\n']);
 fprintf(['<strong>musp = ',num2str(bmus(1)),'</strong>\n']);
 fprintf(['<strong>t0 = ',num2str(x(3)),'</strong>\n']);
-display(['MuaErr= ',num2str(bmua(1)-mua0)])
-display(['MusErr= ',num2str(bmus(1)-mus0)])
-display(['MuaErr%= ',num2str(((bmua(1)-mua0)./mua0).*100)])
-display(['MusErr%= ',num2str(((bmus(1)-mus0)./mus0).*100)])
+% display(['MuaErr= ',num2str(bmua(1)-mua0)])
+% display(['MusErr= ',num2str(bmus(1)-mus0)])
+% display(['MuaErr%= ',num2str(((bmua(1)-mua0)./mua0).*100)])
+% display(['MusErr%= ',num2str(((bmus(1)-mus0)./mus0).*100)])
 %% extract the amplitude area
 self_norm = 0;
 mask = true(nwin*nQM,1);
-[proj_fit, Aproj_fit] = ForwardTD(grid,Spos, Dpos, dmask, x(1), x(2), n, ...
+[~, Aproj_fit] = ForwardTD(grid,Spos, Dpos, dmask, x(1), x(2), n, ...
                 [],[], A, dt, nstep, self_norm,...
-                geom, 'linear');
-proj_fit = circshift(proj_fit,round(x(3)/dt));
-if numel(irf)>1
-    z = convn(proj_fit,irf);
-    nmax = max(nstep,numel(irf));
-    proj_fit = z(1:nmax,:);
-    clear nmax
-end
-proj_fit = WindowTPSF(proj_fit,twin);
-Aproj_fit = sum(proj_fit);
+                geom, 'linear',irf);
+%proj_fit = circshift(proj_fit,round(x(3)/dt));
+
+%proj_fit = WindowTPSF(proj_fit,twin);
 A_data = sum(data2);
 factor = Aproj_fit./A_data;
 save('factor_ref.mat','factor');
+%% ===================== OBJECTIVE FUNCTIONS=============================
 
 %% Callback function for objective evaluation
-    function [p,g] = objective(x,~)
+    function [p,g] = objective(x,~) %#ok<DEFNU>
         verbosity = 1;
         xx = [x(1)*ones(nsol,1);x(2)*ones(nsol,1)];
         [mua,mus] = toastDotXToMuaMus(hBasis,xx,refind);
@@ -194,8 +190,9 @@ save('factor_ref.mat','factor');
             g = - 2 * J' * ((data-proj)./sd);
         end
     end
+
 %% Callback function for objective evaluation
-    function [p,J] = objective2(x,~)
+    function [p,J] = objective2(x,~) %#ok<DEFNU>
         xx = [x(1)*ones(nsol,1);x(2)*ones(nsol,1)];
         [mua,mus] = toastDotXToMuaMus(hBasis,xx,refind);
         mua(notroi) = mua0;
@@ -229,14 +226,7 @@ save('factor_ref.mat','factor');
             JJ = Jacobian (mua, mus, qvec, mvec);
             JJ = spdiags(1./sd,0,nQM*nwin,nQM*nwin) * JJ;
             % Normalized measruements
-            if self_norm == true
-                for i=1:nQM
-                    sJ = sum(JJ((1:nwin)+(i-1)*nwin,:),'omitnan');
-                    sJ = repmat(sJ,nwin,1);
-                    sJ = spdiags(proj((1:nwin)+(i-1)*nwin),0,nwin,nwin) * sJ;
-                    JJ((1:nwin)+(i-1)*nwin,:) = (JJ((1:nwin)+(i-1)*nwin,:) - sJ)./Aproj(i);
-                end
-            end
+            
             J(:,1) = - sum(JJ(:,1:nsol),2);
             J(:,2) = - sum(JJ(:,nsol + (1:nsol)),2);
        end
@@ -247,24 +237,25 @@ function [proj,J] = forward(x,~)
     t0 = x(3);
     [proj, Aproj] = ForwardTD(grid,Spos, Dpos, dmask, x(1), x(2), n, ...
                 [],[], A, dt, nstep, self_norm,...
-                geom, 'linear');
-   % [~,proj] = Contini1997(0,(1:nstep)*dt/1000,20,mua(1),mus(1),1,n(1),'slab','Dmus',200);
-   % proj = proj';%./sum(proj);
-    if numel(irf)>1
-        z = convn(proj,irf);
-        nmax = max(nstep,numel(irf));
-        proj = z(1:nmax,:);
-        clear nmax
-        if self_norm == true
-            proj = proj * spdiags(1./sum(proj,'omitnan')',0,nQM,nQM);
-        end
-        clear z
-    end
+                geom, 'linear',irf);
+   
     proj = circshift(proj,round(t0/dt));
     proj = WindowTPSF(proj,twin);
-    if self_norm == true
-        proj = proj * spdiags(1./sum(proj,'omitnan')',0,nQM,nQM);
+            
+    switch lower(weight_type)
+        case 'none'
+            if self_norm == true
+                proj = NormalizeTPSF(proj);
+            end
+        case 'rect'
+            if self_norm == true
+                proj = NormalizeTPSF(proj.*ROI_d);
+            end
+            proj = proj(ROI);
+            
     end
+        
+    
     proj(mask) = [];
     proj = proj(:)./sd;
     
@@ -275,24 +266,17 @@ function [proj,J] = forward(x,~)
     drawnow;
     nwin = size(twin,1);
     if nargout>1
-        JJ = Jacobian (mua, mus, qvec, mvec);
+        JJ = Jacobian (x(1), x(2));
         %save('J1','JJ');
         njac = size(JJ,2)/2;
         % Normalized measruements
-        if self_norm == true
-            for i=1:nQM
-                sJ = sum(JJ((1:nwin)+(i-1)*nwin,:),'omitnan');
-                sJ = repmat(sJ,nwin,1);
-                sJ = spdiags(proj((1:nwin)+(i-1)*nwin),0,nwin,nwin) * sJ;
-                JJ((1:nwin)+(i-1)*nwin,:) = (JJ((1:nwin)+(i-1)*nwin,:) - sJ)./Aproj(i);
-            end
-        end
+        
         J(:,1) = sum(JJ(:,1:njac),2);% * 0.3;
         J(:,2) = sum(JJ(:,njac + (1:njac)),2);% * 0.3;
        % J = spdiags(1./proj,0,nQM*nwin,nQM*nwin) * J;
     end
 end
-function L =  Loss_func(coeff,~)
+function L =  Loss_func(coeff,~) %#ok<DEFNU>
     fwd = forward(coeff);
     err_square = (fwd-data).^2;
     data_=reshape(data,numel(fwd)/nQM,nQM);
@@ -302,7 +286,7 @@ function L =  Loss_func(coeff,~)
             for im = 1:nQM
                 idx1 = find(data_(:,im)>max(data_(:,im))*fract_first,1,'first');
                 idx2 = find(data_(:,im)>max(data_(:,im))*fract_last,1,'last');
-                weight([idx1:idx2],im) = 1;
+                weight(idx1:idx2,im) = 1;
                 interval(1,im) = idx1+(im-1)*numel(fwd)/nQM; interval(2,im)= idx2+(im-1)*numel(fwd)/nQM;
             end
             L=sum(weight(:).*err_square);

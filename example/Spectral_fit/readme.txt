@@ -1,0 +1,1 @@
+In this example a nonlinear fitting using spectral constrains for the homogeneous model is performed.

@@ -5,34 +5,29 @@ REC.domain = 'td';          % CW or TD: data type to be inverted
 REC.type_fwd = 'linear';    % 'linear' or 'fem'.
 % -------------------------------------------------------------------------
 % REC.time.roi = [];
-REC.time.roi = [261 991;253 991;232 991;228 975;228 993;232 993;236 970;243 987];                        % ROI in time-step unit. 
+REC.time.roi = [259,919];
+                        % ROI in time-step unit. 
                         % If omitted, the ROI will be
                         % selected dinamically by the user.
-NUM_TW = 20;            % Number of Time Windows within ROI
+NUM_TW = diff(REC.time.roi); % Number of Time Windows within ROI
 % =========================================================================
 %%                        Initial parameter estimates 
 % =========================================================================
 % In this section all the parameter for the inverse solver are setted.
 % --------------------------- Optical properties --------------------------
-REC.solver.variables = {'mus'}; % variables mua,mus.
+REC.solver.variables = {'mua','mus'}; % variables mua,mus.
 REC.opt.mua0 = 0.01;    % absorption [mm-1]
-REC.opt.musp0 = 1.0;      % reduced scattering [mm-1]
+REC.opt.musp0 = 1.0;    % reduced scattering [mm-1]
 REC.opt.nB = 1.4;
-if SPECTRA == 0
-mua_ = [0.00335394973467767,0.00208272121572369,0.00328333490577450,0.0101311816365722,0.0113533356313992,0.00950065021456835,0.00907688587133433,0.00617935497869766];
-musp_ = [1.23400000000000,1.20133635788488,1.07935169073345,1.02799611957338,1.01423383723663,0.993319553161961,0.968909937001070,0.952855880308506];
+mua_ = 0.05;
+musp_ = 2.0;
 Xr = {mua_,musp_}; 
-else
-a_ = 1.234; b_ = 0.50;
-conc_ = [1.45 9.38 0.8186*10*100*0.91 0.1172*10*100 0.0453*10*100*0.196];
-Xr = {conc_,[a_ b_]};
-end
 
 % ---------------------- Solver and regularization ------------------------
-REC.solver.tau = 0.00001;            % regularisation parameter
-REC.solver.type = 'spectral_born';          % 'born','GN': gauss-newton, 
+REC.solver.tau = 0.003;            % regularisation parameter
+REC.solver.type = 'fit';          % 'tk0','GN': gauss-newton, 
                                   % 'tk1': first order Tichonov regul
-                                  % 'USprior': Simon's strutural prior
+                                  % 'USprior': tk1+structural prior
                                   % 'LM': Levenberg-Marquardt,
                                   % 'l1': L1-based minimization
                                   % 'fit': fitting homogeneous data

@@ -9,7 +9,7 @@ function [bMua,bMus,bmua,bmus] = SpectralFitMuaMus_TD(~,grid,mua0,mus0, n, A,...
     Spos,Dpos,dmask, dt, nstep, twin, self_norm, data, irf, ref, sd,~,radiometry,spe)
 geom = 'semi-inf';
 self_norm = true;
-weight_type = 'none'; %'rect';
+weight_type = 'rect'; %'rect';
 first_lim = 0.1; last_lim = 0.1;
 ForceConstitSolution = spe.ForceConstitSolution;
 
@@ -172,15 +172,15 @@ else
     if iscolumn(bmus), bmus = bmus'; end
     display(['a = '  num2str(x(end-1))]); display(['b =' num2str(x(end))]);
     display([char(spe.cromo_label) repmat('=',spe.nCromo,1) num2str(x(2:end-2))]);
-    disp([char(spe.cromo_label) repmat('=',spe.nCromo,1) num2str(x(2:end-2).*spe.cromo_factor') repmat(' ',spe.nCromo,1) char(spe.cromo_units)]);
+    disp([char(spe.cromo_label) repmat('=',spe.nCromo,1) num2str(x(2:end-2)) repmat(' ',spe.nCromo,1) char(spe.cromo_units)]);
 end
 fprintf(['<strong>mua = ',num2str(bmua),'</strong>\n']);
 fprintf(['<strong>musp = ',num2str(bmus),'</strong>\n']);
 display(['t0 = ',num2str(x(1))]);
-display(['MuaErr= ',num2str(bmua-mua0)])
-display(['MusErr= ',num2str(bmus-mus0)])
-display(['MuaErr%= ',num2str(((bmua-mua0)./mua0).*100)])
-display(['MusErr%= ',num2str(((bmus-mus0)./mus0).*100)])
+% display(['MuaErr= ',num2str(bmua-mua0)])
+% display(['MusErr= ',num2str(bmus-mus0)])
+% display(['MuaErr%= ',num2str(((bmua-mua0)./mua0).*100)])
+% display(['MusErr%= ',num2str(((bmus-mus0)./mus0).*100)])
 
 %% Map parameters back to mesh
 
