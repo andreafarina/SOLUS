@@ -29,7 +29,7 @@ switch lower(FWD_TYPE)
         else
             type = 'homo';
         end
-        %disp(['calculating Forward(',type,', ',geom,')']);
+        disp(['calculating Forward(',type,', ',geom,')']);
         
         switch lower(type)
             case 'homo'

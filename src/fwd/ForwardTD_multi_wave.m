@@ -8,15 +8,13 @@ if nargin<17
 end
     lambda = radiometry.lambda;
     for inl = 1:radiometry.nL
-        %fprintf(['<strong>------- Wavelength ',num2str(lambda(inl)),'-------</strong>\n'])
-        %meas_set = (1:nQM)+(inl-1)*nQM;
+        fprintf(['<strong>------- Wavelength ',num2str(lambda(inl)),'-------</strong>\n'])
         if isempty(Mua)||isempty(Musp)
             MuaData = []; MusData = [];
         else
             MuaData = squeeze(Mua(:,:,:,inl));
             MusData = squeeze(Musp(:,:,:,inl));
         end
-        %[phi(:,meas_set),Area(1:nQM,inl)]
         if ~isempty(irf)
             irf_lambda = irf(:,inl);
         else
