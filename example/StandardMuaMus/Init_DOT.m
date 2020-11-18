@@ -24,6 +24,7 @@ DOT.TD = 1;             % Time-domain: enable the calculation of TPSF
 DOT.sigma = 0;          % add gaussian noise to CW data
 % -------------------------------------------------------------------------
 RADIOMETRY = 1;         % apply radiometric inputs to simulated data
+SPECTRA = 0;
 % -------------------------------------------------------------------------
 SAVE_FWD = 1;           % Save forward data (possibly with noise) 
                         % in a _Data.m file

@@ -1,0 +1,1 @@
+In this example an absorbing and scattering perturbation is placed and a linear reconstruction using first-order Tikhonov regularization and spectral constrain is performed.

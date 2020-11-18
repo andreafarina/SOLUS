@@ -19,4 +19,6 @@ function idx = identify_inclusion(mu_recon)
     if isempty(idx)
         idx= find(mu_recon > 0 |mu_recon < 0);
     end
+
 end
+

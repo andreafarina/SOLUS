@@ -1,8 +1,9 @@
-function J = JacobianTD(grid,Spos, Dpos, dmask, muaB, muspB, n, ...
-    A, dt, nstep, twin, irf, geom,type,type_fwd)
+function J = JacobianTD(grid,Spos, Dpos, dmask, muaB, muspB, refind, ...
+    A, dt, nstep, twin, irf, geom,type,type_fwd,selfnorm,logdata)
 global mesh
 DEBUG = 0;
-v = 0.2999/n;
+v = 0.2999/refind;
+nQM = sum(dmask(:));
 switch lower(type_fwd)
     case 'linear'
         Ns = size(Spos,1);
@@ -14,7 +15,7 @@ switch lower(type_fwd)
         else
             n = grid.N;
         end
-        J = zeros(nwin*Nopt,n);
+        J = (zeros(nwin*Nopt,n));
         t = (1:nstep) * dt;
         t = t';
         
@@ -72,7 +73,7 @@ switch lower(type_fwd)
 
 
         J = toastJacobianTimedomain_INPROGRESS(mesh.hMesh,grid.hBasis,...
-            mesh.qvec, mesh.mvec, dmask, mua, musp, n*ones(N,1),dt,...
+            mesh.qvec, mesh.mvec, dmask, mua, musp, refind*ones(N,1),dt,...
             nstep,twin,irf, GRADIENT) * vscale * dt;
         if DEBUG == 1
             Ns = size(Spos,1);
@@ -126,5 +127,29 @@ switch lower(type_fwd)
         end
         
 end
+
+%% self-norm and logdata
+if selfnorm||logdata
+    [proj, Aproj] = ForwardTD(grid,Spos, Dpos, dmask, muaB, muspB, refind, ...
+    [],[], A, dt, nstep, selfnorm, geom, type_fwd, irf);
+    proj = WindowTPSF(proj,twin);
+end
+
+%% case self-normalized
+if selfnorm == true
+    for i=1:nQM
+        sJ = sum(J((1:nwin)+(i-1)*nwin,:),'omitnan');
+        sJ = repmat(sJ,nwin,1);
+        sJ = spdiags(proj((1:nwin)+(i-1)*nwin)',0,nwin,nwin) * sJ;
+        J((1:nwin)+(i-1)*nwin,:) = (J((1:nwin)+(i-1)*nwin,:) - sJ)./Aproj(i);
+    end
+end
+%% case logData
+if logdata
+    for i = 1:nQM*nwin
+        J(i,:) = J(i,:)./proj(i);
+    end
+end
+
 
 

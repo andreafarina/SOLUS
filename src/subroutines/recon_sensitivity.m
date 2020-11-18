@@ -13,7 +13,6 @@ function [contrast,  CNR] = recon_sensitivity(mu_recon, incl_idx,str_norm, vol_t
 
 
 
-
     mu_recon = mu_recon(:);
     if nargin < 2
         incl_idx = identify_inclusion(mu_recon(:));
@@ -21,6 +20,7 @@ function [contrast,  CNR] = recon_sensitivity(mu_recon, incl_idx,str_norm, vol_t
     if nargin < 3
        str_norm = 'else'; 
        mu0 = 0;
+
     end
         bin_incl_idx = false(numel(mu_recon),1);
         bin_incl_idx(incl_idx) = true;
@@ -30,10 +30,12 @@ function [contrast,  CNR] = recon_sensitivity(mu_recon, incl_idx,str_norm, vol_t
         bulk = mu_recon(bin_bulk_idx);
         
         if strcmpi(str_norm,'volume') && nargin > 4
+
             vol_norm = sum(bin_incl_idx(:))/vol_target;
         else
             vol_norm = 1;
         end
+
 
         diff_mean = (mu0 + (mean(incl)- mu0)*vol_norm) - mean(bulk);       
         contrast = diff_mean/ mean(bulk);

@@ -28,11 +28,13 @@ function [Dy, Dx, Dz, Lap] = gradientOperator(volume, h, c, BC, mask)
 % Reference: Arridge, Betcke, Harhanen'2014 
 %
 % Copyright C Marta M. Betcke 2013
+% substituted LinIndex with the buit-in sub2ind A. Farina 2020
+% Corrected bug on nargin
 
-if nargin < 4
+if nargin < 5
   mask = ones(volume);
 end
-if nargin < 3
+if nargin < 1
   BC = 'none';
 end
 
@@ -132,7 +134,7 @@ end
 if nargout > 3
   m = size(Dy,1);
   % Default standard homogenous Laplacian
-  if nargin < 2 || isempty(c)
+  if nargin < 3 || isempty(c)
     c = ones(m,1);
   end
   C = spdiags(c,0,m,m);
@@ -195,13 +197,13 @@ if dim == 2
   for j = 1:volume(1)
     indx1 = find(reshape(mask(j,:),[],1),1,'first');
     if ~isempty(indx1)
-      jx1(j) = linIndex(volume,[j,indx1]);
+      jx1(j) = sub2ind(volume,j,indx1);
     else
       jx1(j) = 0;
     end
     indx2 = find(reshape(mask(j,:),[],1),1,'last');
     if ~isempty(indx2)
-      jx2(j) = linIndex(volume,[j,indx2]);
+      jx2(j) = sub2ind(volume,j,indx2);
     else
       jx2(j) = 0;
     end
@@ -215,13 +217,13 @@ if dim > 2
     for jz = 1:volume(3)
       indx1 = find(reshape(mask(jy,:,jz),[],1),1,'first');
       if ~isempty(indx1)
-        jx1(jy,jz) = linIndex(volume,[jy,indx1,jz]);
+        jx1(jy,jz) = sub2ind(volume,jy,indx1,jz); %pronta da usare
       else
         jx1(jy,jz) = 0;
       end
       indx2 = find(reshape(mask(jy,:,jz),[],1),1,'last');
       if ~isempty(indx2)
-        jx2(jy,jz) = linIndex(volume,[jy,indx2,jz]);
+        jx2(jy,jz) = sub2ind(volume,jy,indx2,jz);
       else
         jx2(jy,jz) = 0;
       end
@@ -236,13 +238,13 @@ if dim == 3
     for jx = 1:volume(2)
       indz1 = find(reshape(mask(jy,jx,:),[],1),1,'first');
       if ~isempty(indz1)
-        jz1(jy,jx) = linIndex(volume,[jy,jx,indz1]);
+        jz1(jy,jx) = sub2ind(volume,jy,jx,indz1);
       else
         jz1(jy,jx) = 0;
       end
       indz2 = find(reshape(mask(jy,jx,:),[],1),1,'last');
       if ~isempty(indz2)
-        jz2(jy,jx) = linIndex(volume,[jy,jx,indz2]);
+        jz2(jy,jx) = sub2ind(volume,jy,jx,indz2);
       else
         jz2(jy,jx) = 0;
       end

@@ -1,5 +1,6 @@
 function err = recon_accuracy(mu_recon, target, idx, str_norm, vol_target, mu0)
 
+
 % err = recon_accuracy(mu_recon, target, idx)
 % retrieves the relative error in the quantification of the inclusion,
 % where the reconstructed value for the inclusion is assumed to be
@@ -11,6 +12,7 @@ function err = recon_accuracy(mu_recon, target, idx, str_norm, vol_target, mu0)
 % account the volume mismatch
 % vol_target: volume of the target in number of voxel
 % mu0: reference value for which the jacobian was calculated
+
     if nargin < 3
         idx = identify_inclusion(mu_recon(:));
     end

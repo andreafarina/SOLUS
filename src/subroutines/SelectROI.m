@@ -9,7 +9,10 @@ if nargin > 1
 end
 ylim([max(data(:))/10000 max(data(:))])%,legend(['data','irf']),
 title('select ROI');
-[x,~] = ginput(2);
+r = drawrectangle;
+x(1) = r.Position(1);
+x(2) = r.Position(3) + x(1);
+%[x,~] = ginput(2);
 roi = round(x);
-disp(['Used ROI: ',num2str(roi')]);
+disp(['Used ROI: ',num2str(roi)]);
 close
