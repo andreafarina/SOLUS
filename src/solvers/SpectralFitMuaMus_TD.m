@@ -8,8 +8,7 @@
 function [bMua,bMus,bmua,bmus] = SpectralFitMuaMus_TD(~,grid,mua0,mus0, n, A,...
     Spos,Dpos,dmask, dt, nstep, twin, self_norm, data, irf, ref, sd,~,radiometry,spe)
 geom = 'semi-inf';
-self_norm = true;
-weight_type = 'rect'; %'rect';
+weight_type = 'none'; %'rect';
 first_lim = 0.1; last_lim = 0.1;
 ForceConstitSolution = spe.ForceConstitSolution;
 
@@ -20,46 +19,20 @@ nwin = size(twin,1);
 %% Inverse solver
 [proj, Aproj] = ForwardTD_multi_wave(grid,Spos, Dpos, dmask, mua0, mus0, n, ...
     [],[], A, dt, nstep, self_norm,...
-    geom,'linear',radiometry);
-if numel(irf)>1
-    for inl = 1:radiometry.nL
-        meas_set = (1:nQM)+(inl-1)*nQM;
-        proj_single = proj(:,meas_set);
-        z = convn(proj_single,irf(:,inl));
-        nmax = max(nstep,numel(irf(:,inl)));
-        proj_single = z(1:nmax,:);
-        clear nmax
-        
-        if self_norm == true
-            proj_single = proj_single * spdiags(1./sum(proj_single,'omitnan')',0,nQM,nQM);
-        end
-        clear z
-        if inl == 1
-            proj(1:size(proj_single),meas_set) = proj_single;
-            proj(size(proj_single,1)+1:end,:) = [];
-        else
-            proj(1:size(proj_single,1),meas_set) = proj_single;
-        end
-    end
-end
+    geom,'linear',radiometry,irf);
+
 if self_norm == true
-    for inl = 1:radiometry.nL
-        meas_set = (1:nQM)+(inl-1)*nQM;
-        data_single = data(:,meas_set);
-        data_single = data_single * spdiags(1./sum(data_single,'omitnan')',0,nQM,nQM);
-        ref_single = ref(:,meas_set);
-        ref_single = ref_single * spdiags(1./sum(ref_single,'omitnan')',0,nQM,nQM);
-        data(:,meas_set) = data_single;
-        ref(:,meas_set) = ref_single;
-    end
+    data = NormalizeTPSF(data);
+    ref = NormalizeTPSF(ref);
 end
+
 dummy_proj = zeros(size(twin,1),nQM*radiometry.nL);
 for inl = 1:radiometry.nL
     meas_set =(1:nQM)+(inl-1)*nQM; twin_set = (1:2)+(inl-1)*2;
     proj_single = proj(:,meas_set);
     proj_single = WindowTPSF(proj_single,twin(:,twin_set));
     if self_norm == true
-        proj_single = proj_single * spdiags(1./sum(proj_single,'omitnan')',0,nQM,nQM);
+        proj_single = NormalizeTPSF(proj_single);
     end
     dummy_proj(:,meas_set) = proj_single;
 end
@@ -222,36 +195,17 @@ save('factor_ref.mat','factor');
         end
         [proj, Aproj] = ForwardTD_multi_wave(grid,Spos, Dpos, dmask, mua, mus, n, ...
             [],[], A, dt, nstep, self_norm,...
-            geom,'linear',radiometry);
-        if spe.SPECTRA == 0 && ForceConstitSolution == false
-            display(['mua = ',num2str(mua)]);
-            display(['musp = ',num2str(mus)]);
-        else
-            disp(spe.cromo_label); disp(conc_'); disp({'a','b'}); disp([a_ b_]);
-        end
+            geom,'linear',radiometry,irf);
+%         if spe.SPECTRA == 0 && ForceConstitSolution == false
+%             display(['mua = ',num2str(mua)]);
+%             display(['musp = ',num2str(mus)]);
+%         else
+%             disp(spe.cromo_label); disp(conc_'); disp({'a','b'}); disp([a_ b_]);
+%         end
         % [~,proj] = Contini1997(0,(1:nstep)*dt/1000,20,mua(1),mus(1),1,n(1),'slab','Dmus',200);
         % proj = proj';%./sum(proj);
         
-        if numel(irf)>1
-            for inl_ = 1:radiometry.nL
-                meas_set_ = (1:nQM)+(inl_-1)*nQM;
-                proj_single_ = proj(:,meas_set_);
-                z = convn(proj_single_,irf(:,inl_));
-                nmax = max(nstep,numel(irf(:,inl_)));
-                proj_single_ = z(1:nmax,:);
-                clear nmax
-                if self_norm == true
-                    proj_single_ = proj_single_ * spdiags(1./sum(proj_single_,'omitnan')',0,nQM,nQM);
-                end
-                clear z
-                if inl_ == 1
-                    proj(1:size(proj_single_,1),meas_set_) = proj_single_;
-                    proj(size(proj_single_,1)+1:end,:) = [];
-                else
-                    proj(1:size(proj_single_,1),meas_set_) = proj_single_;
-                end
-            end
-        end
+
         clear meas_set_
         dummy_proj_ = zeros(size(twin,1),sum(dmask(:))*radiometry.nL);
         for inl_ = 1:radiometry.nL
@@ -260,7 +214,7 @@ save('factor_ref.mat','factor');
             proj_single_ = circshift(proj_single_,round(t0_/dt));
             proj_single_ = WindowTPSF(proj_single_,twin(:,twin_set_));
             if self_norm == true
-                proj_single_ = proj_single_ * spdiags(1./sum(proj_single_,'omitnan')',0,nQM,nQM);
+                proj_single_ = NormalizeTPSF(proj_single_);
             end
             dummy_proj_(:,meas_set_) = proj_single_;
         end
