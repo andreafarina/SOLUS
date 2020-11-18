@@ -1,4 +1,5 @@
-function [displ, brd, brdRMS] = recon_localisation(mu_recon, bin_target, grid,dim, idx, manual)
+function [displ, brd, brdRMS] = recon_localisation(mu_recon, bin_target, grid,dim, idx)
+
 
 % [displ, brd, brdRMS] = recon_localisation(mu_recon, bin_target, grid,dim, idx)
 % Geometrical localisation of inclusion.
@@ -34,8 +35,9 @@ function [displ, brd, brdRMS] = recon_localisation(mu_recon, bin_target, grid,di
     xc = mean(xx(idx));
     yc = mean(yy(idx));
     zc = mean(zz(idx));
-    
-    xc_target = mean(xx(bin_target(:))); 
+
+    xc_target = mean(xx(bin_target(:)));
+
     yc_target = mean(yy(bin_target(:)));
     zc_target = mean(zz(bin_target(:)));
     
@@ -51,8 +53,7 @@ function [displ, brd, brdRMS] = recon_localisation(mu_recon, bin_target, grid,di
     for dd = 1:numel(dim)
         dl = dL(dd);
         cumul_sq = squeeze(dl*sum(bin_recon, dd)).^2;
-        RMS = sqrt( mean( cumul_sq(cumul_sq > 0 ) ));
-        
+        RMS = sqrt( mean( cumul_sq(cumul_sq > 0 ) ));       
         cumul_sq_target = squeeze(dl*sum(bin_target, dd)).^2;
         RMS_target = sqrt( mean( cumul_sq_target(cumul_sq_target > 0 ) )); 
         brdRMS(dd) = RMS - RMS_target;
@@ -60,5 +61,6 @@ function [displ, brd, brdRMS] = recon_localisation(mu_recon, bin_target, grid,di
     end
     
     return;
+
 end
 

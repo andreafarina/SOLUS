@@ -112,6 +112,7 @@ for nlambda = 1:REC.radiometry.nL
     end
 end
 
+
 if contains(lower(REC.solver.type),'spectral')
     if numel(REC.opt.hete1.type)==1
         if strcmpi(REC.opt.hete1.type,'Mua')

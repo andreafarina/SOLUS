@@ -33,9 +33,9 @@ supz = final_dims(2,3);
 [smaskx, smasky, smaskz] = size(mask);
 
 % N0 of voxels of the out grid
-outdimx = numel( infx: delta : supx);
-outdimy = numel( infy: delta : supy);
-outdimz = numel( infz: delta : supz);
+outdimx = numel( infx: delta : supx)-1;
+outdimy = numel( infy: delta : supy)-1;
+outdimz = numel( infz: delta : supz)-1;
 
 out_grid = false(outdimx, outdimy, outdimz);
 
