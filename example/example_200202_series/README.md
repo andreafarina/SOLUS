@@ -12,8 +12,9 @@ Reconstruction with US prior
  - Set your directory to a folder in /dt_prior_0.01/ .
    Each folder contains initialisation files for the reconstruction of the experimental data coming from different combinations of inclusion/bulk and a file containing the extrapolated 3D shape.
    The extrapolated shape from US is already set in the in the initialisation files
- - The initialisation file RECsettings.m can be modified to allow for different parameters of reconstruction
- - The path to the extrapolated 3D shape is set in REC.solver.prior.path =''  
+ - The initialisation file RECsettings.m can be modified to allow for different parameters of reconstruction e.g. 
+   the extrapolated shape to be used in reconstruction can be changed by modifying the value of the variable REC.solver.prior.path='/path/to/new/shape.mat' 
+   where the required *.mat files can be generated with Gen3Dshape.m.   
  - Run run_DOT.m
 
 Reconstruction with CVylindrical prior
@@ -21,8 +22,7 @@ Reconstruction with CVylindrical prior
  - Set your directory to a folder in /cylprior_0.01/ .
    Each folder contains initialisation files for the reconstruction of the experimental data coming from different combinations of inclusion/bulk and a file containing the extrapolated 3D shape.
    The use of a cylindrical prior is already set in the initialisation files
- - The initialisation file RECsettings.m can be modified to allow for different parameters of reconstruction
- - The path to the extrapolated 3D shape is set in REC.solver.prior.path =''
+ - The initialisation file RECsettings.m can be modified to allow for different parameters of reconstruction. By setting REC.solver.prior.path=[] the software will use the ground truth shape for the edge-regularised reconstructions
  - Run run_DOT.m
 
 
