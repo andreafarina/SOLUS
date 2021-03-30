@@ -63,6 +63,7 @@ taphi = timeSolver_('apply', mvec);
 
 %% Convolution with IRF if present
 if numel(irf) > 1
+    %for j = 1:size(tphi)
     tphi = convn(irf,tphi);
     tphi(nstep + 1:end,:,:) = [];
 end

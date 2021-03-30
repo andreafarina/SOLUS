@@ -43,6 +43,10 @@ Init_DOT;
 %disp('Setting paths and filenames');
 %run(fullfile(folder,'SetIO_DOT.m'));
 SetIO_DOT;
+
+%% correct missing flags for compatibility with older examples
+if ~exist('SHOWPLOTS','var'), SHOWPLOTS = 1; end
+if ~exist('REMOVE_VOXELS','var'), REMOVE_VOXELS = 0; end
 %==========================================================================
 %%  SETTING SOURCES (QVEC), DETECTORS (MVEC) AND THEIR PERMUTATIONS (DMASK)
 %==========================================================================
@@ -59,7 +63,14 @@ end
 %%               OVERRIDE param using P values (multiSIM)
 % =========================================================================
 Override_MultiSim
-
+    REC.solver.type = 'usprior';
+    %DOT.radiometry.nL = 8;
+    %SPECTRA=1;
+%     REC.type_fwd ='fem';
+%     TYPE_FWD ='fem';
+%     DOT.Source.Area = 2;
+%     DOT.Detector.Area = 2;
+    REC.time.roi = 'auto';
 % =========================================================================
 %%                     Create folder for saving data
 % =========================================================================
@@ -71,6 +82,11 @@ end
 disp(['Results path: ',rdir]);
 %% Get True Variables from X
 [DOT,REC] = TranslateX_2Var(SPECTRA,Xd,Xp,Xr,spectra_file,DOT,REC);
+%% check dimensions of dmask for compatibily purposes
+if ismatrix(DOT.dmask)
+    DOT.dmask = repmat(DOT.dmask, [1,1,DOT.radiometry.nL]);
+end
+
 
 %==========================================================================
 %%                          Experimental data
@@ -83,12 +99,13 @@ if (EXPERIMENTAL == 1)
     % Select measurements by dmask
     if (EXP_DATA == 1)
         if (size(EXP.data.spc,2)>sum(DOT.dmask))
-            EXP.data.spc = EXP.data.spc(:,repmat(DOT.dmask,1,DOT.radiometry.nL));
-            EXP.data.ref = EXP.data.ref(:,repmat(DOT.dmask,1,DOT.radiometry.nL));
+            EXP.data.spc = EXP.data.spc(:,DOT.dmask(:));
+            EXP.data.ref = EXP.data.ref(:,DOT.dmask(:));
             if DOT.time.self_norm
-                nm = sum(DOT.dmask(:));
+                nQM = findMeasIndex(DOT.dmask);
                 for inl = 1:DOT.radiometry.nL
-                    meas_set = (1:nm)+(inl-1)*nm;
+                    meas_set = nQM{inl};
+                    nm = numel(meas_set);
                     EXP.data.spc(:,meas_set) = EXP.data.spc(:,meas_set)*spdiags(1./sum(EXP.data.spc(:,meas_set),1)',0,nm,nm);
                     EXP.data.ref(:,meas_set) = EXP.data.ref(:,meas_set)*spdiags(1./sum(EXP.data.ref(:,meas_set),1)',0,nm,nm);
                 end
@@ -97,6 +114,7 @@ if (EXPERIMENTAL == 1)
     end
 end
 disp(['Experiment file: ',exp_path,'EXP_',exp_file]);
+
 
 %% Background optical properties
 DOT.opt.cs = 0.299/DOT.opt.nB;       % speed of light in medium
@@ -149,22 +167,51 @@ end
 %==========================================================================
 %%                         Time domain parameters
 %==========================================================================
+
 if DOT.TD == 1
     % --------- resample IRF following the parameters in DOT.time -------------
     if ((EXPERIMENTAL == 1) && (EXP_IRF == 1))
+        % check dimensions of IRF for compatibily purposes
+        if size(EXP.irf.data,2) == 8
+            % push waveleght dimension as last one
+            tmp = permute(EXP.irf.data,[1,3,2]);
+            tmp = repmat(tmp, [1, size(DOT.dmask,1)*size(DOT.dmask,2) ,1]);
+            % save old irf for debug
+            EXP.irf.dataMat = EXP.irf.data;
+            % update IRF
+            EXP.irf.data = reshape(tmp, [size(tmp,1),size(tmp,2)*size(tmp,3)]);
+            % update peak positions 
+            EXP.irf.peak = repmat(permute(EXP.irf.peak, [1,2]),[size(DOT.dmask,1)*size(DOT.dmask,2) ,1]);
+            % update baric
+            EXP.irf.baric = repmat(permute(EXP.irf.baric, [1,2]),[size(DOT.dmask,1)*size(DOT.dmask,2) ,1]);
+            clear tmp
+        end
         switch lower(EXP_DELTA)
             case 'peak'
                 EXP.irf.data = zeros(size(EXP.irf.data));
-                peak_pos = (0:DOT.radiometry.nL-1).*(size(EXP.irf.data,1)) + [EXP.irf.peak(1:DOT.radiometry.nL).pos];
-                EXP.irf.data(peak_pos) = 1;
-            case 'baric'
+                peak_pos = reshape([EXP.irf.peak.pos], size(EXP.irf.peak));
+                [I,J]  = ind2sub(size(peak_pos),[1:numel(peak_pos)]);
+                idx = sub2ind(size(EXP.irf.data),peak_pos(:)' ,I,J);
+                EXP.irf.data(idx) = 1;
+            case 'baric'                
                 EXP.irf.data = zeros(size(EXP.irf.data));
-                baric_pos = (0:DOT.radiometry.nL-1).*(size(EXP.irf.data,1)) + [EXP.irf.baric(1:DOT.radiometry.nL).pos];
-                EXP.irf.data(baric_pos) = 1;
+                baric_pos = reshape([EXP.irf.baric.pos], size(EXP.irf.baric));
+                [I,J]  = ind2sub(size(baric_pos),[1:numel(baric_pos)]);
+                idx = sub2ind(size(EXP.irf.data),baric_pos(:)' ,I,J);
+                EXP.irf.data(idx) = 1; 
         end
-        for inl = 1:DOT.radiometry.nL
-            DOT.time.irf.data(:,inl) = resampleSPC(EXP.irf.data(:,inl),EXP.time.axis,DOT.time.dt,'norm');
+%         for inl = 1:DOT.radiometry.nL
+%             DOT.time.irf.data(:,inl) = resampleSPC(EXP.irf.data(:,inl),EXP.time.axis,DOT.time.dt,'norm');
+%         end
+        
+        tmp = EXP.irf.data;
+        tmp = reshape(tmp, [size(tmp,1),size(tmp,2)*size(tmp,3)]);
+        for i_sam = 1:size(tmp,2)
+            tmp_(:,i_sam)= resampleSPC(tmp(:,i_sam),EXP.time.axis,DOT.time.dt,'norm');
         end
+        DOT.time.irf.data = reshape(tmp_, [size(tmp_,1),size(EXP.irf.data,2)*size(EXP.irf.data,3)]);
+        % get set of IRFs used in convolution
+        DOT.time.irf.data_mask = DOT.time.irf.data(:, DOT.dmask(:));
         % ------ setting channel 0 based on the peak and width of the IRF ---------
         %resc_fact = round(DOT.time.dt./EXP.spc.factor);
         [DOT.time.irf.peak.value,...
@@ -180,14 +227,20 @@ end
 
 
 % -------------------------------------------------------------------------
-% plot DMASK
-%figure(10), imagesc(DOT.dmask),xlabel('Sources'),ylabel('Meas'), axis image,title('Dmask');
-
-% plot source-detectors and heterogeneities
-figure(11)
-subplot(1,2,1),PlotHeteQM(DOT,squeeze(DOT.opt.Mua(:,:,:,1)),DOT.opt.muaB(1)),title('Mua');
-subplot(1,2,2),PlotHeteQM(DOT,squeeze(DOT.opt.Musp(:,:,:,1)),DOT.opt.muspB(1)),title('Musp');
-drawnow;
+if SHOWPLOTS
+    % plot DMASK
+    figure(10) 
+    for inl = 1:DOT.radiometry.nL
+        subplot(1,size(DOT.dmask,3), inl);
+        imagesc(DOT.dmask(:,:,inl)),xlabel('Sources'),ylabel('Meas'), axis image;
+        title(sprintf('Dmask: lam %g',  DOT.radiometry.lambda(inl)));
+    end
+    % plot source-detectors and heterogeneities
+    figure(11)
+    subplot(1,2,1),PlotHeteQM(DOT,squeeze(DOT.opt.Mua(:,:,:,1)),DOT.opt.muaB(1)),title('Mua');
+    subplot(1,2,2),PlotHeteQM(DOT,squeeze(DOT.opt.Musp(:,:,:,1)),DOT.opt.muspB(1)),title('Musp');
+    drawnow;
+end
 %==========================================================================
 % The structure DOT contains all geometrical parameters needed also for
 % the inverse problem
@@ -235,7 +288,7 @@ if FORWARD == 1
     %==========================================================================
     if DOT.TD == 1
         DOT.time.time = (1:DOT.time.nstep) * DOT.time.dt;
-if LOAD_FWD_TEO == 0
+        if LOAD_FWD_TEO == 0
                 DataTD = ForwardTD_multi_wave(DOT.grid,DOT.Source.Pos, DOT.Detector.Pos, DOT.dmask,...
                     DOT.opt.muaB, DOT.opt.muspB,DOT.opt.nB, DOT.opt.Mua,...
                     DOT.opt.Musp, DOT.A, DOT.time.dt,...
@@ -260,37 +313,45 @@ if LOAD_FWD_TEO == 0
         % Convolution with IRF
         % AF: to optimize memory assign directly DataTD
         if ((EXPERIMENTAL == 1) && (EXP_IRF == 1))
-            nsub=numSubplots(DOT.radiometry.nL);
-            figure(12);
-            for inl = 1:DOT.radiometry.nL
-                meas_set = (1:nmeas)+(inl-1)*nmeas;
-                subplot(nsub(1),nsub(2),inl)
-                z = convn(full(DataTD(:,meas_set)),DOT.time.irf.data(:,inl));
-                semilogy(z(:,1),'b'),hold,semilogy(DataTD(:,meas_set(1)),'k'),
-                semilogy(DOT.time.irf.data(:,inl),'r'),%ylim([max(DataTD(:))/10000 max(DataTD(:))])
-                title(['Wavelength: ' num2str(DOT.radiometry.lambda(inl))]);
-                nmax = max(DOT.time.nstep,numel(DOT.time.irf.data(:,inl)));
-                if inl == 1
-                    DataTD(1:nmax,meas_set) = z(1:nmax,:);
-                    DataTD(nmax+1:end,:) = [];
-                else
-                    DataTD(:,meas_set) = z(1:nmax,:);
-                end
+            
+                % vectorise data
+                tmpsize = size(DataTD);
+                tmpdata = DataTD;
+                DataTD = reshape(DataTD, [tmpsize(1), tmpsize(2)]);
+                % convolve by IRF
+                DataTD = ConvIRF(full(DataTD),...
+                    DOT.time.irf.data_mask);
+                % reshape
+                DataTD = reshape(DataTD, tmpsize);
+       
                 
                 if REF == 1
-                    z = convn(full(RefTD(:,meas_set)),DOT.time.irf.data(:,inl));
-                    if inl == 1
-                        RefTD(1:nmax,meas_set) = z(1:nmax,:);
-                        RefTD(nmax+1:end,:) = [];
-                    else
-                        RefTD(:,meas_set) = z(1:nmax,:);
-                    end
+                    % vectorise
+                    tmpsize = size(RefTD);
+                    RefTD = reshape(RefTD, [tmpsize(1), tmpsize(2)]);
+                    % convolve by IRF
+                    RefTD = ConvIRF(full(RefTD),...
+                            DOT.time.irf.data_mask);
+                    % reshape
+                    RefTD = reshape(RefTD, tmpsize);
                 end
                 clear nmax
-            end
-            drawnow
+                %% plots
+                if SHOWPLOTS
+                    idx = findMeasIndex(DOT.dmask);
+                    for inl = 1:DOT.radiometry.nL
+                        nsub=numSubplots(DOT.radiometry.nL);
+                        figure(12);    
+                        subplot(nsub(1),nsub(2),inl)
+                        semilogy(tmpdata(:,idx{inl}(1)),'b'),hold,semilogy(DataTD(:,idx{inl}(1)),'k'),
+                        semilogy(DOT.time.irf.data_mask(:,idx{inl}(1)),'r'),%ylim([max(DataTD(:))/10000 max(DataTD(:))])
+                        title(['Wavelength: ' num2str(DOT.radiometry.lambda(inl))]);
+                    end
+                    drawnow
+                end
+
         end
-        clear z inl meas_set
+
         
         % ---- Radiometry -------
         if RADIOMETRY == 1
@@ -298,10 +359,13 @@ if LOAD_FWD_TEO == 0
         else
             RealFactor = ones(1,DOT.radiometry.nL);
         end
-        %-------------------- Add noise to TD data ------------------------
+        %-------------------- Add noise to TD data
+        %------------------------
         sdTD = zeros(size(DataTD));
+        idx = findMeasIndex(DOT.dmask);
         for inl = 1:DOT.radiometry.nL
-            meas_set = (1:nmeas)+(inl-1)*nmeas;
+            meas_set = idx{inl};
+            nmeas = numel(meas_set);
             DataTD_single_wave = DataTD(:,meas_set);
             if REF == 1
             RefTD_single_wave = RefTD(:,meas_set);
@@ -408,26 +472,32 @@ if ((EXPERIMENTAL == 1) && (EXP_DATA == 1))
         end
         % ------ Comparison between conv(irf,fwd) and the experimental data -------
         if FORWARD == 1
-            h = 1;
-            nsub=numSubplots(DOT.radiometry.nL);
-            for h=1:size(z,2)
+            if SHOWPLOTS
+                h = 1;
+                nsub=numSubplots(DOT.radiometry.nL);
                 fh=figure(202);
                 fh.Name = ['Ref measurement number ',num2str(h)];
                 fh=figure(203);
                 fh.Name = ['Data measurement number ',num2str(h)];
+                idxMeas = findMeasIndex(DOT.dmask);
                 for inl = 1:DOT.radiometry.nL
-                    meas_set = (1:nmeas)+(inl-1)*nmeas;
-                    figure(202);subplot(nsub(1),nsub(2),inl);
-                    semilogy(1:size(z,1),[f(:,meas_set(h))./sum(f(:,meas_set(h)),'omitnan'),RefTD(:,meas_set(h))./sum(RefTD(:,meas_set(h)),'omitnan')]),
-                    legend('Data','conv(irf,fwd)'),
-                    title(['Wavelength :' num2str(DOT.radiometry.lambda(inl))]);
-                    figure(203);subplot(nsub(1),nsub(2),inl);
-                    semilogy(1:size(z,1),[z(:,meas_set(h))./sum(z(:,meas_set(h)),'omitnan'),DataTD(:,meas_set(h))./sum(DataTD(:,meas_set(h)),'omitnan')]),
-                    legend('Data','conv(irf,fwd)'),
-                    title(['Wavelength :' num2str(DOT.radiometry.lambda(inl))]);
+                    meas_set = idxMeas{inl};
+                    for h=1:size(meas_set,2)                
+                        figure(202);subplot(nsub(1),nsub(2),inl);
+                        semilogy(1:size(z,1),[f(:,meas_set(h))./sum(f(:,meas_set(h)),'omitnan'),RefTD(:,meas_set(h))./sum(RefTD(:,meas_set(h)),'omitnan')]),
+                        legend('Data','conv(irf,fwd)'),
+                        title(['Wavelength :' num2str(DOT.radiometry.lambda(inl))]);
+                        figure(203);subplot(nsub(1),nsub(2),inl);
+                        semilogy(1:size(z,1),[z(:,meas_set(h))./sum(z(:,meas_set(h)),'omitnan'),DataTD(:,meas_set(h))./sum(DataTD(:,meas_set(h)),'omitnan')]),
+                        legend('Data','conv(irf,fwd)'),
+                        title(['Wavelength :' num2str(DOT.radiometry.lambda(inl))]);
+                        hMeas =findSQcouple(DOT.dmask(:,:,inl), h);
+                        ImageMeasure(DOT,hMeas);
+                        pause(0.01);
+                    end
+                    
+
                 end
-                ImageMeasure(DOT,h);
-                pause(0.01);
             end
             %             for h = 1:size(z,2)
             %             semilogy(1:size(z,1),[f(:,h)./sum(f(:,h)),RefTD(:,h)./sum(RefTD(:,h),'omitnan')]),
@@ -533,47 +603,109 @@ if RECONSTRUCTION == 1
             warning('on','backtrace')
         end
         if isempty(REC.time.roi)
+            idxmeas = findMeasIndex(REC.dmask);
             for inl = 1:REC.radiometry.nL
-                meas_set = (1:nmeas)+(inl-1)*nmeas;
+                meas_set = idxmeas{inl};
                 fprintf(['<strong>------- Wavelength ',num2str(REC.radiometry.lambda(inl)),'-------</strong>\n'])
-                REC.time.roi(inl,:) = SelectROI(DataTD(:,meas_set),REC.time.irf.data(:,inl));
+                REC.time.roi(inl,:) = SelectROI(DataTD(:,meas_set),REC.time.irf.data_mask(:,meas_set));
+            end
+        elseif strcmpi(REC.time.roi, 'auto')
+            % selects the ROI automatically for each curve
+            REC.time.roi = zeros(2, size(DataTD,2));
+            for i = 1:size(DataTD,2)
+                REC.time.roi(:,i) = auto_selectROI(DataTD(:,i));
+            end
+        elseif strcmpi(REC.time.roi, 'auto_by_wave')
+            % write routing for selecting one ROI automaticaly per wavelength 
+            REC.time.roi = zeros(2, size(DataTD,2));
+            for i = 1:size(DataTD,2)
+                REC.time.roi(:,i) = auto_selectROI(DataTD(:,i));
+            end
+            idxmeas = findMeasIndex(REC.dmask);
+            for inl = 1:REC.radiometry.nL
+                meas_set = idxmeas{inl};
+                roi0 = REC.time.roi(1,meas_set);
+                roi1 = REC.time.roi(2,meas_set);
+                REC.time.roi(1,meas_set) = min(roi0(:));
+                REC.time.roi(2,meas_set) = max(roi1(:));
             end
         end
+        % foresee one roi per curve by repeating the twin
+        tmp_roi = zeros(2,sum(REC.dmask(:)));
+        idxmeas = findMeasIndex(REC.dmask);
+        if any(size(REC.time.roi) ~= [2,sum(REC.dmask(:))]) % if not the correct dimensions go for a repmat
+            for inl = 1:REC.radiometry.nL
+                meas_set = idxmeas{inl};
+                nmeas = numel(meas_set);
+                tmp_roi(:,meas_set) =  repmat(REC.time.roi(inl, :)', [1,nmeas]);
+            end
+            REC.time.roi = tmp_roi;
+            clear tmp_roitmp_roi
+
+        end
+        
         REC.ref = []; REC.Data = []; REC.sd = [];
-        nsub = numSubplots(REC.radiometry.nL);
-        for inl = 1:REC.radiometry.nL
-            figure(20);
-            meas_set = (1:nmeas)+(inl-1)*nmeas;
-            twin_set = (1:2)+(inl-1)*2;
-            fprintf(['<strong>------- Wavelength ',num2str(REC.radiometry.lambda(inl)),'-------</strong>\n'])
-            REC.time.twin(:,twin_set) = CreateTimeWindows(REC.time.nstep,REC.time.roi(inl,:),'even',NUM_TW);
-            REC.time.nwin(inl) = size(REC.time.twin(:,twin_set),1);
-            subplot(nsub(1),nsub(2),inl)
-            ShowTimeWindows(DataTD(:,meas_set),REC.time.twin(:,twin_set),REC.time.dt);
-            title(['Wavelength: ' num2str(REC.radiometry.lambda(inl))]);
-            %save_figure('time_ROI');
-            if exist('RefTD','var')
-                REC.ref(:,meas_set) = WindowTPSF(RefTD(:,meas_set),REC.time.twin(:,twin_set));
-                if inl == REC.radiometry.nL,  clear RefTD; end
+        
+        % set time windows
+        REC.time.twin = zeros(NUM_TW,2,size(DataTD,2));
+        for i_twin = 1:size(REC.time.roi,2)
+            SQ = findSQcouple(REC.dmask, i_twin, 'sub');
+            fprintf('lambda: %g , source: %g , detector: %g ->',REC.radiometry.lambda(SQ(3)), SQ(2), SQ(1));
+            REC.time.twin(:,:,i_twin) = CreateTimeWindows(REC.time.nstep,REC.time.roi(:,i_twin)','even',NUM_TW);
+            REC.time.nwin(i_twin) = size(REC.time.twin(:,:,i_twin),1);
+        end
+        if exist('RefTD','var')
+            REC.ref = WindowTPSF(RefTD,REC.time.twin);
+            clear RefTD
+        end
+        REC.Data = WindowTPSF(DataTD,REC.time.twin);
+        if (EXP_DATA == 0)
+            if ~strcmpi(REC.time.noise,'none')
+                REC.sd = sqrt(WindowTPSF(sdTD.^2,REC.time.twin));     % ATTENTION NOT TO SUM SD
+            else
+                REC.sd = ones(size(REC.Data));
             end
-            REC.Data(:,meas_set) = WindowTPSF(DataTD(:,meas_set),REC.time.twin(:,twin_set));
-            if (EXP_DATA == 0)
-                if ~strcmpi(REC.time.noise,'none')
-                    REC.sd(:,meas_set) = sqrt(WindowTPSF(sdTD(:,meas_set).^2,REC.time.twin(:,twin_set)));     % ATTENTION NOT TO SUM SD
-                else
-                    REC.sd(:,meas_set) = ones(size(REC.Data(:,meas_set)));
+        end
+        if (EXP_DATA == 1)
+            REC.sd = sqrt(WindowTPSF(sdTD.^2,REC.time.twin));
+        end        
+        
+        if SHOWPLOTS
+            idxmeas = findMeasIndex(REC.dmask);
+            nsub = numSubplots(REC.radiometry.nL);
+            for inl = 1:REC.radiometry.nL
+                figure(20);
+                meas_set = idxmeas{inl};
+                twin_set = meas_set;
+                fprintf(['<strong>------- Wavelength ',num2str(REC.radiometry.lambda(inl)),'-------</strong>\n'])
+                subplot(nsub(1),nsub(2),inl)
+                ShowTimeWindows(DataTD(:,meas_set),REC.time.twin(:,:,twin_set(1)),REC.time.dt);
+                title(['Wavelength: ' num2str(REC.radiometry.lambda(inl))]);
+                %save_figure('time_ROI');
+                if exist('RefTD','var')
+                    REC.ref(:,meas_set) = WindowTPSF(RefTD(:,meas_set),REC.time.twin(:,:,twin_set));
+                    if inl == REC.radiometry.nL,  clear RefTD; end
                 end
-            end
-            if (EXP_DATA == 1)
-                REC.sd(:,meas_set) = sqrt(WindowTPSF(sdTD(:,meas_set).^2,REC.time.twin(:,twin_set)));
-            end
-            if inl == REC.radiometry.nL
-                clear DataTD sdTD
-                tilefigs;
+                REC.Data(:,meas_set) = WindowTPSF(DataTD(:,meas_set),REC.time.twin(:,:,twin_set));
+                if (EXP_DATA == 0)
+                    if ~strcmpi(REC.time.noise,'none')
+                        REC.sd(:,meas_set) = sqrt(WindowTPSF(sdTD(:,meas_set).^2,REC.time.twin(:,:,twin_set)));     % ATTENTION NOT TO SUM SD
+                    else
+                        REC.sd(:,meas_set) = ones(size(REC.Data(:,meas_set)));
+                    end
+                end
+                if (EXP_DATA == 1)
+                    REC.sd(:,meas_set) = sqrt(WindowTPSF(sdTD(:,meas_set).^2,REC.time.twin(:,:,twin_set)));
+                end
+                if inl == REC.radiometry.nL
+                    clear DataTD sdTD
+                    tilefigs;
+                end
             end
         end
     end
     clear inl shift meas_set
+    clear DataTD sdTD
     % % =========================================================================
     % %%                        Initial parameter estimates
     % % =========================================================================
@@ -685,6 +817,8 @@ if RECONSTRUCTION == 1
     % =========================================================================
     %%                      Reconstruction Solver
     % =========================================================================
+
+    
     switch lower(REC.domain)
         case 'cw'
             switch lower(REC.solver.type)
@@ -721,19 +855,22 @@ if RECONSTRUCTION == 1
                         REC.grid,mesh.hMesh,REC.grid.hBasis,REC.opt.mua0,REC.opt.musp0,...
                         REC.opt.nB,mesh.qvec,mesh.mvec,REC.dmask,REC.time.dt,REC.time.nstep,...
                         REC.time.twin,REC.time.self_norm, REC.Data,REC.time.irf.data,REC.ref,REC.sd,0);
-                case 'tk0'
+                case {'born','tk0'}
+                    
                     REC.solver.prior.refimage = [];
                     original_path = REC.solver.prejacobian.path;
                     reg_par = zeros(REC.radiometry.nL,1);
+                    idxmeas = findMeasIndex(REC.dmask);
                     for inl = 1:REC.radiometry.nL
+                        meas_set = idxmeas{inl};
                         if REC.solver.prejacobian.load
                             REC.solver.prejacobian.path=strcat(original_path,num2str(REC.radiometry.lambda(inl)),'.mat');
                         end
                         fprintf(['<strong>------- Wavelength ',num2str(REC.radiometry.lambda(inl)),' -------</strong>\n'])
                         [REC.opt.bmua(:,inl),REC.opt.bmusp(:,inl),reg_par(inl,1)] = RecSolverTK0_TD(...
-                            REC.solver,REC.grid,REC.opt.mua0(inl),REC.opt.musp0(inl),REC.opt.nB,REC.A,REC.Source.Pos,REC.Detector.Pos,REC.dmask,REC.time.dt,REC.time.nstep,...
-                            REC.time.twin(:,(1:2)+(inl-1)*2),REC.time.self_norm,REC.Data(:,(1:nmeas)+(inl-1)*nmeas),...
-                            REC.time.irf.data(:,inl),REC.ref(:,(1:nmeas)+(inl-1)*nmeas),REC.sd(:,(1:nmeas)+(inl-1)*nmeas),REC.type_fwd, REC.radiometry.lambda(inl));
+                            REC.solver,REC.grid,REC.opt.mua0(inl),REC.opt.musp0(inl),REC.opt.nB,REC.A,REC.Source.Pos,REC.Detector.Pos,REC.dmask(:,:, inl),REC.time.dt,REC.time.nstep,...
+                            REC.time.twin(:,:, meas_set),REC.time.self_norm,REC.Data(:,meas_set),...
+                            REC.time.irf.data_mask(:, meas_set),REC.ref(:,meas_set),REC.sd(:,meas_set),REC.type_fwd, REC.radiometry.lambda(inl));
                         if REC.solver.prejacobian.load==0
                             movefile([REC.solver.prejacobian.path,'.mat'],strcat(REC.solver.prejacobian.path,num2str(REC.radiometry.lambda(inl)),'.mat'));
                         end
@@ -743,7 +880,9 @@ if RECONSTRUCTION == 1
                 case 'born_spectral_post_proc'
                     REC.solver.prior.refimage = [];
                     original_path = REC.solver.prejacobian.path;
+                    idxmeas = findMeasIndex(REC.dmask);
                     for inl = 1:REC.radiometry.nL
+                        meas_set = idxmeas{inl}; 
                         if REC.solver.prejacobian.load
                             REC.solver.prejacobian.path=strcat(original_path,num2str(REC.radiometry.lambda(inl)),'.mat');
                         end
@@ -751,9 +890,9 @@ if RECONSTRUCTION == 1
                         [REC.opt.bmua(:,inl),REC.opt.bmusp(:,inl)] = RecSolverTK0_TD(REC.solver,...
                             REC.grid,...
                             REC.opt.mua0(inl),REC.opt.musp0(inl),REC.opt.nB,REC.A,...
-                            REC.Source.Pos,REC.Detector.Pos,REC.dmask,REC.time.dt,REC.time.nstep,...
-                            REC.time.twin(:,(1:2)+(inl-1)*2),REC.time.self_norm,REC.Data(:,(1:nmeas)+(inl-1)*nmeas),...
-                            REC.time.irf.data(:,inl),REC.ref(:,(1:nmeas)+(inl-1)*nmeas),REC.sd(:,(1:nmeas)+(inl-1)*nmeas),REC.type_fwd);
+                            REC.Source.Pos,REC.Detector.Pos,REC.dmask(:,:,inl),REC.time.dt,REC.time.nstep,...
+                            REC.time.twin(:,:,meas_set),REC.time.self_norm,REC.Data(:,meas_set),...
+                            REC.time.irf.data_mask(:,meas_set),REC.ref(:,meas_set),REC.sd(:,meas_set),REC.type_fwd);
                         if REC.solver.prejacobian.load==0
                             movefile([REC.solver.prejacobian.path,'.mat'],strcat(REC.solver.prejacobian.path,num2str(REC.radiometry.lambda(inl)),'.mat'));
                         end
@@ -803,18 +942,20 @@ if RECONSTRUCTION == 1
                         REC.solver.prior.refimage = ones(size(REC.opt.Mua(:,:,:,1)));
                     end
                     original_path = REC.solver.prejacobian.path;
+                    idxmeas = findMeasIndex(REC.dmask);
                     for inl = 1:REC.radiometry.nL
                         if REC.solver.prejacobian.load
                             REC.solver.prejacobian.path=strcat(original_path,num2str(REC.radiometry.lambda(inl)),'.mat');
                         end
+                        meas_set = idxmeas{inl};
                         fprintf(['<strong>------- Wavelength ',num2str(REC.radiometry.lambda(inl)),'-------</strong>\n'])
                         [REC.opt.bmua(:,inl),REC.opt.bmusp(:,inl)] = RecSolverTK1_TD(REC.solver,...
                             REC.grid,...
                             REC.opt.mua0(inl),REC.opt.musp0(inl),REC.opt.nB,REC.A,...
-                            REC.Source.Pos,REC.Detector.Pos,REC.dmask,...
-                            REC.time.dt,REC.time.nstep,REC.time.twin(:,(1:2)+(inl-1)*2),...
-                            REC.time.self_norm,REC.Data(:,(1:nmeas)+(inl-1)*nmeas),...
-                            REC.time.irf.data(:,inl),REC.ref(:,(1:nmeas)+(inl-1)*nmeas),REC.sd(:,(1:nmeas)+(inl-1)*nmeas),REC.type_fwd);
+                            REC.Source.Pos,REC.Detector.Pos,REC.dmask(:,:,inl),...
+                            REC.time.dt,REC.time.nstep,REC.time.twin(:,:,meas_set),...
+                            REC.time.self_norm,REC.Data(:,meas_set),...
+                            REC.time.irf.data_mask(:,meas_set),REC.ref(:,meas_set),REC.sd(:,meas_set),REC.type_fwd);
                         if REC.solver.prejacobian.load==0
                             movefile([REC.solver.prejacobian.path,'.mat'],strcat(REC.solver.prejacobian.path,num2str(REC.radiometry.lambda(inl)),'.mat'));
                         end
@@ -823,15 +964,17 @@ if RECONSTRUCTION == 1
                     REC.solver.prejacobian.path = original_path; clear original_path
                     %%
                 case 'fit'
+                    idxmeas = findMeasIndex(REC.dmask);
                     for inl = 1:REC.radiometry.nL
+                        meas_set = idxmeas{inl};
                         fprintf(['<strong>------- Wavelength ',num2str(REC.radiometry.lambda(inl)),'-------</strong>\n'])
                         [REC.opt.bmua(:,inl),REC.opt.bmusp(:,inl)] = FitMuaMus_TD(REC.solver,...
                             REC.grid,...
                             REC.opt.mua0(inl),REC.opt.musp0(inl),REC.opt.nB,REC.A,...
-                            REC.Source.Pos,REC.Detector.Pos,REC.dmask,...
-                            REC.time.dt,REC.time.nstep,REC.time.twin(:,(1:2)+(inl-1)*2),...
-                            REC.time.self_norm,REC.Data(:,(1:nmeas)+(inl-1)*nmeas),...
-                            REC.time.irf.data(:,inl),REC.ref(:,(1:nmeas)+(inl-1)*nmeas),REC.sd(:,(1:nmeas)+(inl-1)*nmeas),REC.type_fwd);
+                            REC.Source.Pos,REC.Detector.Pos,REC.dmask(:,:,inl),...
+                            REC.time.dt,REC.time.nstep,REC.time.twin(:,:,meas_set),...
+                            REC.time.self_norm,REC.Data(:,meas_set),...
+                            REC.time.irf.data(:,inl),REC.ref(:,meas_set),REC.sd(:,meas_set),REC.type_fwd);
                         dh=gcf;dh.Name = ['Wavelength ',num2str(REC.radiometry.lambda(inl))];
                         fh(inl)=copyobj(dh,0); delete(dh);
                     end
@@ -882,15 +1025,17 @@ if RECONSTRUCTION == 1
                         REC.solver.prior.refimage = REC.opt.Mua;
                         
                     end
+                    idxmeas = findMeasIndex(REC.dmask);
                     for inl = 1:REC.radiometry.nL
+                        meas_set = idxmeas{inl};
                         fprintf(['<strong>------- Wavelength ',num2str(REC.radiometry.lambda(inl)),'-------</strong>\n'])
                         [REC.opt.bmua(:,inl),REC.opt.bmusp(:,inl), REC.opt.fitOUTPUT] = Fit2Mua2Mus_TD(REC.solver,...
                             REC.grid,...
                             REC.opt.mua0(inl),REC.opt.musp0(inl),REC.opt.nB,[],...
-                            REC.Source.Pos,REC.Detector.Pos,REC.dmask,...
-                            REC.time.dt,REC.time.nstep,REC.time.twin(:,(1:2)+(inl-1)*2),...
-                            REC.time.self_norm,REC.Data(:,(1:nmeas)+(inl-1)*nmeas),...
-                            REC.time.irf.data(:,inl),REC.ref(:,(1:nmeas)+(inl-1)*nmeas),REC.sd(:,(1:nmeas)+(inl-1)*nmeas),1);
+                            REC.Source.Pos,REC.Detector.Pos,REC.dmask(:,:,inl),...
+                            REC.time.dt,REC.time.nstep,REC.time.twin(:,:,meas_set),...
+                            REC.time.self_norm,REC.Data(:,meas_set),...
+                            REC.time.irf.data(:,inl),REC.ref(:,meas_set),REC.sd(:,meas_set),1);
                         dh=gcf;dh.Name = ['Wavelength ',num2str(REC.radiometry.lambda(inl))];
                         fh(inl)=copyobj(dh,0); delete(dh);
                     end
@@ -902,8 +1047,11 @@ if RECONSTRUCTION == 1
     if strcmpi(REC.solver.type,'born')||...
             strcmpi(REC.solver.type,'born_spectral_post_proc')||...
             strcmpi(REC.solver.type,'usprior')
+        if ~isdir(REC.solver.prejacobian.path(1:end-2))
+            mkdir(REC.solver.prejacobian.path(1:end-2))
+        end
         for inl = 1:REC.radiometry.nL
-            if ~exist([REC.solver.prejacobian.path,num2str(REC.radiometry.lambda(inl)),'.mat'],'file')
+            if ~exist([REC.solver.prejacobian.path,num2str(REC.radiometry.lambda(inl)),'.mat'],'file')                
                 save([REC.solver.prejacobian.path,num2str(REC.radiometry.lambda(inl)),'.mat'],'ROI','NW');
             else
                 save([REC.solver.prejacobian.path,num2str(REC.radiometry.lambda(inl)),'.mat'],'ROI','NW','-append');
@@ -925,52 +1073,52 @@ if RECONSTRUCTION == 1
     end
     %% =============================== DISPLAY RESULTS ===========================================
     % ---------------------------- display mua --------------------------------
-    if ~contains(REC.solver.type,'fit')
-        
-        if ~contains(REC.solver.type,'spectral')
-            Nr = ceil(sqrt(REC.radiometry.nL));Nc = round(sqrt(REC.radiometry.nL));
-            nfig = 500;
-            fh = figure(nfig);
-            for inl = 1:REC.radiometry.nL
-                SubPlotMap(reshape(REC.opt.bmua(:,inl),REC.grid.dim),...
-                    [num2str(REC.radiometry.lambda(inl)) ' nm'],nfig,Nr,Nc,inl,res_fact);
+    if SHOWPLOTS
+        if ~contains(REC.solver.type,'fit')
+            if ~contains(REC.solver.type,'spectral')
+                Nr = ceil(sqrt(REC.radiometry.nL));Nc = round(sqrt(REC.radiometry.nL));
+                nfig = 500;
+                fh = figure(nfig);
+                for inl = 1:REC.radiometry.nL
+                    SubPlotMap(reshape(REC.opt.bmua(:,inl),REC.grid.dim),...
+                        [num2str(REC.radiometry.lambda(inl)) ' nm'],nfig,Nr,Nc,inl,res_fact);
+                end
+                fh.NumberTitle = 'off';fh.Name = 'Reconstructed Absorption';
+                %    ------------------------ Reference musp ----------------------------------
+                nfig = 600;
+                fh = figure(nfig);
+                for inl = 1:REC.radiometry.nL
+                    SubPlotMap(reshape(REC.opt.bmusp(:,inl),REC.grid.dim),...
+                        [num2str(REC.radiometry.lambda(inl)) ' nm'],nfig,Nr,Nc,inl,res_fact);
+                end
+                fh.NumberTitle = 'off';fh.Name = 'Reconstructed Scattering';
+
+                disp('recon: finished');
+            elseif contains(REC.solver.type,'spectral')
+                %% plot conc
+                Nr = 3; Nc = 3;
+                nfig = 800;
+                fh = figure(nfig);
+                for ic = 1:REC.spe.nCromo
+                    SubPlotMap(reshape(REC.opt.bConc(:,ic),REC.grid.dim),...
+                        [REC.spe.cromo_label{ic} ' Map'],nfig,Nr,Nc,ic,res_fact);
+                end
+                % Hbtot and SO2
+                REC.opt.HbTot = REC.opt.bConc(:,strcmpi(REC.spe.cromo_label,'hb'))+...
+                    REC.opt.bConc(:,strcmpi(REC.spe.cromo_label,'hbo2'));
+                REC.opt.So2 = REC.opt.bConc(:,strcmpi(REC.spe.cromo_label,'hbo2'))./REC.opt.HbTot;
+                SubPlotMap(reshape(REC.opt.HbTot,REC.grid.dim),'HbTot Map',nfig,Nr,Nc,ic+1,res_fact);
+                SubPlotMap(reshape(REC.opt.So2,REC.grid.dim),'So2 Map',nfig,Nr,Nc,ic+2,res_fact);
+
+                % a b scattering
+                SubPlotMap(reshape(REC.opt.bA,REC.grid.dim),'a Map',nfig,Nr,Nc,ic+3,res_fact);
+                SubPlotMap(reshape(REC.opt.bbB,REC.grid.dim),'b Map',nfig,Nr,Nc,ic+4,res_fact);
+
+                fh.NumberTitle = 'off';fh.Name = 'Reconstructed';
+
             end
-            fh.NumberTitle = 'off';fh.Name = 'Reconstructed Absorption';
-            %    ------------------------ Reference musp ----------------------------------
-            nfig = 600;
-            fh = figure(nfig);
-            for inl = 1:REC.radiometry.nL
-                SubPlotMap(reshape(REC.opt.bmusp(:,inl),REC.grid.dim),...
-                    [num2str(REC.radiometry.lambda(inl)) ' nm'],nfig,Nr,Nc,inl,res_fact);
-            end
-            fh.NumberTitle = 'off';fh.Name = 'Reconstructed Scattering';
-            
-            disp('recon: finished');
-        elseif contains(REC.solver.type,'spectral')
-            %% plot conc
-            Nr = 3; Nc = 3;
-            nfig = 800;
-            fh = figure(nfig);
-            for ic = 1:REC.spe.nCromo
-                SubPlotMap(reshape(REC.opt.bConc(:,ic),REC.grid.dim),...
-                    [REC.spe.cromo_label{ic} ' Map'],nfig,Nr,Nc,ic,res_fact);
-            end
-            % Hbtot and SO2
-            REC.opt.HbTot = REC.opt.bConc(:,strcmpi(REC.spe.cromo_label,'hb'))+...
-                REC.opt.bConc(:,strcmpi(REC.spe.cromo_label,'hbo2'));
-            REC.opt.So2 = REC.opt.bConc(:,strcmpi(REC.spe.cromo_label,'hbo2'))./REC.opt.HbTot;
-            SubPlotMap(reshape(REC.opt.HbTot,REC.grid.dim),'HbTot Map',nfig,Nr,Nc,ic+1,res_fact);
-            SubPlotMap(reshape(REC.opt.So2,REC.grid.dim),'So2 Map',nfig,Nr,Nc,ic+2,res_fact);
-            
-            % a b scattering
-            SubPlotMap(reshape(REC.opt.bA,REC.grid.dim),'a Map',nfig,Nr,Nc,ic+3,res_fact);
-            SubPlotMap(reshape(REC.opt.bbB,REC.grid.dim),'b Map',nfig,Nr,Nc,ic+4,res_fact);
-            
-            fh.NumberTitle = 'off';fh.Name = 'Reconstructed';
-            
         end
     end
-    
     
     %% Save reconstruction
     if ~contains(REC.solver.type,'fit')

@@ -126,6 +126,7 @@ end
 if nargout > 1
     Area = sum(phi,'omitnan');
 end
+
 phi = ConvIRF(phi,irf);
 
 if self_norm == true

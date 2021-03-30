@@ -25,10 +25,20 @@ size_y = size(TPSF);
 nwin = size(twin,1);
 size_y(1) = nwin;
 y = zeros(size_y);
-for w = 1:nwin
-             y(w,:) = sum(TPSF(twin(w,1):twin(w,2),:),1,'omitnan');
-end
+if size(twin,3) > 1
+    for i = 1:size_y(2)
+        for w = 1:nwin
+            y(w,i) = sum(TPSF(squeeze(twin(w,1,i)):squeeze(twin(w,2,i)),i),1,'omitnan');
+        end
+    end
 
+else
+    
+    for w = 1:nwin
+        y(w,:) = sum(TPSF(squeeze(twin(w,1)):squeeze(twin(w,2)),:),1,'omitnan');
+    end
+
+end
     
         
        

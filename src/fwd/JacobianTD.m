@@ -35,16 +35,19 @@ switch lower(type_fwd)
                 
             case 'semi-inf'
                 row_off = 0;
+                
                 for i = 1:Ns
                     ind_d = find(dmask(:,i));
                     %textprogressbar(i/Ns*100);
                     %pause(0.01);
+                    
                     for j=1:numel(ind_d)
                         m = ind_d(j);
+                        dm = findIndexfromSQ(dmask,m,i);                        
                         J(row_off + (1:nwin),:) = WindowTPSF(...
-                            convn(...
+                            convn_fft(...
                             J_Semi_Inf_PCBC_TR_3D_muaD(t, muaB,muspB,v,A,Spos(i,:),Dpos(m,:),XX,YY,ZZ,...
-                            grid.dV,type), irf), twin);
+                            grid.dV,type), irf(:,dm)), twin(:,:,dm));
                         row_off = row_off + nwin;
                     end
                 end
@@ -108,10 +111,11 @@ switch lower(type_fwd)
                 %pause(0.01);
                 for j=1:numel(ind_d)
                     m = ind_d(j);
+                    dm = findIndexfromSQ(dmask,i,m); 
                     J2(row_off + (1:nwin),:) = WindowTPSF(...
                         convn(...
                         J_Semi_Inf_PCBC_TR_3D_muaD(t, muaB,muspB,v,A,Spos(i,:),Dpos(m,:),XX,YY,ZZ,...
-                        grid.dV,type), irf), twin);
+                        grid.dV,type), irf(:,dm)), twin(:,:,dm));
                     row_off = row_off + nwin;
                 end
             end
