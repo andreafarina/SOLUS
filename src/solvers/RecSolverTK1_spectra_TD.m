@@ -33,11 +33,12 @@ Jacobian = @(mua, mus) JacobianTD_multiwave_spectral (grid, Spos, Dpos, dmask, m
     geom, fwd_type,radiometry,irf);
 
 %% Window TPSF for each wavelength
-dummy_proj = zeros(size(twin,1),nQM*radiometry.nL);
+dummy_proj = zeros(size(twin,1),nQM);
+idxmeas = findMeasIndex(dmask);
 for inl = 1:radiometry.nL
-    meas_set = (1:nQM)+(inl-1)*nQM; twin_set = (1:2)+(inl-1)*2;
+    meas_set = idxmeas{inl};
     proj_single = proj(:,meas_set);
-    proj_single = WindowTPSF(proj_single,twin(:,twin_set));
+    proj_single = WindowTPSF(proj_single,twin(:,:,meas_set));
     dummy_proj(:,meas_set) = proj_single;
 end
 proj = dummy_proj;

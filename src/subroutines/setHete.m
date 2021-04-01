@@ -32,11 +32,20 @@ switch upper(hete.geometry)
     case 'USIMAGE'
         disp('+++ Distance Transform');
         [DOT,~] = prior3D(DOT, hete, solver);
+        
+    case 'LOAD_BKG'
+    disp('+++ LOAD BACKGROUND'); % ONLY FOR OPTICAL, BOTH COEFF--INPROGRESS
     
+    load(DOT.hete.path);
+    for inl= 1:DOT.radiometry.nL
+        DOT.opt.Mua(:,:,:,inl) = fuzzy_priormask(structopt.Mua(:,:,:,inl), dimVox(1),DOT.grid);
+        DOT.opt.Musp(:,:,:,inl) = fuzzy_priormask(structopt.Musp(:,:,:,inl), dimVox(1),DOT.grid);
+    end
     otherwise
         error(['+++ ',hete.geometry,' : type unknown']);
+        
 end
-
+hete.load_bkg = 'victre_sim.mat';
 for itype = 1: size(hete.type,2)
     if isfield(hete, 'randinhom') 
         fprintf('Setting pesudo-inhomogeneities for %s \n', hete.type{itype});
@@ -45,7 +54,7 @@ for itype = 1: size(hete.type,2)
                                                              [DOT.grid.Nx, DOT.grid.Ny, DOT.grid.Nz ] , ...
                                                              hete.randinhom(1)/DOT.grid.dx,...
                                                              hete.randinhom(2) );
-        end
+        end    
     end
 end
 

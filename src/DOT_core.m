@@ -63,14 +63,6 @@ end
 %%               OVERRIDE param using P values (multiSIM)
 % =========================================================================
 Override_MultiSim
-    REC.solver.type = 'usprior';
-    %DOT.radiometry.nL = 8;
-    %SPECTRA=1;
-%     REC.type_fwd ='fem';
-%     TYPE_FWD ='fem';
-%     DOT.Source.Area = 2;
-%     DOT.Detector.Area = 2;
-    REC.time.roi = 'auto';
 % =========================================================================
 %%                     Create folder for saving data
 % =========================================================================
@@ -146,6 +138,7 @@ for i = 1:NUM_HETE
     h_string = ['hete',num2str(i)];
     [DOT,DOT.opt.(h_string)] = setHete(DOT,DOT.opt.(h_string),REC.solver.type);
 end
+
 
 % Map optical properties to mesh and QM
 if strcmpi(TYPE_FWD,'fem')

@@ -4,7 +4,7 @@
 REC.domain = 'td';          % CW or TD: data type to be inverted
 REC.type_fwd = 'linear';    % 'linear' or 'fem'.
 % -------------------------------------------------------------------------
-REC.time.roi = [282 946;264 941;241 942;232 946;222 946;218 942;213 941;218 944];
+REC.time.roi = 'auto';%[282 946;264 941;241 942;232 946;222 946;218 942;213 941;218 944];
 
                         % selected dinamically by the user.
 NUM_TW = 20;            % Number of Time Windows within ROI
@@ -30,7 +30,7 @@ end
 
 % ---------------------- Solver and regularization ------------------------
 REC.solver.tau = 0.1;            % regularisation parameter
-REC.solver.type = 'tk0';         % 'born','GN': gauss-newton, 
+REC.solver.type = 'spectral_tk1';         % 'born','GN': gauss-newton, 
                                   % 'USprior': Simon's strutural prior
                                   % 'LM': Levenberg-Marquardt,
                                   % 'l1': L1-based minimization

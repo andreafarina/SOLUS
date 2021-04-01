@@ -62,11 +62,11 @@ tphi = timeSolver_('apply', qvec);
 taphi = timeSolver_('apply', mvec);
 
 %% Convolution with IRF if present
-if numel(irf) > 1
-    %for j = 1:size(tphi)
-    tphi = convn(irf,tphi);
-    tphi(nstep + 1:end,:,:) = [];
-end
+% if numel(irf) > 1
+%     %for j = 1:size(tphi)
+%     tphi = convn(irf,tphi);
+%     tphi(nstep + 1:end,:,:) = [];
+% end
 % Elegant but memory consuming
 % if numel(irf)>1
 %     lf = numel(irf) + 2*nstep -1;
@@ -107,6 +107,7 @@ switch lower(CALC)
             
             for im = 1:length(ind_m)
                 m = ind_m(im);
+                
                 disp(['Building Jacobian for source / measurement: ', num2str(q) '/' num2str(m)]);
                 if ~strcmpi(GRADIENT,'none')
                     for it = 1:nstep
@@ -125,7 +126,8 @@ switch lower(CALC)
                             rhost(:,iel) = rhost(:,iel) + squeeze(conv(gd(:,idim,iel),ga(:,idim,iel)));
                         end
                     end
-                    J(row_off + (1:nwin), nsol+(1:nsol)) = -WindowTPSF(rhost,twin);
+                    dm = findIndexfromSQ(dmask,q,m);
+                    J(row_off + (1:nwin), nsol+(1:nsol)) = -WindowTPSF(ConvIRF(rhost,irf(:,dm)),twin(:,:,dm));
                 end
                 % loop on the mesh elements - Absorption
                 for iel=1:size(qvec,1)
@@ -135,7 +137,8 @@ switch lower(CALC)
                 for it=1:nstep
                     rhoat(it,:) = hBasis.Map('M->S',da(it,:));
                 end
-                J(row_off + (1:nwin), 1:nsol) = -WindowTPSF(rhoat,twin);
+                dm = findIndexfromSQ(dmask,q,m);
+                J(row_off + (1:nwin), 1:nsol) = -WindowTPSF(ConvIRF(rhoat,irf(:,dm)),twin(:,:,dm));
                 row_off = row_off + nwin;
                 toc
             end
@@ -159,7 +162,8 @@ switch lower(CALC)
                             rhoat(k,:) = - hBasis.Map('M->S',tphi(k,:,q).*taphi(k,:,m)); %absorbtion
                         end
                         rhoat = ifft(rhoat,[],1);
-                        J(row_off + (1:nwin), 1:nsol) = WindowTPSF(rhoat,twin);
+                        dm = findIndexfromSQ(dmask,q,m);
+                        J(row_off + (1:nwin), 1:nsol) = WindowTPSF(ConvIRF(rhoat,irf(:,dm)),twin(:,:,dm));
                         row_off = row_off + nwin;
                     end
                 end
@@ -189,8 +193,9 @@ switch lower(CALC)
                         end
                         rhoat = ifft(rhoat,[],1);
                         rhost = ifft(rhost,[],1);
-                        J(row_off + (1:nwin), 1:nsol) = WindowTPSF(rhoat,twin);
-                        J(row_off + (1:nwin), nsol+(1:nsol)) = WindowTPSF(rhost,twin);
+                        dm = findIndexfromSQ(dmask,q,m);
+                        J(row_off + (1:nwin), 1:nsol) = WindowTPSF(ConvIRF(rhoat,irf(:,dm)),twin(:,:,dm));
+                        J(row_off + (1:nwin), nsol+(1:nsol)) = WindowTPSF(ConvIRF(rhost,irf(:,dm)),twin(:,:,dm));
                         row_off = row_off + nwin;
                     end
                 end
@@ -217,6 +222,7 @@ switch lower(CALC)
                 for q = 1:size(qvec,2)
                     %ind_m = find(dmask(q,:));
                     ind_m = find(dmask(:,q));	% A. Farina: consistent with dmask order
+                    
                     disp(['Building Jacobian for source: ', num2str(q)]);
                     for im = 1:length(ind_m)
                         m = ind_m(im);
@@ -231,9 +237,9 @@ switch lower(CALC)
                         rhoat = ifft(rhoat,[],1); % time domain PMDF for absorption
                         rhost = permute(rhost,[2 1]);
                         rhost = ifft(rhost,[],1); % time domain PMDF for diffusion
-                        
-                        J(row_off + (1:nwin), 1:nsol)        = WindowTPSF(rhoat,twin); %toastMapMeshToSol(hBasis,rhoaw(w,:));
-                        J(row_off + (1:nwin), nsol+(1:nsol)) = WindowTPSF(rhost,twin); %toastMapMeshToSol(hBasis,rhosw(w,:));
+                        dm = findIndexfromSQ(dmask,q,m);
+                        J(row_off + (1:nwin), 1:nsol)        = WindowTPSF(ConvIRF(rhoat,irf(:,dm)),twin(:,:,dm)); %toastMapMeshToSol(hBasis,rhoaw(w,:));
+                        J(row_off + (1:nwin), nsol+(1:nsol)) = WindowTPSF(ConvIRF(rhost,irf(:,dm)),twin(:,:,dm)); %toastMapMeshToSol(hBasis,rhosw(w,:));
                         row_off = row_off + nwin;
                     end
                 end

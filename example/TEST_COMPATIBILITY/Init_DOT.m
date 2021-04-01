@@ -34,7 +34,7 @@ LOAD_FWD_TEO = 0;       % if 0: save the raw TPSF(un-noisy) in a _FwdTeo.m file.
                         % if 1: load the raw TPSF for speed up
 % -------------------------------------------------------------------------
 TOAST2DOT = 0;          % if 1 the function toast2dot is used for conversion 
-SPECTRA = 0;
+SPECTRA = 1;
 DOT.spe.cromo_label = {'Hb','HbO2','Lipid','H2O','Collagen'};
 DOT.spe.active_cromo = [1,1,1,1,1];
 DOT.spe.cromo_factor = [1,1,10*100*0.91,10*100, 10*100*0.196];
@@ -48,7 +48,7 @@ mua_ = mua_(lamda_id); musp_ = musp_(lamda_id);
 Xd = {mua_,musp_};
 else
 a_ = 0.789550;	b_ =1.05756;
-conc_ = [9.50498	0.92704	0.15076	0.63606	1.11337];
+conc_ = [9.50498 0.92704 0.15076 0.63606 1.11337];
 Xd = {conc_,[a_ b_]};
 end
 % ========================================================================= 
@@ -157,3 +157,8 @@ end
 %                         DOT.time.TotCounts in any case.  
 CUT_COUNTS = 1;         
 NumDelays = 1;      % number of delays
+
+
+%%
+DOT.Source.Area = 2
+DOT.Detector.Area = 2
