@@ -3,13 +3,15 @@ function Q = QuantifyDOT(REC,ref_true)
 %                            Quantify DOT
 % =========================================================================
 FullPrint = false;
+Q = [];
 if any(strcmpi(REC.solver.variables,'mua'))
     for inl = 1:numel(REC.opt.muaB)
         if FullPrint == true
             fprintf(['<strong>------- Absorbtion: Wavelength ',num2str(REC.radiometry.lambda(inl)),'-------</strong>\n'])
         end
-        Q.mua(inl) = QuantifyX(REC.grid,REC.opt.muaB(inl),REC.opt.bmua(:,inl),...
+        Q.mua(inl) = QuantifyX(REC.grid,REC.opt.mua0(inl),REC.opt.bmua(:,inl),...
             ref_true,REC.opt.hete1.c,REC.opt.Mua(:,:,:,inl),FullPrint);
+        
     end
 end
 if any(strcmpi(REC.solver.variables,'mus'))

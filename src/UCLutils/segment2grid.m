@@ -37,7 +37,7 @@ outdimx = numel( infx: delta : supx)-1;
 outdimy = numel( infy: delta : supy)-1;
 outdimz = numel( infz: delta : supz)-1;
 
-out_grid = false(outdimx, outdimy, outdimz);
+out_grid = zeros(outdimx, outdimy, outdimz);
 
 % Defining middle indexes
 mx = round(outdimx/2);

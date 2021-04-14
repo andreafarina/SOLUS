@@ -17,7 +17,7 @@ type_ref = 'theor';      % 'theor', 'meas', 'area'
 
 %% REGULARIZATION PARAMETER CRITERION
 %REGU = 'external'; % 'lcurve', 'gcv', 'external'
-REGU = 'lcurve'; 
+REGU = 'simon';%'lcurve'; 
 BACKSOLVER = 'tikh'; % 'tikh', 'tsvd', 'discrep','simon', 'gmres', 'pcg', 'lsqr'
 % -------------------------------------------------------------------------
 [~,type] = ExtractVariables(solver.variables);

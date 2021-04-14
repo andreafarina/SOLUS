@@ -36,16 +36,20 @@ switch upper(hete.geometry)
     case 'LOAD_BKG'
     disp('+++ LOAD BACKGROUND'); % ONLY FOR OPTICAL, BOTH COEFF--INPROGRESS
     
-    load(DOT.hete.path);
+    load(hete.path);
+    DOT.opt.muaB = 0*DOT.opt.Mua;
+    DOT.opt.muspB = 0*DOT.opt.Mua;
     for inl= 1:DOT.radiometry.nL
-        DOT.opt.Mua(:,:,:,inl) = fuzzy_priormask(structopt.Mua(:,:,:,inl), dimVox(1),DOT.grid);
-        DOT.opt.Musp(:,:,:,inl) = fuzzy_priormask(structopt.Musp(:,:,:,inl), dimVox(1),DOT.grid);
+        DOT.opt.Mua(:,:,:,inl) = fuzzy_priormask(structopt.mua(:,:,:,inl), dimVox(1),DOT.grid);
+        DOT.opt.Musp(:,:,:,inl) = fuzzy_priormask(structopt.musp(:,:,:,inl), dimVox(1),DOT.grid);
+        DOT.opt.muaB(:,:,:,inl) = fuzzy_priormask(structopt.mua0(:,:,:,inl), dimVox(1),DOT.grid);
+        DOT.opt.muspB(:,:,:,inl) = fuzzy_priormask(structopt.musp0(:,:,:,inl), dimVox(1),DOT.grid);
+
     end
     otherwise
         error(['+++ ',hete.geometry,' : type unknown']);
         
 end
-hete.load_bkg = 'victre_sim.mat';
 for itype = 1: size(hete.type,2)
     if isfield(hete, 'randinhom') 
         fprintf('Setting pesudo-inhomogeneities for %s \n', hete.type{itype});

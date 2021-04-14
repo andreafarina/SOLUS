@@ -44,9 +44,6 @@ Init_DOT;
 %run(fullfile(folder,'SetIO_DOT.m'));
 SetIO_DOT;
 
-%% correct missing flags for compatibility with older examples
-if ~exist('SHOWPLOTS','var'), SHOWPLOTS = 1; end
-if ~exist('REMOVE_VOXELS','var'), REMOVE_VOXELS = 0; end
 %==========================================================================
 %%  SETTING SOURCES (QVEC), DETECTORS (MVEC) AND THEIR PERMUTATIONS (DMASK)
 %==========================================================================
@@ -59,6 +56,12 @@ if RECONSTRUCTION == 1
     %run(fullfile(folder,'RecSettings_DOT.m'));
     RecSettings_DOT;
 end
+%% correct missing flags for compatibility with older examples
+if ~exist('SHOWPLOTS','var'), SHOWPLOTS = 1; end
+if ~exist('REMOVE_VOXELS','var'), REMOVE_VOXELS = 0; end
+if ~exist('SHOWIMAGEMEAS','var'), SHOWIMAGEMEAS = 0; end
+if ~exist('RECFILE_APPEND','var'), RECFILE_APPEND = '';end
+
 % =========================================================================
 %%               OVERRIDE param using P values (multiSIM)
 % =========================================================================
@@ -72,6 +75,8 @@ if ~exist(rdir,'dir')
     mkdir(rdir)
 end
 disp(['Results path: ',rdir]);
+%% set suffixes to filename
+filename = [filename, RECFILE_APPEND];
 %% Get True Variables from X
 [DOT,REC] = TranslateX_2Var(SPECTRA,Xd,Xp,Xr,spectra_file,DOT,REC);
 %% check dimensions of dmask for compatibily purposes
@@ -88,9 +93,13 @@ end
 
 if (EXPERIMENTAL == 1)
     load([exp_path,'EXP_',exp_file])
-    % Select measurements by dmask
+
     if (EXP_DATA == 1)
+        % Select measurements by dmask
+        DOT.dmask = logical(DOT.dmask.*EXP.grid.dmask);
         if (size(EXP.data.spc,2)>sum(DOT.dmask))
+            
+            % do not select data that are not available experimentally      
             EXP.data.spc = EXP.data.spc(:,DOT.dmask(:));
             EXP.data.ref = EXP.data.ref(:,DOT.dmask(:));
             if DOT.time.self_norm
@@ -101,7 +110,7 @@ if (EXPERIMENTAL == 1)
                     EXP.data.spc(:,meas_set) = EXP.data.spc(:,meas_set)*spdiags(1./sum(EXP.data.spc(:,meas_set),1)',0,nm,nm);
                     EXP.data.ref(:,meas_set) = EXP.data.ref(:,meas_set)*spdiags(1./sum(EXP.data.ref(:,meas_set),1)',0,nm,nm);
                 end
-            end
+            end           
         end
     end
 end
@@ -307,31 +316,21 @@ if FORWARD == 1
         % AF: to optimize memory assign directly DataTD
         if ((EXPERIMENTAL == 1) && (EXP_IRF == 1))
             
-                % vectorise data
-                tmpsize = size(DataTD);
-                tmpdata = DataTD;
-                DataTD = reshape(DataTD, [tmpsize(1), tmpsize(2)]);
                 % convolve by IRF
                 DataTD = ConvIRF(full(DataTD),...
                     DOT.time.irf.data_mask);
-                % reshape
-                DataTD = reshape(DataTD, tmpsize);
        
                 
                 if REF == 1
-                    % vectorise
-                    tmpsize = size(RefTD);
-                    RefTD = reshape(RefTD, [tmpsize(1), tmpsize(2)]);
                     % convolve by IRF
                     RefTD = ConvIRF(full(RefTD),...
                             DOT.time.irf.data_mask);
-                    % reshape
-                    RefTD = reshape(RefTD, tmpsize);
                 end
                 clear nmax
                 %% plots
                 if SHOWPLOTS
                     idx = findMeasIndex(DOT.dmask);
+                    tmpdata = DataTD;
                     for inl = 1:DOT.radiometry.nL
                         nsub=numSubplots(DOT.radiometry.nL);
                         figure(12);    
@@ -465,7 +464,7 @@ if ((EXPERIMENTAL == 1) && (EXP_DATA == 1))
         end
         % ------ Comparison between conv(irf,fwd) and the experimental data -------
         if FORWARD == 1
-            if SHOWPLOTS
+            if SHOWPLOTS && SHOWIMAGEMEAS
                 h = 1;
                 nsub=numSubplots(DOT.radiometry.nL);
                 fh=figure(202);
@@ -484,8 +483,8 @@ if ((EXPERIMENTAL == 1) && (EXP_DATA == 1))
                         semilogy(1:size(z,1),[z(:,meas_set(h))./sum(z(:,meas_set(h)),'omitnan'),DataTD(:,meas_set(h))./sum(DataTD(:,meas_set(h)),'omitnan')]),
                         legend('Data','conv(irf,fwd)'),
                         title(['Wavelength :' num2str(DOT.radiometry.lambda(inl))]);
-                        hMeas =findSQcouple(DOT.dmask(:,:,inl), h);
-                        ImageMeasure(DOT,hMeas);
+                        hMeas =findSQcouple(DOT.dmask(:,:,inl), h, 'sub');
+                        ImageMeasure(DOT,hMeas(2),hMeas(1) ,DOT.dmask(:,:,inl));
                         pause(0.01);
                     end
                     
@@ -633,8 +632,7 @@ if RECONSTRUCTION == 1
                 tmp_roi(:,meas_set) =  repmat(REC.time.roi(inl, :)', [1,nmeas]);
             end
             REC.time.roi = tmp_roi;
-            clear tmp_roitmp_roi
-
+            clear tmp_roi
         end
         
         REC.ref = []; REC.Data = []; REC.sd = [];
@@ -714,103 +712,155 @@ if RECONSTRUCTION == 1
     %==========================================================================
     res_fact = [1 1 1];
     % ------------------------ Reference mua ----------------------------------
-    if ~SPECTRA
-          Nr = ceil(sqrt(REC.radiometry.nL));Nc = round(sqrt(REC.radiometry.nL));
-          nfig = 300;
-          fh = figure(nfig);
-          for inl = 1:REC.radiometry.nL
-              SubPlotMap(REC.opt.Mua(:,:,:,inl),...
-                [num2str(REC.radiometry.lambda(inl)) ' nm'],nfig,Nr,Nc,inl,res_fact);
-          end
-          fh.NumberTitle = 'off';fh.Name = 'Simulated Absorption';
-    % ------------------------ Reference musp ----------------------------------          
-         nfig = 400; 
-         fh = figure(nfig);
-         for inl = 1:REC.radiometry.nL
-              SubPlotMap(REC.opt.Musp(:,:,:,inl),...
-                [num2str(REC.radiometry.lambda(inl)) ' nm'],nfig,Nr,Nc,inl,res_fact);
-         end
-         fh.NumberTitle = 'off';fh.Name = 'Simulated Scattering'; 
-    %%    
-        
-%         for inl = 1:REC.radiometry.nL
-%             PlotMua = squeeze(REC.opt.Mua(:,:,:,inl));
-%             PlotMusp = squeeze(REC.opt.Musp(:,:,:,inl));
-%             fh=figure(300+inl);
-%             fh.Name = ['Wave: ' num2str(REC.radiometry.lambda(inl))];
-%             if isfield(REC.opt,'Mua')
-%                 ShowRecResults(REC.grid,PlotMua,...
-%                     REC.grid.z1,REC.grid.z2,REC.grid.dz,1,...
-%                     'auto',0,max(PlotMua(:)));
-%                 suptitle('Mua');
-%             end
-%             % ------------------------ Reference musp ---------------------------------
-%             fh=figure(400+inl);
-%             fh.Name = ['Wave: ' num2str(REC.radiometry.lambda(inl))];
-%             if isfield(REC.opt,'Musp')
-%                 ShowRecResults(REC.grid,PlotMusp,...
-%                     REC.grid.z1,REC.grid.z2,REC.grid.dz,1,...
-%                     'auto',0,max(PlotMusp(:)));
-%                 suptitle('Mus');
-%             end
-%         end
-    end
-    if SPECTRA
-        %% plot conc
-        Nr = 3; Nc = 3;
-        nfig = 900;
-        fh = figure(nfig);
-        for ic = 1:REC.spe.nCromo
-            SubPlotMap(REC.opt.Conc(:,:,:,ic),...
-                [REC.spe.cromo_label{ic} ' Map'],nfig,Nr,Nc,ic,res_fact);
+    if SHOWPLOTS
+        if ~SPECTRA
+              Nr = ceil(sqrt(REC.radiometry.nL));Nc = round(sqrt(REC.radiometry.nL));
+              nfig = 300;
+              fh = figure(nfig);
+              for inl = 1:REC.radiometry.nL
+                  SubPlotMap(REC.opt.Mua(:,:,:,inl),...
+                    [num2str(REC.radiometry.lambda(inl)) ' nm'],nfig,Nr,Nc,inl,res_fact);
+              end
+              fh.NumberTitle = 'off';fh.Name = 'Simulated Absorption';
+        % ------------------------ Reference musp ----------------------------------          
+             nfig = 400; 
+             fh = figure(nfig);
+             for inl = 1:REC.radiometry.nL
+                  SubPlotMap(REC.opt.Musp(:,:,:,inl),...
+                    [num2str(REC.radiometry.lambda(inl)) ' nm'],nfig,Nr,Nc,inl,res_fact);
+             end
+             fh.NumberTitle = 'off';fh.Name = 'Simulated Scattering'; 
+        %%    
+
+    %         for inl = 1:REC.radiometry.nL
+    %             PlotMua = squeeze(REC.opt.Mua(:,:,:,inl));
+    %             PlotMusp = squeeze(REC.opt.Musp(:,:,:,inl));
+    %             fh=figure(300+inl);
+    %             fh.Name = ['Wave: ' num2str(REC.radiometry.lambda(inl))];
+    %             if isfield(REC.opt,'Mua')
+    %                 ShowRecResults(REC.grid,PlotMua,...
+    %                     REC.grid.z1,REC.grid.z2,REC.grid.dz,1,...
+    %                     'auto',0,max(PlotMua(:)));
+    %                 suptitle('Mua');
+    %             end
+    %             % ------------------------ Reference musp ---------------------------------
+    %             fh=figure(400+inl);
+    %             fh.Name = ['Wave: ' num2str(REC.radiometry.lambda(inl))];
+    %             if isfield(REC.opt,'Musp')
+    %                 ShowRecResults(REC.grid,PlotMusp,...
+    %                     REC.grid.z1,REC.grid.z2,REC.grid.dz,1,...
+    %                     'auto',0,max(PlotMusp(:)));
+    %                 suptitle('Mus');
+    %             end
+    %         end
         end
-        % Hbtot and SO2
-        REC.opt.HbTot = REC.opt.Conc(:,:,:,strcmpi(REC.spe.cromo_label,'hb'))+...
-                REC.opt.Conc(:,:,:,strcmpi(REC.spe.cromo_label,'hbo2'));
-        REC.opt.So2 = REC.opt.Conc(:,:,:,strcmpi(REC.spe.cromo_label,'hbo2'))./REC.opt.HbTot;
-        SubPlotMap(REC.opt.HbTot,'HbTot Map',nfig,Nr,Nc,ic+1,res_fact);
-        SubPlotMap(REC.opt.So2,'So2 Map',nfig,Nr,Nc,ic+2,res_fact);
-        
-        % a b scattering
-        SubPlotMap(REC.opt.A,'a Map',nfig,Nr,Nc,ic+3,res_fact);
-        SubPlotMap(REC.opt.B,'b Map',nfig,Nr,Nc,ic+4,res_fact);
-        
-        fh.NumberTitle = 'off';fh.Name = 'Simulated';
-            %%
-%         for ic = 1:REC.spe.nCromo
-%             PlotConc = squeeze(REC.opt.Conc(:,:,:,ic));
-%             fh=figure(900+ic);fh.NumberTitle = 'off';fh.Name = [REC.spe.cromo_label{ic} ' Map'];
-%             ShowRecResults(REC.grid,PlotConc,...
-%                 REC.grid.z1,REC.grid.z2,REC.grid.dz,1,'auto',0,max(PlotConc(:)));%,0.,0.64);
-%             suptitle(REC.spe.cromo_label{ic});
-%         end
-        
-        %% detailed visualization
-%         REC.opt.HbTot = REC.opt.Conc(:,:,:,strcmpi(REC.spe.cromo_label,'hb'))+...
-%                 REC.opt.Conc(:,:,:,strcmpi(REC.spe.cromo_label,'hbo2'));
-%         REC.opt.So2 = REC.opt.Conc(:,:,:,strcmpi(REC.spe.cromo_label,'hbo2'))./REC.opt.HbTot;
-%         fh=figure(900+ic+1);fh.NumberTitle = 'off';fh.Name = 'HbTot Map';
-%         ShowRecResults(REC.grid,REC.opt.HbTot,...
-%             REC.grid.z1,REC.grid.z2,REC.grid.dz,1,'auto');%,0.,0.64);
-%         suptitle('HbTot');
-%         fh=figure(900+ic+2);fh.NumberTitle = 'off';fh.Name = 'So2 Map';
-%         ShowRecResults(REC.grid,REC.opt.So2,...
-%             REC.grid.z1,REC.grid.z2,REC.grid.dz,1,'auto');%,0.,0.64);
-%         suptitle('So2');
-%         fh=figure(900+ic+3);fh.NumberTitle = 'off';fh.Name = ('a Map');
-%         ShowRecResults(REC.grid,REC.opt.A,...
-%             REC.grid.z1,REC.grid.z2,REC.grid.dz,1,'auto');%,0.,0.64);
-%         suptitle('a');
-%         fh=figure(900+ic+4);fh.NumberTitle = 'off';fh.Name = ('b Map');
-%         ShowRecResults(REC.grid,REC.opt.B,...
-%             REC.grid.z1,REC.grid.z2,REC.grid.dz,1,'auto');%,0.,0.64);
-%         suptitle('b');
+        if SPECTRA
+            %% plot conc
+            Nr = 3; Nc = 3;
+            nfig = 900;
+            fh = figure(nfig);
+            for ic = 1:REC.spe.nCromo
+                SubPlotMap(REC.opt.Conc(:,:,:,ic),...
+                    [REC.spe.cromo_label{ic} ' Map'],nfig,Nr,Nc,ic,res_fact);
+            end
+            % Hbtot and SO2
+            REC.opt.HbTot = REC.opt.Conc(:,:,:,strcmpi(REC.spe.cromo_label,'hb'))+...
+                    REC.opt.Conc(:,:,:,strcmpi(REC.spe.cromo_label,'hbo2'));
+            REC.opt.So2 = REC.opt.Conc(:,:,:,strcmpi(REC.spe.cromo_label,'hbo2'))./REC.opt.HbTot;
+            SubPlotMap(REC.opt.HbTot,'HbTot Map',nfig,Nr,Nc,ic+1,res_fact);
+            SubPlotMap(REC.opt.So2,'So2 Map',nfig,Nr,Nc,ic+2,res_fact);
+
+            % a b scattering
+            SubPlotMap(REC.opt.A,'a Map',nfig,Nr,Nc,ic+3,res_fact);
+            SubPlotMap(REC.opt.B,'b Map',nfig,Nr,Nc,ic+4,res_fact);
+
+            fh.NumberTitle = 'off';fh.Name = 'Simulated';
+                %%
+    %         for ic = 1:REC.spe.nCromo
+    %             PlotConc = squeeze(REC.opt.Conc(:,:,:,ic));
+    %             fh=figure(900+ic);fh.NumberTitle = 'off';fh.Name = [REC.spe.cromo_label{ic} ' Map'];
+    %             ShowRecResults(REC.grid,PlotConc,...
+    %                 REC.grid.z1,REC.grid.z2,REC.grid.dz,1,'auto',0,max(PlotConc(:)));%,0.,0.64);
+    %             suptitle(REC.spe.cromo_label{ic});
+    %         end
+
+            %% detailed visualization
+    %         REC.opt.HbTot = REC.opt.Conc(:,:,:,strcmpi(REC.spe.cromo_label,'hb'))+...
+    %                 REC.opt.Conc(:,:,:,strcmpi(REC.spe.cromo_label,'hbo2'));
+    %         REC.opt.So2 = REC.opt.Conc(:,:,:,strcmpi(REC.spe.cromo_label,'hbo2'))./REC.opt.HbTot;
+    %         fh=figure(900+ic+1);fh.NumberTitle = 'off';fh.Name = 'HbTot Map';
+    %         ShowRecResults(REC.grid,REC.opt.HbTot,...
+    %             REC.grid.z1,REC.grid.z2,REC.grid.dz,1,'auto');%,0.,0.64);
+    %         suptitle('HbTot');
+    %         fh=figure(900+ic+2);fh.NumberTitle = 'off';fh.Name = 'So2 Map';
+    %         ShowRecResults(REC.grid,REC.opt.So2,...
+    %             REC.grid.z1,REC.grid.z2,REC.grid.dz,1,'auto');%,0.,0.64);
+    %         suptitle('So2');
+    %         fh=figure(900+ic+3);fh.NumberTitle = 'off';fh.Name = ('a Map');
+    %         ShowRecResults(REC.grid,REC.opt.A,...
+    %             REC.grid.z1,REC.grid.z2,REC.grid.dz,1,'auto');%,0.,0.64);
+    %         suptitle('a');
+    %         fh=figure(900+ic+4);fh.NumberTitle = 'off';fh.Name = ('b Map');
+    %         ShowRecResults(REC.grid,REC.opt.B,...
+    %             REC.grid.z1,REC.grid.z2,REC.grid.dz,1,'auto');%,0.,0.64);
+    %         suptitle('b');
+        end
+        drawnow
     end
-    drawnow
+    
+    %% fit reference to get starting values for Jacobian based solvers
+    if isfield(REC.solver,'fit_reference') 
+        if REC.solver.fit_reference == true
+            
+            if REC.solve.fit_reference_far == true
+                fit_dmask = logical(zeros(size(REC.dmask)));                         
+                dist = sqrt((REC.Detector.Pos(:,1) - REC.Source.Pos(:,1)' ).^2 + ...
+                     (REC.Detector.Pos(:,2) - REC.Source.Pos(:,2)' ).^2 + ...
+                  (REC.Detector.Pos(:,3) - REC.Source.Pos(:,3)' ).^2);
+                dist = repmat(dist,[1,1,REC.radiometry.nL]);
+                Imax = find(dist == max(dist(:)));
+                fit_dmask(Imax) = true;        
+                fit_dmask = fit_dmask .* REC.dmask;
+                fit_dmaskMAT = fit_dmask;
+                fit_dmask(~REC.dmask(:)) = [];
+            else
+                fit_dmask = REC.dmask;
+            end
+            idxmeas = findMeasIndex(REC.dmask);
+            for inl = 1:REC.radiometry.nL
+                meas_set = idxmeas{inl};
+                fitref = REC.ref(:,meas_set);
+                fitsd = REC.sd(:,meas_set);
+                fittwin = REC.time.twin(:,:,meas_set);
+                fitirf = REC.time.irf.data_mask(:,meas_set);
+                
+                % delete unselected
+                fitref(:,~fit_dmask(meas_set)) = [];
+                fitsd(:,~fit_dmask(meas_set)) = [];
+                fitirf(:,~fit_dmask(meas_set)) = [];
+                fittwin(:,:,~fit_dmask(meas_set)) = [];
+                fprintf(['<strong>------- Wavelength ',num2str(REC.radiometry.lambda(inl)),'-------</strong>\n'])
+                [tmp_mua0(:,inl),tmp_musp0(:,inl)] = FitMuaMus_TD(REC.solver,...
+                    REC.grid,...
+                    REC.opt.mua0(inl),REC.opt.musp0(inl),REC.opt.nB,REC.A,...
+                    REC.Source.Pos,REC.Detector.Pos,fit_dmaskMAT(:,:,inl),...
+                    REC.time.dt,REC.time.nstep,fittwin,...
+                    REC.time.self_norm,fitref,...
+                    fitirf,fitref,fitsd,REC.type_fwd);
+                dh=gcf;dh.Name = ['Wavelength ',num2str(REC.radiometry.lambda(inl))];
+                fh(inl)=copyobj(dh,0); delete(dh);
+            end
+            REC.opt.mua0 = tmp_mua0(1,:);
+            REC.opt.musp0 = tmp_musp0(1,:);
+            
+            clear tmp_mua0
+            clear tmp_musp0
+        end
+    end
     % =========================================================================
     %%                      Reconstruction Solver
     % =========================================================================
-
+   
     
     switch lower(REC.domain)
         case 'cw'
@@ -967,7 +1017,7 @@ if RECONSTRUCTION == 1
                             REC.Source.Pos,REC.Detector.Pos,REC.dmask(:,:,inl),...
                             REC.time.dt,REC.time.nstep,REC.time.twin(:,:,meas_set),...
                             REC.time.self_norm,REC.Data(:,meas_set),...
-                            REC.time.irf.data(:,inl),REC.ref(:,meas_set),REC.sd(:,meas_set),REC.type_fwd);
+                            REC.time.irf.data_mask(:,meas_set),REC.ref(:,meas_set),REC.sd(:,meas_set),REC.type_fwd);
                         dh=gcf;dh.Name = ['Wavelength ',num2str(REC.radiometry.lambda(inl))];
                         fh(inl)=copyobj(dh,0); delete(dh);
                     end
@@ -1132,5 +1182,5 @@ if RECONSTRUCTION == 1
         disp(['Quantification will be stored in: ', rdir,filename,'_', 'REC.mat']);
         save([rdir,filename,'_', 'REC'],'Q','-append')
     end
-    clearvars REC
+
 end

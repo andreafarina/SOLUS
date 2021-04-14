@@ -29,7 +29,7 @@ Xr = {conc_,[a_ b_]};
 end
 
 % ---------------------- Solver and regularization ------------------------
-REC.solver.tau = 0.1;            % regularisation parameter
+REC.solver.tau = 0.01;            % regularisation parameter
 REC.solver.type = 'spectral_tk1';         % 'born','GN': gauss-newton, 
                                   % 'USprior': Simon's strutural prior
                                   % 'LM': Levenberg-Marquardt,

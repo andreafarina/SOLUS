@@ -1,9 +1,13 @@
 function [Mua,Musp,Conc,A,B] = applyGrid(grid,muaB,muspB,solv_type,concB,aB,bB)
-nL = numel(muaB);
+%nL = numel(muaB(ndims));
+nL = size(muaB, ndims(muaB)); % get last dimension to know the number of wavelengths
 if iscolumn(muaB), muaB = muaB'; end
 if iscolumn(muspB), muspB = muspB'; end
-Mua = ones(prod(grid.dim),nL).* muaB;
-Musp = ones(prod(grid.dim),nL).* muspB;
+
+Mua = ones(prod(grid.dim),nL).* reshape(muaB, [numel(muaB)/nL,nL]);
+Musp = ones(prod(grid.dim),nL).* reshape(muspB, [numel(muspB)/nL,nL]);
+
+
 Mua = squeeze(reshape(Mua,[grid.dim nL]));
 Musp = squeeze(reshape(Musp,[grid.dim nL]));
 

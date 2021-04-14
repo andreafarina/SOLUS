@@ -14,9 +14,9 @@ function [data,area,peak,baric] = resampleSPC(y,t,dt,flag)
 %%
 verbosity = 0;
 dty = t(2)-t(1);
-bin_ratio = dt./dty;       
+bin_ratio = round(dt./dty,6);       
 %% Better to first oversample if bin_ratio is not integer
-if floor(bin_ratio)>(bin_ratio+eps*1e6) || floor(bin_ratio)<(bin_ratio-eps*1e6)
+if floor(bin_ratio)>(bin_ratio+1e-6) || floor(bin_ratio)<(bin_ratio-1e-6)
     dt_ov = 1e-3;    % 1 fs
     tii = t(1):dt_ov:t(end);
     yii = interp1(t,y,tii);
@@ -25,9 +25,10 @@ if floor(bin_ratio)>(bin_ratio+eps*1e6) || floor(bin_ratio)<(bin_ratio-eps*1e6)
     bin_ratio = round(dt./dt_ov);
 else
     yii = y;
+    bin_ratio = floor(bin_ratio);
 end 
 
-ti = t(1):dt:t(end);
+ti = t(1):dt:(t(end)+0.5*dt);
 bin = meshgrid(1:numel(ti),1:bin_ratio);
 bin = bin(1:numel(yii));
 bin = bin(:);

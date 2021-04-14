@@ -28,7 +28,11 @@ switch lower(kind)
             error('Set the number of windows!')
         end
         while rem(diff(roi),param)~=0
-            roi(2)=roi(2)-1;
+            if diff(roi) > param
+                roi(2) = roi(2) - 1;
+            elseif diff(roi) < param
+                roi(2) = roi(2) + 1;
+            end           
         end
         fprintf(['<strong>Actual roi: ', num2str(roi),'</strong>\n'])
         nt_win = round(diff(roi)/param);

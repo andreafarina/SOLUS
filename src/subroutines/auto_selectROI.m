@@ -3,7 +3,7 @@ function out = auto_selectROI(x, p1,p2)
 
 if nargin < 2
    p1 = 0.90;
-   p2 = 0.10;
+   p2 = 0.01;
 end
     peak = max(x(:));
     out(1) = find(x>p1*peak, 1,'first');

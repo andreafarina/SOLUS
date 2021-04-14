@@ -9,7 +9,7 @@
 function [bmua,bmus] = FitMuaMus_TD(~,grid,mua0,mus0, n, A,...
     Spos,Dpos,dmask, dt, nstep, twin, self_norm, data, irf, ref, sd, type_fwd)
 geom = 'semi-inf';
-weight_type = 'rect';%'none'; % 'none','rect'
+weight_type = 'none';%'rect';%'none'; % 'none','rect'
 fract_first = 0.5; fract_last = 0.01;
 data = data;%ref;%data;%ref;
 data2 = data;
@@ -77,7 +77,7 @@ opts = optimoptions('lsqcurvefit',...
     'Jacobian','off',...
     ...'Algorithm','levenberg-marquardt',...
     'DerivativeCheck','off',...
-    'MaxIter',100,'Display','final-detailed','FinDiffRelStep',[1e-3,1e-2,2]);%,'TolFun',1e-10,'TolX',1e-10)
+    'MaxIter',100,'Display','final-detailed','FinDiffRelStep',[1e-3,1e-2,dt]);%,'TolFun',1e-10,'TolX',1e-10)
 %% Setup optimization for lsqnonlin
 % opts = optimoptions('lsqnonlin',...
 %     'Jacobian','off',...
@@ -99,7 +99,7 @@ opts = optimoptions('lsqcurvefit',...
 %x = fminsearch(@objective,x0);
 x0 = x;
 %if strcmpi(weight_type,'none')
-    x = lsqcurvefit(@forward,x0,[],data,[],[],opts);
+    x = lsqcurvefit(@forward,x0,[],data,[0, 0,- 0*5 * nstep*dt],[],opts);
 %else    
 %    x = fminunc(@Loss_func,x0);
 %end
@@ -262,7 +262,7 @@ function [proj,J] = forward(x,~)
 % plot forward
     t = (1:numel(data)) * dt;
     figure(1003);
-    semilogy(t,proj,'-',t,data,'.'),ylim([1e-3 1])
+    semilogy(t,proj,'-',t,data,'.')%,ylim([1e-3 1])
     drawnow;
     nwin = size(twin,1);
     if nargout>1
