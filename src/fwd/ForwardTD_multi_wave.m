@@ -19,7 +19,7 @@ end
             MusData = squeeze(Musp(:,:,:,inl));
         end
         if ~isempty(irf)
-            irf_lambda = irf(:,inl);
+            irf_lambda = irf(:,idxQM);
         else
             irf_lambda = [];
         end

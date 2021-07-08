@@ -16,18 +16,18 @@ cor0 = cor;
 % number of points after spline
 npoints = 400;
 % number of parameters though which the updated spline will be run
-nparam = 2*(numel(cor)-1);
+nparam = 3*((numel(cor)-1)/2);
 points0 = Lee_spline(cor, npoints);
 param = Lee_spline(cor, nparam+1);
 param = param(:,1:end-1);
 param0 = param;
 
 order = 1;
-dStep = 0.1; 
+dStep = 0.03; 
 %drawfitting(param, npoints, im);
-nsigma = 15;
-minsigma = 0.15;
-maxsigma = 0.7;
+nsigma = 10;
+minsigma = 0.3;%0.15;
+maxsigma =0.8;%0.7
 sigma_p = linspace(maxsigma,minsigma,nsigma);
 i_s = 1;
 % calculate image features
@@ -39,7 +39,7 @@ dstruct.points0 = points0;
 
 % initialise cycle
 k = 1;
-max_k = 16;
+max_k = 8;
 max_ik = 100;
 alpha0 = 30*dStep;
 % compute initial loss
@@ -75,7 +75,7 @@ while k <= max_k
         k = 0;
     end
     k = k+1;
-%    drawfitting(param, npoints, im);
+    drawfitting(param, npoints, dstruct.dist);
 end
 
 
@@ -143,7 +143,7 @@ function d = setDomain(im,cor, sigma_p, pp)
         dist = double( bwdist(smlap >= i & smlap <= j ));%+ bwdist(smlap <= i).^2 ); 
         dist = dist - min(dist(:));
         dist = dist/ max(dist(:));        
-        d.dist(:,:,i_sigma) = dist.^2+ (add_dist*(max(dist(roi_idx))/max(add_dist(:)))).^2;
+        d.dist(:,:,i_sigma) = dist.^1+ (add_dist*(max(dist(roi_idx))/max(add_dist(:)))).^1;
     end    
     d.lap = lap;
 %    imagesc(sum(d.dist(:,:,3)));
@@ -240,7 +240,7 @@ function L = Loss(points, d,~,~)%param, cor0)
 %     Regu = sum(regu(1,:).^2 + regu(2,:).^2 );
     
     a = 0;
-    b = 2;
+    b = 3;
     ab = a + b;
     a = a / ab;
     b = b / ab;

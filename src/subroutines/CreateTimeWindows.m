@@ -29,9 +29,19 @@ switch lower(kind)
         end
         while rem(diff(roi),param)~=0
             if diff(roi) > param
-                roi(2) = roi(2) - 1;
+                if mod(rem(diff(roi),param),2) == 1 
+                    roi(2) = roi(2) - 1;
+                else
+                    roi(2) = roi(2) - 1;
+                    roi(1) = roi(1) + 1;
+                end
             elseif diff(roi) < param
-                roi(2) = roi(2) + 1;
+                if mod(rem(diff(roi),param),2) == 1 
+                    roi(2) = roi(2) + 1;
+                else
+                    roi(2) = roi(2) + 1;
+                    roi(1) = roi(1) - 1;
+                end
             end           
         end
         fprintf(['<strong>Actual roi: ', num2str(roi),'</strong>\n'])

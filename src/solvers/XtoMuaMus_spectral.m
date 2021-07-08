@@ -24,6 +24,7 @@ switch lower(type)
         bconc = x(:,1:spe.nCromo);
         bAB = x(:,spe.nCromo+1:end);
         bmua = (spe.ext_coeff0*bconc')';
+        
         bmus = zeros(nV,numel(spe.lambda));
         for in = 1:nV
            bmus(in,:) = bAB(in,1).*(spe.lambda./spe.lambda0).^(-bAB(in,2));

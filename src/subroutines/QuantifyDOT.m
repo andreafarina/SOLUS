@@ -2,8 +2,14 @@ function Q = QuantifyDOT(REC,ref_true)
 % =========================================================================
 %                            Quantify DOT
 % =========================================================================
+REFIMAGE = 1;
+SOLUS_ONLY=1;
 FullPrint = false;
+REC.opt.muaB = REC.opt.mua0; % temporary
+REC.opt.muspB = REC.opt.musp0;% temporary
+
 Q = [];
+if ~SOLUS_ONLY
 if any(strcmpi(REC.solver.variables,'mua'))
     for inl = 1:numel(REC.opt.muaB)
         if FullPrint == true
@@ -50,7 +56,7 @@ end
 % Add fields of the Q structure you want to display.
 % Fields which have an array of values are NOT supported!
 DispQuantifyTable(Q,REC,{'cnr' 'max.rec'});
-
+end
 %% FIGURE OF MERIT SOLUS
 n_mu = numel(REC.opt.hete1.type);
 for nlambda = 1:REC.radiometry.nL
@@ -65,13 +71,13 @@ for nlambda = 1:REC.radiometry.nL
         % extract data
         if n_mu ==  1
             mu = reshape( REC.opt.bmua(:,nlambda), REC.grid.dim);
-            mu0 = REC.opt.mua0(nlambda);
+            mu0 = REC.opt.muaB(nlambda);
             muin0 = REC.opt.hete1.val(nlambda);
             target_mu = REC.opt.Mua(:,:,:,nlambda);
             coeff = 'mua';
         else
             mu = reshape( REC.opt.bmusp(:,nlambda), REC.grid.dim);
-            mu0 = REC.opt.musp0(nlambda);
+            mu0 = REC.opt.muspB(nlambda);
             if numel(REC.opt.hete1.type) == 2
                 muin0 = REC.opt.hete1.val(nlambda + REC.radiometry.nL);
             else
@@ -81,12 +87,15 @@ for nlambda = 1:REC.radiometry.nL
             coeff = 'musp';
         end
         % get region
-        if mean(target_mu) >= mu0
-            char_target = logical(target_mu > 0.5*(max(target_mu(:)) + min(target_mu(:))) );
+        if mean(target_mu(:)) >= mu0
+            char_target = logical(target_mu > (0.5*(max(target_mu(:)) + min(target_mu(:))) ));
         else
-            char_target = logical(target_mu < 0.5*(max(target_mu(:)) + min(target_mu(:))));
+            char_target = logical(target_mu < (0.5*(max(target_mu(:)) + min(target_mu(:))) ));
         end
         idx_incl = identify_inclusion(mu(:));
+        if REFIMAGE ==1
+            idx_incl = find(REC.solver.prior.refimage(:) > mean(REC.solver.prior.refimage(:)));
+        end
         % get sensitivity
         [C,  CNR] = recon_sensitivity(mu(:), idx_incl);
         [C_vol,  CNR_vol] = recon_sensitivity(mu(:), idx_incl, 'volume', sum(char_target(:)), mu0);
@@ -104,13 +113,21 @@ for nlambda = 1:REC.radiometry.nL
         % get accuracy
         acc = recon_accuracy(mu, muin0, idx_incl);
         acc_vol = recon_accuracy(mu, muin0, idx_incl, 'volume', sum(char_target(:)), mu0);
+        tmp_mu = mu(idx_incl);
         
+        ValIn = mean(tmp_mu(tmp_mu>prctile(tmp_mu,5)&tmp_mu<prctile(tmp_mu,95)));
+        if ValIn >= mu0
+            ValIn= mu0+(max(tmp_mu(:))- mu0);%*(numel(idx_incl)*8);
+        else
+            ValIn= mu0+(min(tmp_mu(:))-mu0);%*(numel(idx_incl)*8);
+        end
         cmd = sprintf('Q.SOLUS_FigMerit.%s', coeff);
         cmd_end = sprintf('(:,%g)',nlambda);
         for i_field = {'C','C_vol', 'CNR','CNR_vol', 'displ',...
-                'brd','brdRMS', 'acc', 'acc_vol'}
+                'brd','brdRMS', 'acc', 'acc_vol', 'ValIn'}
             eval([cmd,'.',  char(i_field), cmd_end,'=', char(i_field),';' ])
         end
+        
     end
 end
 
@@ -127,7 +144,7 @@ if contains(lower(REC.solver.type),'spectral')
     if n_mu == 1 || (numel(REC.opt.hete1.type) == 2)
         for ic = 1:REC.spe.nCromo
             mu = reshape(REC.opt.bConc(:,ic), REC.grid.dim);
-            mu0 = REC.opt.conc0(ic);
+            mu0 = REC.opt.concB(ic);
             muin0 = REC.opt.hete1.conc(ic);
             target_mu = REC.opt.Conc(:,:,:,ic);
             if ic == 1
@@ -148,6 +165,9 @@ if contains(lower(REC.solver.type),'spectral')
                 char_target = logical(target_mu < 0.5*(max(target_mu(:)) + min(target_mu(:))));
             end
             idx_incl = identify_inclusion(mu(:));
+            if REFIMAGE ==1
+                idx_incl = find(REC.solver.prior.refimage(:) > mean(REC.solver.prior.refimage(:)));
+            end
             %     get sensitivity
             [C,  CNR] = recon_sensitivity(mu(:), idx_incl);
             [C_vol,  CNR_vol] = recon_sensitivity(mu(:), idx_incl, 'volume', sum(char_target(:)), mu0);
@@ -166,10 +186,17 @@ if contains(lower(REC.solver.type),'spectral')
             acc = recon_accuracy(mu, muin0, idx_incl);
             acc_vol = recon_accuracy(mu, muin0, idx_incl, 'volume', sum(char_target(:)), mu0);
             
+            tmp_mu = mu(idx_incl);
+            ValIn = mean(tmp_mu(tmp_mu>prctile(tmp_mu,5)&tmp_mu<prctile(tmp_mu,95)));
+            if ValIn >= mu0
+                ValIn= mu0+(max(tmp_mu(:))- mu0);%*(numel(idx_incl)*8);
+            else
+                ValIn= mu0+(min(tmp_mu(:))-mu0);%*(numel(idx_incl)*8);
+            end
             cmd = sprintf('Q.SOLUS_FigMerit.%s', coeff);
-            cmd_end = sprintf('(:,%g)',ic);
+            cmd_end = '';%sprintf('(%g)',ic);
             for i_field = {'C','C_vol', 'CNR','CNR_vol', 'displ',...
-                    'brd','brdRMS', 'acc', 'acc_vol'}
+                    'brd','brdRMS', 'acc', 'acc_vol','ValIn'}
                 eval([cmd,'.',  char(i_field), cmd_end,'=', char(i_field),';' ])
             end
             % % %     create mask manually selected by user
@@ -225,6 +252,9 @@ if contains(lower(REC.solver.type),'spectral')
                 char_target = logical(target_mu < 0.5*(max(target_mu(:)) + min(target_mu(:))));
             end
             idx_incl = identify_inclusion(mu(:));
+            if REFIMAGE ==1
+                idx_incl = find(REC.solver.prior.refimage(:) > mean(REC.solver.prior.refimage(:)));
+            end
             % get sensitivity
             [C,  CNR] = recon_sensitivity(mu(:), idx_incl);
             [C_vol,  CNR_vol] = recon_sensitivity(mu(:), idx_incl, 'volume', sum(char_target(:)), mu0);
@@ -242,11 +272,17 @@ if contains(lower(REC.solver.type),'spectral')
             % get accuracy
             acc = recon_accuracy(mu, muin0, idx_incl);
             acc_vol = recon_accuracy(mu, muin0, idx_incl, 'volume', sum(char_target(:)), mu0);
-            
+            tmp_mu = mu(idx_incl);
+                    ValIn = mean(tmp_mu(tmp_mu>prctile(tmp_mu,5)&tmp_mu<prctile(tmp_mu,95)));
+            if ValIn >= mu0
+                ValIn= mu0+(max(tmp_mu(:))- mu0);%*(numel(idx_incl)*8);
+            else
+                ValIn= mu0+(min(tmp_mu(:))-mu0);%*(numel(idx_incl)*8);
+            end
             cmd = sprintf('Q.SOLUS_FigMerit.%s', coeff);
-            cmd_end = sprintf('(:,%g)',ic);
+            cmd_end = '';%sprintf('(%g)',ic+REC.spe.nCromo);
             for i_field = {'C','C_vol', 'CNR','CNR_vol', 'displ',...
-                    'brd','brdRMS', 'acc', 'acc_vol'}
+                    'brd','brdRMS', 'acc', 'acc_vol','ValIn'}
                 eval([cmd,'.',  char(i_field), cmd_end,'=', char(i_field),';' ])
             end
             %create mask manually selected by user

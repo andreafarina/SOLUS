@@ -7,7 +7,7 @@
 function [bmua,bmus] = RecSolverTK1_TD(solver,grid,mua0,mus0, n, A,...
     Spos,Dpos,dmask, dt, nstep, twin, self_norm, data, irf, ref, sd, type_fwd)
 %% Jacobain options
-USEGPU = 0;%gpuDeviceCount;
+USEGPU = 1;%gpuDeviceCount;
 LOAD_JACOBIAN = solver.prejacobian.load;      % Load a precomputed Jacobian
 geom = 'semi-inf';
 xtransf = '(x/x0)'; %log(x),x,log(x/x0)
@@ -77,10 +77,10 @@ J(mask,:) = [];
 %[L,~] = StructuredLaplacianPrior(solver.prior.refimage,siz_prior(1),siz_prior(2),siz_prior(3));
 
 k3d = Kappa(solver.prior.refimage,5);
-[Dx,Dy,Dz] = gradientOperator(grid.dim,[1,1,1],[],'Dirichlet');
+[Dx,Dy,Dz] = gradientOperator(grid.dim,[1,1,1],[],'1st');
 L = [sqrt(k3d)*Dx;sqrt(k3d)*Dy;sqrt(k3d)*Dz];
 %% Solver
-disp('Calculating the larger singular value');
+disp('Calculating the largest singular value');
 s = svds(J,1);
 % structured Laplacian
 L1 = [];

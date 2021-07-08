@@ -28,7 +28,9 @@ addpath([getenv('DOTSRC'),filesep,'visual']);
 addpath([getenv('DOTSRC'),filesep,'multiSimProcedures']);
 addpath([getenv('DOTSRC'),filesep,'TOASTutils']);
 addpath([getenv('DOTSRC'),filesep,'UCLutils']);
-
+if exist('UTIL_install.m','file')>=1
+    UTIL_install
+end
 clearvars('-except',StartVars{:});
 
 

@@ -83,13 +83,13 @@ J(mask,:) = [];
 
 %% Structured laplacian prior
 
-%siz_prior = size(solver.prior.refimage);
-%solver.prior(solver.prior == max(solver.prior(:))) = 1.1*min(solver.prior(:)); 
-%solver.prior = solver.prior .* (1 + 0.01*randn(size(solver.prior)));
+siz_prior = size(solver.prior.refimage);
+% %solver.prior.refimage(solver.prior.refimage == max(solver.prior(:))) = 1.1*min(solver.prior.refimage(:)); 
+% %solver.prior.refimage = solver.prior.refimage .* (1 + 0.01*randn(size(solver.prior)));
 %[L,~] = StructuredLaplacianPrior(solver.prior.refimage,siz_prior(1),siz_prior(2),siz_prior(3));
 %% new gradient
 k3d = Kappa(solver.prior.refimage,5);
-[Dy,Dx,Dz] = gradientOperator(grid.dim,[1,1,1],[],'none');
+[Dx,Dy,Dz] = gradientOperator(grid.dim,[1,1,1],[],'1st');
 L = [sqrt(k3d)*Dx;sqrt(k3d)*Dy;sqrt(k3d)*Dz];
 
 %% Solver

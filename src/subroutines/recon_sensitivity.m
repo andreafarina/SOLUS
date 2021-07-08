@@ -45,3 +45,4 @@ function [contrast,  CNR] = recon_sensitivity(mu_recon, incl_idx,str_norm, vol_t
         CNR = diff_mean/std(bulk);
 
 end
+

@@ -2,11 +2,11 @@ function kap3D = Kappa(refimage,th)
 %% Generate a diffusivity coefficient for the anisotropic laplacian
 % th: threshold for the gradient
 % 
-VERBOSITY = 1;
+VERBOSITY = 0;
 nvox = numel(refimage);
 [gx,gy,gz] = gradient(refimage);
 gg = sqrt(gx.^2+gy.^2+gz.^2);
-Mgg = max(gg(:));
+Mgg = max(gg(:)); % 
 if Mgg==0
     Mgg = 1; % to manage a flat mask
 end

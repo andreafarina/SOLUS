@@ -4,7 +4,7 @@ function J = JacobianTD_multiwave_spectral(grid,Spos, Dpos, dmask, muaB, muspB, 
 nQM = sum(dmask(:));
 nV = grid.N;
 nTW = size(twin,1);
-ishift = 0;
+ishift = nV*spe.nCromo;
 switch lower(type)
     case 'mua'
         J = zeros(nTW*nQM,nV*spe.nCromo);
@@ -19,7 +19,8 @@ if contains(lower(type),'mua')
     ext_coeff0 = spe.ext_coeff0;
     %Ja = zeros(nTW*nQM,nV*spe.nCromo);
     idxmeas = findMeasIndex(dmask);
-    parfor inl = 1:radiometry.nL
+    Ja = cell(8,1);
+    for inl = 1:radiometry.nL
         meas_set = idxmeas{inl};
         disp('-------');
         fprintf('<strong>Absorption operations</strong>\n');
@@ -28,9 +29,10 @@ if contains(lower(type),'mua')
         %J(meas_set,(1:nV*spe.nCromo))
         Ja{inl} = JacobianTD(grid,Spos, Dpos, dmask(:,:,inl), muaB(inl), muspB(inl), n, ...
             A, dt, nstep, twin(:,:,meas_set), irf(:,meas_set), geom,'mua','linear',self_norm,logdata)*kron(ext_coeff0(inl,:),speye(nV));
-        %clear ext_coeff_mat
+        clear ext_coeff_mat
+        
     end
-    J(:,(1:nV*spe.nCromo)) = cell2mat(Ja');%reshape(permute(Ja,[1,3,2]),nTW*nQM,[]);
+    J(:,(1:nV*spe.nCromo)) = cell2mat(Ja);%reshape(permute(Ja,[1,3,2]),nTW*nQM,[]);
     %J(:,(1:nV*spe.nCromo)) = reshape(permute(Ja,[1,3,2]),nTW*nQM,[]);
     clear Ja
 end
@@ -40,6 +42,7 @@ if contains(lower(type),'d')
     lambda0 = radiometry.lambda0;
     %Js = (zeros(nTW*nQM,nV*2,radiometry.nL));
     idxmeas = findMeasIndex(dmask);
+    Js = cell(8,1);
     for inl = 1:radiometry.nL
         meas_set = idxmeas{inl};
         disp('-------');
@@ -52,7 +55,7 @@ if contains(lower(type),'d')
             kron([(lambda(inl)./lambda0).^(-b0),(-a0.*(lambda(inl)./lambda0).^(-b0))*...
             log(lambda(inl)./lambda0)],speye(nV));
     end
-    J(:,ishift+(1:nV*2)) = cell2mat(Js');
+    J(:,ishift+(1:nV*2)) = cell2mat(Js);
     %J(:,ishift+(1:nV*2)) = reshape(permute(Js,[1,3,2]),nTW*nQM*radiometry.nL,[]);
 end
 end

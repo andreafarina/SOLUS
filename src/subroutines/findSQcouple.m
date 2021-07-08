@@ -5,7 +5,7 @@ function s_out = findSQcouple(dmask, idx, FLAG)
 
 %dmask = dmask(:);
 
-I = find(dmask ~=0);
+I = find(dmask(:) ~=0);
 s_out = I(idx);
 if nargin < 3
     return

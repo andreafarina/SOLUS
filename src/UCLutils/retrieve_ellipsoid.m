@@ -24,11 +24,11 @@ MAX_third = ceil(sm_fact * MAX_D);
 half_mask = false(MAX_x, MAX_y, ceil(MAX_third));
 %% for procedure 
 tic;
-idxk = uint16(find(D >= 1));
+idxk = (find(D >= 1));
 [idxi, idxj] = ( ind2sub(size(D),find( D >= 1)));  
-idxi = uint16(idxi);
-idxj = uint16(idxj);
-idxk = uint16(ceil( sm_fact * sqrt( 2 * D(idxk) * MAX_D -  D(idxk).^2)) );
+%idxi = (idxi);
+%idxj = (idxj);
+idxk = (ceil( sm_fact * sqrt( 2 * D(idxk) * MAX_D -  D(idxk).^2)) );
 disp('Generating 3D Mask')
 
  for j = 1: numel(idxk)

@@ -61,11 +61,12 @@ if ~exist('SHOWPLOTS','var'), SHOWPLOTS = 1; end
 if ~exist('REMOVE_VOXELS','var'), REMOVE_VOXELS = 0; end
 if ~exist('SHOWIMAGEMEAS','var'), SHOWIMAGEMEAS = 0; end
 if ~exist('RECFILE_APPEND','var'), RECFILE_APPEND = '';end
-
+if ~exist('RECFILE_APPEND_DATA','var'), RECFILE_APPEND_DATA = '';end
 % =========================================================================
 %%               OVERRIDE param using P values (multiSIM)
 % =========================================================================
 Override_MultiSim
+
 % =========================================================================
 %%                     Create folder for saving data
 % =========================================================================
@@ -76,14 +77,44 @@ if ~exist(rdir,'dir')
 end
 disp(['Results path: ',rdir]);
 %% set suffixes to filename
+filename_DATA = [filename, RECFILE_APPEND_DATA];
 filename = [filename, RECFILE_APPEND];
+
 %% Get True Variables from X
+if 0 == 0
+    DOT.spe.lambda0 = DOT.radiometry.lambda0;
+    DOT.spe.lambda = DOT.radiometry.lambda;
+    DOT.spe.nLambda = numel(DOT.spe.lambda);
+    DOT.spe.spectra_file = spectra_file;
+    DOT.spe.SPECTRA = SPECTRA;
+    DOT.spe.nCromo = numel(DOT.spe.cromo_label);
+    DOT.spe.ext_coeffB = LoadSpectra(spectra_file,DOT.radiometry.lambda,ones(1,DOT.spe.nCromo));
+    DOT.spe.ext_coeffB = DOT.spe.ext_coeffB.*DOT.spe.active_cromo;
+    DOT.spe.ext_coeff0 = DOT.spe.ext_coeffB;
+    REC.spe.ext_coeff0 = DOT.spe.ext_coeffB;
+end
+
+if contains(REC.solver.type,'spectral') && ~exist('conc_','var')% if concentrations are not given, fit voxels
+    
+    
+    %[~,~,DOT.opt.concB, DOT.opt.aB, DOT.opt.bB] = 
+    [~,~,conc_,a_,b_]=FitVoxel(Xd{1},Xd{2},DOT.spe);
+    Xd = {conc_,[a_ b_]};
+    [~,~,conc_,a_,b_]=FitVoxel(Xp{1},Xp{2},DOT.spe);
+    Xp = {conc_,[a_ b_]};
+    [~,~,conc_,a_,b_]=FitVoxel(Xr{1},Xr{2},DOT.spe);
+    Xr = {conc_,[a_ b_]};
+
+
+    
+end
+
+
 [DOT,REC] = TranslateX_2Var(SPECTRA,Xd,Xp,Xr,spectra_file,DOT,REC);
 %% check dimensions of dmask for compatibily purposes
 if ismatrix(DOT.dmask)
     DOT.dmask = repmat(DOT.dmask, [1,1,DOT.radiometry.nL]);
 end
-
 
 %==========================================================================
 %%                          Experimental data
@@ -96,16 +127,16 @@ if (EXPERIMENTAL == 1)
 
     if (EXP_DATA == 1)
         % Select measurements by dmask
-        DOT.dmask = logical(DOT.dmask.*EXP.grid.dmask);
-        if (size(EXP.data.spc,2)>sum(DOT.dmask))
+        DOT.dmask = logical(DOT.dmask.*EXP.grid.dmask(:,:,:));
+        if (size(EXP.data.spc,2)>sum(DOT.dmask(:)))
             
             % do not select data that are not available experimentally      
             EXP.data.spc = EXP.data.spc(:,DOT.dmask(:));
             EXP.data.ref = EXP.data.ref(:,DOT.dmask(:));
             if DOT.time.self_norm
-                nQM = findMeasIndex(DOT.dmask);
+                indexmeas = findMeasIndex(DOT.dmask);
                 for inl = 1:DOT.radiometry.nL
-                    meas_set = nQM{inl};
+                    meas_set = indexmeas{inl};
                     nm = numel(meas_set);
                     EXP.data.spc(:,meas_set) = EXP.data.spc(:,meas_set)*spdiags(1./sum(EXP.data.spc(:,meas_set),1)',0,nm,nm);
                     EXP.data.ref(:,meas_set) = EXP.data.ref(:,meas_set)*spdiags(1./sum(EXP.data.ref(:,meas_set),1)',0,nm,nm);
@@ -137,7 +168,6 @@ end
 %%                                  SET GRID
 %==========================================================================
 DOT.grid = setGrid(DOT);
-
 [DOT.opt.Mua, DOT.opt.Musp,DOT.opt.Conc, DOT.opt.A, DOT.opt.B] = applyGrid(DOT.grid,DOT.opt.muaB,DOT.opt.muspB,REC.solver.type,DOT.opt.concB,DOT.opt.aB,DOT.opt.bB);
 %==========================================================================
 %%                      Set Heterogeneities
@@ -202,15 +232,17 @@ if DOT.TD == 1
                 idx = sub2ind(size(EXP.irf.data),baric_pos(:)' ,I,J);
                 EXP.irf.data(idx) = 1; 
         end
-%         for inl = 1:DOT.radiometry.nL
-%             DOT.time.irf.data(:,inl) = resampleSPC(EXP.irf.data(:,inl),EXP.time.axis,DOT.time.dt,'norm');
-%         end
         
         tmp = EXP.irf.data;
+        % set nan to 0
+        tmp(isnan(tmp)) = 0;
         tmp = reshape(tmp, [size(tmp,1),size(tmp,2)*size(tmp,3)]);
-        for i_sam = 1:size(tmp,2)
+        disp('experimental irf resampling')
+        tic
+        for i_sam = 1:size(tmp,2)          
             tmp_(:,i_sam)= resampleSPC(tmp(:,i_sam),EXP.time.axis,DOT.time.dt,'norm');
         end
+       toc
         DOT.time.irf.data = reshape(tmp_, [size(tmp_,1),size(EXP.irf.data,2)*size(EXP.irf.data,3)]);
         % get set of IRFs used in convolution
         DOT.time.irf.data_mask = DOT.time.irf.data(:, DOT.dmask(:));
@@ -385,8 +417,7 @@ if FORWARD == 1
                             DataTD_single_wave = poissrnd(round(DataTD_single_wave * RealFactor(inl) .* factor));
                             %DataTD = bsxfun(@times,DataTD,factor(idz)./factor');
                     end
-                    
-                    
+                                      
                 else
                     [factor,DataTD_single_wave,sdTD_single_wave] = CutCounts(1:size(RefTD_single_wave,1),DOT.time.dt,...
                         RealFactor(inl)*DataTD_single_wave,DOT.time.TotCounts(inl),RADIOMETRY,CUT_COUNTS,...
@@ -424,17 +455,19 @@ if SAVE_FWD == 1
     if ~exist(rdir,'dir')
         mkdir(rdir)
     end
-    disp(['Results will be stored in: ', rdir,filename,'_','Data.m'])
+    disp(['Results will be stored in: ', rdir,filename_DATA,'_','Data.m'])
     %-------------------------- Save simulated data ---------------------------
     if FORWARD == 1
-        save([rdir,filename,'_', 'Data'],'DataCW','sdCW');
+        save([rdir,filename_DATA,'_', 'Data'],'DataCW','sdCW');
         if REF == 1
-            save([rdir,filename,'_', 'Data'],'RefCW','-append');
+            save([rdir,filename_DATA,'_', 'Data'],'RefCW','-append');
         end
         if DOT.TD == 1
-            save([rdir,filename,'_', 'Data'],'DataTD','sdTD','-append');
+            nstep = DOT.time.nstep;
+            dt =  DOT.time.dt;
+            save([rdir,filename_DATA,'_', 'Data'],'DataTD','sdTD','dt','nstep','-append');
             if REF == 1
-                save([rdir,filename,'_', 'Data'],'RefTD','-append');
+                save([rdir,filename_DATA,'_', 'Data'],'RefTD','-append');
             end
         end
         
@@ -457,10 +490,13 @@ if ((EXPERIMENTAL == 1) && (EXP_DATA == 1))
         % % ----- Resample experimental data to match the time-scale of DOT.time ----
         %        z = zeros(DOT.time.nstep,size(EXP.data.spc,2));
         %        f = zeros(DOT.time.nstep,size(EXP.data.spc,2));
-        
         for i = 1:size(EXP.data.spc,2)
-            z(:,i) = resampleSPC(EXP.data.spc(:,i),EXP.time.axis,DOT.time.dt);
-            f(:,i) = resampleSPC(EXP.data.ref(:,i),EXP.time.axis,DOT.time.dt);
+            tmpspc = EXP.data.spc(:,i);
+            tmpspc(isnan(tmpspc)) = 0;
+            tmpref = EXP.data.ref(:,i);
+            tmpref(isnan(tmpref)) = 0;
+            z(:,i) = resampleSPC(tmpspc,EXP.time.axis,DOT.time.dt);
+            f(:,i) = resampleSPC(tmpref,EXP.time.axis,DOT.time.dt);
         end
         % ------ Comparison between conv(irf,fwd) and the experimental data -------
         if FORWARD == 1
@@ -491,19 +527,9 @@ if ((EXPERIMENTAL == 1) && (EXP_DATA == 1))
 
                 end
             end
-            %             for h = 1:size(z,2)
-            %             semilogy(1:size(z,1),[f(:,h)./sum(f(:,h)),RefTD(:,h)./sum(RefTD(:,h),'omitnan')]),
-            %             legend('Data','conv(irf,fwd)'),
-            %             title(['Ref measurement number ',num2str(h)]);
-            %             figure(204);semilogy(1:size(z,1),[z(:,h)./sum(z(:,h)),DataTD(:,h)./sum(DataTD(:,h),'omitnan')]),
-            %             legend('Data','conv(irf,fwd)'),
-            %             title(['Data measurement number ',num2str(h)]);
-            %             ImageMeasure(DOT,h);
-            %             pause(0.01)
-            %             end
+
         end
-        %figure;semilogy(f)
-        %figure;semilogy(f./z)
+
         % -------- Save Time-resolved Data,Reference and standard deviation -------
         DataTD = z;
         RefTD = f;
@@ -540,14 +566,28 @@ if RECONSTRUCTION == 1
             end
         end
     end
+    %% delete Toast files
+    if isfield(DOT.grid,'hBasis')
+        DOT.grid.hBasis.delete();
+        DOT.grid.hBasis = [];
+        DOT.grid = rmfield(REC.grid,'hBasis');
+    end
     clear DOT
-    
-    
+    %% update mask
+    lamda_idMask = (1:8).*squeeze(sum(sum(REC.dmask,1),2)~=0)';
+    lamda_id = sort(intersect(lamda_id, lamda_idMask), 'ascend');
+    REC.dmask = REC.dmask(:,:,lamda_id);
+    if numel(REC.radiometry.lambda)>numel(lamda_id)
+        REC.radiometry.lambda = REC.radiometry.lambda(lamda_id);
+    end
+    REC.radiometry.nL = numel(REC.radiometry.lambda);
+
+
     %==========================================================================
     %%                               Load data
     %==========================================================================
     if (EXPERIMENTAL == 0)||(EXP_DATA == 0)
-        load([rdir,filename,'_', 'Data'])
+        load([rdir,filename_DATA,'_', 'Data'])
         if REF == 0
             REC.ref = 0;
         else
@@ -562,6 +602,32 @@ if RECONSTRUCTION == 1
         REC.sd = sdCW;
         clear DataCW sdCW
     end
+    
+    %% resample DT data
+    if strcmpi(REC.domain,'td') && (nstep ~= REC.time.nstep || dt ~= REC.time.dt )
+        taxis = 0:dt:(dt*(nstep-1));
+        
+        tmpspc = DataTD;
+        tmpspc(isnan(tmpspc)) = 0;
+        tmpref = RefTD;
+        tmpref(isnan(tmpref)) = 0;
+        tmpsd = sdTD;
+        tmpsd(isnan(sdTD)) = 0;
+
+        disp('Resampling Data')
+        tic
+        for i = 1:size(DataTD,2)
+            tmpspc_(:,i) = resampleSPC(tmpspc(:,i),taxis,REC.time.dt);
+            tmpref_(:,i) = resampleSPC(tmpref(:,i),taxis,REC.time.dt);
+            tmpsd_(:,i) = resampleSPC(tmpsd(:,i),taxis,REC.time.dt);
+        end
+        toc
+        DataTD = tmpspc_;
+        RefTD = tmpref_;
+        sdTD = tmpsd_;
+        clear tmpspc_ tmpref_ tmpsd_ tmpspc tmpref tmpsd
+    end
+    
     %==========================================================================
     %%                      Create time windows for TD
     %==========================================================================
@@ -623,6 +689,7 @@ if RECONSTRUCTION == 1
             end
         end
         % foresee one roi per curve by repeating the twin
+
         tmp_roi = zeros(2,sum(REC.dmask(:)));
         idxmeas = findMeasIndex(REC.dmask);
         if any(size(REC.time.roi) ~= [2,sum(REC.dmask(:))]) % if not the correct dimensions go for a repmat
@@ -634,6 +701,7 @@ if RECONSTRUCTION == 1
             REC.time.roi = tmp_roi;
             clear tmp_roi
         end
+
         
         REC.ref = []; REC.Data = []; REC.sd = [];
         
@@ -647,7 +715,7 @@ if RECONSTRUCTION == 1
         end
         if exist('RefTD','var')
             REC.ref = WindowTPSF(RefTD,REC.time.twin);
-            clear RefTD
+            %clear RefTD
         end
         REC.Data = WindowTPSF(DataTD,REC.time.twin);
         if (EXP_DATA == 0)
@@ -667,6 +735,7 @@ if RECONSTRUCTION == 1
             for inl = 1:REC.radiometry.nL
                 figure(20);
                 meas_set = idxmeas{inl};
+                if ~isempty(meas_set)
                 twin_set = meas_set;
                 fprintf(['<strong>------- Wavelength ',num2str(REC.radiometry.lambda(inl)),'-------</strong>\n'])
                 subplot(nsub(1),nsub(2),inl)
@@ -675,7 +744,6 @@ if RECONSTRUCTION == 1
                 %save_figure('time_ROI');
                 if exist('RefTD','var')
                     REC.ref(:,meas_set) = WindowTPSF(RefTD(:,meas_set),REC.time.twin(:,:,twin_set));
-                    if inl == REC.radiometry.nL,  clear RefTD; end
                 end
                 REC.Data(:,meas_set) = WindowTPSF(DataTD(:,meas_set),REC.time.twin(:,:,twin_set));
                 if (EXP_DATA == 0)
@@ -689,14 +757,15 @@ if RECONSTRUCTION == 1
                     REC.sd(:,meas_set) = sqrt(WindowTPSF(sdTD(:,meas_set).^2,REC.time.twin(:,:,twin_set)));
                 end
                 if inl == REC.radiometry.nL
-                    clear DataTD sdTD
+                    %clear DataTD sdTD
                     tilefigs;
+                end
                 end
             end
         end
     end
     clear inl shift meas_set
-    clear DataTD sdTD
+    %clear DataTD sdTD
     % % =========================================================================
     % %%                        Initial parameter estimates
     % % =========================================================================
@@ -730,30 +799,8 @@ if RECONSTRUCTION == 1
                     [num2str(REC.radiometry.lambda(inl)) ' nm'],nfig,Nr,Nc,inl,res_fact);
              end
              fh.NumberTitle = 'off';fh.Name = 'Simulated Scattering'; 
-        %%    
-
-    %         for inl = 1:REC.radiometry.nL
-    %             PlotMua = squeeze(REC.opt.Mua(:,:,:,inl));
-    %             PlotMusp = squeeze(REC.opt.Musp(:,:,:,inl));
-    %             fh=figure(300+inl);
-    %             fh.Name = ['Wave: ' num2str(REC.radiometry.lambda(inl))];
-    %             if isfield(REC.opt,'Mua')
-    %                 ShowRecResults(REC.grid,PlotMua,...
-    %                     REC.grid.z1,REC.grid.z2,REC.grid.dz,1,...
-    %                     'auto',0,max(PlotMua(:)));
-    %                 suptitle('Mua');
-    %             end
-    %             % ------------------------ Reference musp ---------------------------------
-    %             fh=figure(400+inl);
-    %             fh.Name = ['Wave: ' num2str(REC.radiometry.lambda(inl))];
-    %             if isfield(REC.opt,'Musp')
-    %                 ShowRecResults(REC.grid,PlotMusp,...
-    %                     REC.grid.z1,REC.grid.z2,REC.grid.dz,1,...
-    %                     'auto',0,max(PlotMusp(:)));
-    %                 suptitle('Mus');
-    %             end
-    %         end
         end
+        
         if SPECTRA
             %% plot conc
             Nr = 3; Nc = 3;
@@ -807,24 +854,42 @@ if RECONSTRUCTION == 1
         end
         drawnow
     end
+%% db
+% for i= 1:size(REC.Data,2)
+% a = findSQcouple(REC.dmask,i, 'sub');
+% d = REC.Data(:,:);
+% r = REC.ref(:,:);
+% irf = REC.time.irf.data_mask(:,:);
+% t = linspace(REC.time.roi(1,i),REC.time.roi(2,i),NUM_TW);
+% figure(1); semilogy(t,d(:,i)),hold on,
+% %semilogy(irf(:,i)), 
+% semilogy(t,r(:,i)),title(sprintf( '(d%d,s%d,l%d) %g', a(1),a(2),a(3),dist(a(1),a(2),a(3))))
+% pause
+% % if mod(i,8)==0
+% %     hold off
+% % end
+% end
+% 
+    
     
     %% fit reference to get starting values for Jacobian based solvers
     if isfield(REC.solver,'fit_reference') 
         if REC.solver.fit_reference == true
             
-            if REC.solve.fit_reference_far == true
+            if REC.solver.fit_reference_far == true
                 fit_dmask = logical(zeros(size(REC.dmask)));                         
                 dist = sqrt((REC.Detector.Pos(:,1) - REC.Source.Pos(:,1)' ).^2 + ...
                      (REC.Detector.Pos(:,2) - REC.Source.Pos(:,2)' ).^2 + ...
                   (REC.Detector.Pos(:,3) - REC.Source.Pos(:,3)' ).^2);
                 dist = repmat(dist,[1,1,REC.radiometry.nL]);
                 Imax = find(dist == max(dist(:)));
-                fit_dmask(Imax) = true;        
+                fit_dmask(Imax) = true; 
                 fit_dmask = fit_dmask .* REC.dmask;
                 fit_dmaskMAT = fit_dmask;
                 fit_dmask(~REC.dmask(:)) = [];
             else
                 fit_dmask = REC.dmask;
+                fit_dmaskMAT = fit_dmask;
             end
             idxmeas = findMeasIndex(REC.dmask);
             for inl = 1:REC.radiometry.nL
@@ -833,12 +898,20 @@ if RECONSTRUCTION == 1
                 fitsd = REC.sd(:,meas_set);
                 fittwin = REC.time.twin(:,:,meas_set);
                 fitirf = REC.time.irf.data_mask(:,meas_set);
-                
-                % delete unselected
-                fitref(:,~fit_dmask(meas_set)) = [];
-                fitsd(:,~fit_dmask(meas_set)) = [];
-                fitirf(:,~fit_dmask(meas_set)) = [];
-                fittwin(:,:,~fit_dmask(meas_set)) = [];
+                if REC.solver.fit_reference_far == true
+                    % delete unselected
+                    fitref(:,~fit_dmask(meas_set)) = [];
+                    fitsd(:,~fit_dmask(meas_set)) = [];
+                    fitirf(:,~fit_dmask(meas_set)) = [];
+                    fittwin(:,:,~fit_dmask(meas_set)) = [];
+                end
+                if REC.solver.fit_reference_tw == 1 && REC.solver.fit_reference_far == 1
+                    fitref = RefTD(:,meas_set);
+                    fitsd = sdTD(:,meas_set);
+                    fitref(:,~fit_dmask(meas_set)) = [];
+                    fitsd(:,~fit_dmask(meas_set)) = [];
+                    fittwin = repmat(CreateTimeWindows(REC.time.nstep,[1,REC.time.nstep],'even',REC.time.nstep), [1,1,size(fittwin,3)]); 
+                end
                 fprintf(['<strong>------- Wavelength ',num2str(REC.radiometry.lambda(inl)),'-------</strong>\n'])
                 [tmp_mua0(:,inl),tmp_musp0(:,inl)] = FitMuaMus_TD(REC.solver,...
                     REC.grid,...
@@ -847,12 +920,21 @@ if RECONSTRUCTION == 1
                     REC.time.dt,REC.time.nstep,fittwin,...
                     REC.time.self_norm,fitref,...
                     fitirf,fitref,fitsd,REC.type_fwd);
-                dh=gcf;dh.Name = ['Wavelength ',num2str(REC.radiometry.lambda(inl))];
-                fh(inl)=copyobj(dh,0); delete(dh);
+                if SHOWPLOTS
+                    dh=gcf;dh.Name = ['Wavelength ',num2str(REC.radiometry.lambda(inl))];
+                    fh(inl)=copyobj(dh,0); delete(dh);
+                end
             end
             REC.opt.mua0 = tmp_mua0(1,:);
             REC.opt.musp0 = tmp_musp0(1,:);
-            
+             
+            [~,~,REC.opt.conc0,REC.opt.a0,REC.opt.b0]=FitVoxel(REC.opt.mua0,REC.opt.musp0,REC.spe);
+            REC.opt.concB = REC.opt.conc0;
+            REC.opt.aB = REC.opt.a0;
+            REC.opt.bB = REC.opt.b0;
+            REC.spe.opt.conc0=REC.opt.conc0;
+            REC.spe.opt.a0=REC.opt.a0;
+            REC.spe.opt.b0=REC.opt.b0;
             clear tmp_mua0
             clear tmp_musp0
         end
@@ -962,6 +1044,7 @@ if RECONSTRUCTION == 1
                     if strcmpi(REC.solver.type,'spectral_tk1')
                         REC.solver.prior.refimage = ones(size(REC.opt.Mua(:,:,:,1)));
                     end
+                    REC.solver.prior.refimage = 10*double(REC.solver.prior.refimage)+0.1;
                     [REC.opt.bmua,REC.opt.bmusp,REC.opt.bConc,REC.opt.bA,REC.opt.bbB] = RecSolverTK1_spectra_TD(REC.solver,...
                         REC.grid,...
                         REC.opt.mua0,REC.opt.musp0,REC.opt.nB,REC.A,...
@@ -1006,6 +1089,37 @@ if RECONSTRUCTION == 1
                     end
                     REC.solver.prejacobian.path = original_path; clear original_path
                     %%
+                case {'combotk0tk1'}
+                    if ~isempty(REC.solver.prior.path)
+                        REC.solver.prior.refimage = ...
+                            priormask3D(REC.solver.prior.path,REC.grid);
+                    else
+                        disp('No prior is provided in RECSettings_DOT. Reference mua will be used');
+                        REC.solver.prior.refimage = REC.opt.Mua(:,:,:,1);
+                    end
+                    REC.solver.prior.refimage =  double(REC.solver.prior.refimage)*10 + 0.1;
+                    original_path = REC.solver.prejacobian.path;
+                    idxmeas = findMeasIndex(REC.dmask);
+                    for inl = 1:REC.radiometry.nL
+                        if REC.solver.prejacobian.load
+                            REC.solver.prejacobian.path=strcat(original_path,num2str(REC.radiometry.lambda(inl)),'.mat');
+                        end
+                        meas_set = idxmeas{inl};
+                        fprintf(['<strong>------- Wavelength ',num2str(REC.radiometry.lambda(inl)),'-------</strong>\n'])
+                        [REC.opt.bmua(:,inl),REC.opt.bmusp(:,inl)] = RecSolverTK0plusTK1_TD(REC.solver,...
+                            REC.grid,...
+                            REC.opt.mua0(inl),REC.opt.musp0(inl),REC.opt.nB,REC.A,...
+                            REC.Source.Pos,REC.Detector.Pos,REC.dmask(:,:,inl),...
+                            REC.time.dt,REC.time.nstep,REC.time.twin(:,:,meas_set),...
+                            REC.time.self_norm,REC.Data(:,meas_set),...
+                            REC.time.irf.data_mask(:,meas_set),REC.ref(:,meas_set),REC.sd(:,meas_set),REC.type_fwd);
+                        if REC.solver.prejacobian.load==0
+                            movefile([REC.solver.prejacobian.path,'.mat'],strcat(REC.solver.prejacobian.path,num2str(REC.radiometry.lambda(inl)),'.mat'));
+                        end
+                        drawnow
+                    end
+                    REC.solver.prejacobian.path = original_path; clear original_path
+
                 case 'fit'
                     idxmeas = findMeasIndex(REC.dmask);
                     for inl = 1:REC.radiometry.nL
@@ -1163,16 +1277,35 @@ if RECONSTRUCTION == 1
         end
     end
     
-    %% Save reconstruction
-    if ~contains(REC.solver.type,'fit')
-        disp(['Reconstruction will be stored in: ', rdir,filename,'_', 'REC.mat']);
-        save([rdir,filename,'_', 'REC'],'REC');
+    if isfield(REC.grid,'hBasis')
+        mesh.hMesh.delete()
+        delete(mesh.hMesh);
+        mesh.hMesh = [];
+        mesh = rmfield(mesh,'hMesh');
+        clear mesh
+        REC.grid.hBasis.delete();
+        REC.grid.hBasis = [];
+        REC.grid = rmfield(REC.grid,'hBasis');
     end
+    %% Save reconstruction
+    %if ~contains(REC.solver.type,'fit')
+    disp(['Reconstruction will be stored in: ', rdir,filename,'_', 'REC.mat']);
+    save([rdir,filename,'_', 'REC'],'REC');
+    %end
     % =========================================================================
     %%                            Quantify DOT
     % =========================================================================
     if ~contains(REC.solver.type,'fit')
-        Q = QuantifyDOT(REC,~EXP_DATA);
+        if ~contains(REC.opt.hete1.geometry,'LOAD_BKG')
+            Q = QuantifyDOT(REC,~EXP_DATA);
+        else
+            REC.opt.muaBB = REC.opt.muaB; REC.opt.mua0;
+            REC.opt.muaB = REC.opt.mua0;
+            REC.opt.muspBB = REC.opt.muspB; 
+            REC.opt.muspB = REC.opt.musp0;
+         
+            Q = QuantifyDOT(REC,~EXP_DATA);
+        end
     end
     Quantification_MultiSim
     % =========================================================================

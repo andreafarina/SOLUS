@@ -11,7 +11,15 @@ function [bmua,bmus] = FitMuaMus_TD(~,grid,mua0,mus0, n, A,...
 geom = 'semi-inf';
 weight_type = 'none';%'rect';%'none'; % 'none','rect'
 fract_first = 0.5; fract_last = 0.01;
-data = data;%ref;%data;%ref;
+PLOT = 0;
+data = data;%NormalizeTPSF(data);%ref;%data;%ref;
+
+self_norm = true;
+if self_norm==true
+    data = NormalizeTPSF(data);
+    ref = NormalizeTPSF(ref);
+    sd  = sqrt(ref);
+end
 data2 = data;
 nQM = sum(dmask(:));
 nwin = size(twin,1);
@@ -39,6 +47,7 @@ Jacobian = @(mua, mus) JacobianTD (grid, Spos, Dpos, dmask, mua, mus, n, A, ...
             end
             proj = proj(ROI);
     end
+    
 
 proj = proj(:);
 data = data(:);
@@ -62,8 +71,10 @@ end
 ref(mask) = []; 
 data(mask) = [];
 proj(mask) = [];
+if PLOT
 figure(1002);semilogy([proj,data]),legend('proj','ref')
-sd = sqrt(ref);
+end
+sd = sqrt(ref)+1;
 
 data = data./sd;
 
@@ -75,9 +86,10 @@ x = [mua0;mus0;-0];     % [mua0,mus0,t0]
 %% Setup optimization for lsqcurvefit
 opts = optimoptions('lsqcurvefit',...
     'Jacobian','off',...
-    ...'Algorithm','levenberg-marquardt',...
+    'Algorithm','levenberg-marquardt',...
     'DerivativeCheck','off',...
-    'MaxIter',100,'Display','final-detailed','FinDiffRelStep',[1e-3,1e-2,dt]);%,'TolFun',1e-10,'TolX',1e-10)
+    'MaxIter',100,'Display','final-detailed','FinDiffRelStep',[1e-3,1e-2,0.0001*dt*nstep/size(twin,1)],...
+    'TolFun',1e-10,'TolX',1e-10);
 %% Setup optimization for lsqnonlin
 % opts = optimoptions('lsqnonlin',...
 %     'Jacobian','off',...
@@ -99,11 +111,12 @@ opts = optimoptions('lsqcurvefit',...
 %x = fminsearch(@objective,x0);
 x0 = x;
 %if strcmpi(weight_type,'none')
-    x = lsqcurvefit(@forward,x0,[],data,[0, 0,- 0*5 * nstep*dt],[],opts);
+x = lsqcurvefit(@forward,x0,[],data,[0,0, []],[],opts);
 %else    
 %    x = fminunc(@Loss_func,x0);
 %end
 %x = lsqnonlin(@objective2,x0,[],[],opts);
+
 
 %% Map parameters back to mesh
 
@@ -117,6 +130,7 @@ bmus = x(2)*ones(grid.N,1);
 fprintf(['<strong>mua = ',num2str(bmua(1)),'</strong>\n']);
 fprintf(['<strong>musp = ',num2str(bmus(1)),'</strong>\n']);
 fprintf(['<strong>t0 = ',num2str(x(3)),'</strong>\n']);
+forward(x); % display fit result graphics
 % display(['MuaErr= ',num2str(bmua(1)-mua0)])
 % display(['MusErr= ',num2str(bmus(1)-mus0)])
 % display(['MuaErr%= ',num2str(((bmua(1)-mua0)./mua0).*100)])
@@ -133,6 +147,7 @@ mask = true(nwin*nQM,1);
 A_data = sum(data2);
 factor = Aproj_fit./A_data;
 save('factor_ref.mat','factor');
+
 %% ===================== OBJECTIVE FUNCTIONS=============================
 
 %% Callback function for objective evaluation
@@ -238,7 +253,7 @@ function [proj,J] = forward(x,~)
     [proj, Aproj] = ForwardTD(grid,Spos, Dpos, dmask, x(1), x(2), n, ...
                 [],[], A, dt, nstep, self_norm,...
                 geom, 'linear',irf);
-   
+   %t0/dt
     proj = circshift(proj,round(t0/dt));
     proj = WindowTPSF(proj,twin);
             
@@ -254,16 +269,18 @@ function [proj,J] = forward(x,~)
             proj = proj(ROI);
             
     end
-        
+    
     
     proj(mask) = [];
     proj = proj(:)./sd;
     
 % plot forward
     t = (1:numel(data)) * dt;
+    if PLOT
     figure(1003);
-    semilogy(t,proj,'-',t,data,'.')%,ylim([1e-3 1])
+    semilogy(t,proj.*sd,'-',t,data.*sd,'.'),ylim([1e-3 1])
     drawnow;
+    end
     nwin = size(twin,1);
     if nargout>1
         JJ = Jacobian (x(1), x(2));

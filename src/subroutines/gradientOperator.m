@@ -31,6 +31,12 @@ function [Dy, Dx, Dz, Lap] = gradientOperator(volume, h, c, BC, mask)
 % substituted LinIndex with the buit-in sub2ind A. Farina 2020
 % Corrected bug on nargin
 
+if strcmpi('BC','1st')
+    FLAG_FD = 2;
+else
+    FLAG_FD = 1;
+    BC = 'none';
+end
 if nargin < 5
   mask = ones(volume);
 end
@@ -58,11 +64,13 @@ end
 
 % Compute Dy
 % Compute block of Dy
-% Dy_block =    -spdiags(ones(ny,       1),   0,     ny,    ny) ...
-%              + spdiags(ones(ny,       1),   1,     ny,    ny);
+if FLAG_FD == 1
+Dy_block =    -spdiags(ones(ny,       1),   -1,     ny,    ny) ...
+             + spdiags(ones(ny,       1),   0,     ny,    ny);
+else
 Dy_block =    -1/(2*h(1))*spdiags(ones(ny,       1),   -1,     ny,    ny) ...
              + 1/(2*h(1))*spdiags(ones(ny,       1),    1,     ny,    ny);
-
+end
 % Boundary conditions
 switch lower(BC)
   case 'neumann'
@@ -83,10 +91,13 @@ Dy = kron(speye(nx*nz), Dy_block);
 % Compute Dx
 if dim > 1
   % Compute block of Dx
-%   Dx_block =  -spdiags(ones(ny*nx,    1),   0,     ny*nx, ny*nx) ...
-%              + spdiags(ones(ny*nx   , 1),   ny,    ny*nx, ny*nx);  
+if FLAG_FD == 1
+  Dx_block =  -spdiags(ones(ny*nx,    1),   -ny,     ny*nx, ny*nx) ...
+             + spdiags(ones(ny*nx   , 1),   0,    ny*nx, ny*nx);  
+else
   Dx_block =  -1/(2*h(2))*spdiags(ones(ny*nx,    1),   -ny,    ny*nx, ny*nx) ...
              + 1/(2*h(2))*spdiags(ones(ny*nx   , 1),    ny,    ny*nx, ny*nx);  
+end
            
   % Boundary conditions
   switch lower(BC)
@@ -108,10 +119,13 @@ end
 
 if dim > 2
   % Compute Dz
-%   Dz       =  -spdiags(ones(n,        1),   0,     n,     n) ...
-%              + spdiags(ones(n,        1),   ny*nx, n,     n);
+if FLAG_FD == 1
+  Dz       =  -spdiags(ones(n,        1),   -ny*nx,     n,     n) ...
+             + spdiags(ones(n,        1),   0, n,     n);
+else
   Dz       =  -1/(2*h(3))*spdiags(ones(n,        1),   -ny*nx,     n,     n) ...
              + 1/(2*h(3))*spdiags(ones(n,        1),    ny*nx,     n,     n);
+end
            
   % Boundary conditions
   switch lower(BC)
@@ -166,7 +180,7 @@ if nargout > 3
   Lap = Lapx + Lapy + Lapz;
 end
 
-
+if FLAG_FD ~=1
 % Find the linear indecies of points at the boundary of the mask (boundary here is the outmost pixel 1)
 if dim > 1
   nn = prod(volume(2:dim));
@@ -256,6 +270,7 @@ end
 % - the entry to the mask domain with forward difference
 % - at the exit of the mask domain with backward difference
 % This can be dome just by replacing the corresponding rows
+
 for j = 1:length(jy1(:))
   if jy1(j) ~= jy2(j) && jy1(j) && jy2(j) %if only one pixel in mask domain, leave centrel differences.
     %central -> forward difference
@@ -327,7 +342,7 @@ end
 %   end
 %   mask = permute(mask, [2 3 1]);
 % end
-
+end
 
 
 

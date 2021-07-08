@@ -38,9 +38,9 @@ else
     if exist('type', 'var') == 1
          if strcmpi(type,'fit4param') == 1 % when considering TOAST is better not to resize it, proportions are already handled  
 
-        mask = logical(imresizen(single(mask_oversampled),...
+            mask = logical(imresizen(single(mask_oversampled),...
             FACT,'nearest'));
-        return;
+            return;
 
          end
      else

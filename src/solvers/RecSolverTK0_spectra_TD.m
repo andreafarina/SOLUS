@@ -18,8 +18,8 @@ type_ref = 'theor';      % 'theor', 'meas', 'area'
 
 %% REGULARIZATION PARAMETER CRITERION
 NORMDIFF = 'sd';   % 'ref', 'sd'
-REGU = 'lcurve'; % 'lcurve', 'gcv', 'external'
-BACKSOLVER = 'tikh'; % 'tikh', 'tsvd', 'discrep','simon', 'gmres', 'pcg', 'lsqr'
+REGU = 'other'; % 'lcurve', 'gcv', 'external'
+BACKSOLVER = 'lsqr'; % 'tikh', 'tsvd', 'discrep','simon', 'gmres', 'pcg', 'lsqr'
 % -------------------------------------------------------------------------
 nQM = sum(dmask(:));
 nwin = size(twin,1);

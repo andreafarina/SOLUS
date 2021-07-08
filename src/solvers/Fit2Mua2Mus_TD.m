@@ -7,10 +7,10 @@
 
 function [bmua,bmus, OUTPUT] = Fit2Mua2Mus_TD(solver,grid,mua0,mus0, n, ~,...
     Qpos,Mpos,dmask, dt, nstep, twin, self_norm, data, irf, ref, sd,verbosity)
-verbosity = 1;
+verbosity = 0;
 self_norm = true;
 INCL_ONLY = false;
-MUA_ONLY = true; musIN = 1.5;%real value of scattering to be used for MUA_ONLY
+MUA_ONLY = false; musIN = 1.5;%real value of scattering to be used for MUA_ONLY
 
 %% initial setting the FEM problem
 % create the mesh
@@ -31,10 +31,10 @@ hbasis = toastBasis(hmesh,bdim, 'LINEAR');
 priorM = hbasis.Map('B->M',double(solver.prior.refimage));
 
 % set intermidiate values to 1;
-% inter_UP = find(priorM >= 0.01);
-% inter_DW = find( priorM < 0.5);
-% priorM(inter_UP) = 1;
-% priorM(inter_DW) = 0;
+inter_UP =(priorM >= 0.5);
+inter_DW = ( priorM < 0.5);
+priorM(inter_UP) = 1;
+priorM(inter_DW) = 0;
 % create Q/M
 
 Qds = 1; % width of Sources 
@@ -67,24 +67,29 @@ sd(mask) = [];
 
 %% fitting procedure
 if INCL_ONLY
-    x0 = [mua0,mus0]; lb = [0,0]; ub = [1, 10];
+    x0 = [mua0,mus0]; lb=[]; ub=[];%lb = [0,0]; ub = [1, 10];
+    FD=[1e-4,1e-2]
 %    fitfun = @forward2;
 elseif MUA_ONLY
-    x0 = [mua0, mua0];lb = [0,0]; ub = [1, 10];
+    x0 = [mua0, mua0];lb=[]; ub=[];%lb = [0,0]; ub = [1, 10];
+    FD = [1e-4,1e-4];
 else
-   x0 =[mua0 + 0.001,mus0 + 0.1,mua0,mus0];  % [muaIN, musIN, muaOUT, musOUT]
+   x0 =[mua0 + 0.01*mua0,mus0 + 0.01*mus0,mua0,mus0];  % [muaIN, musIN, muaOUT, musOUT]
    %x0 = [0.001,1,0.001,1]; %start from homogeneous combination
-   lb = [0,0,0,0]; ub = [1, 10, 1, 10];
-%    fitfun = @forward;
+   lb =[0,0,0,0]; ub = [1, 5, 1, 5 ]; 
+   FD = [];%[1e-3,1e-5,1e-3,1e-5];
+   ub =[]; 
+   lb = [];%
+   %    fitfun = @forward;
 end
 
 % setting optimization
 opts = optimoptions('lsqcurvefit',...
      'Jacobian','off',...
-     ...'Algorithm','trust-region-reflective',...
+     'Algorithm','levenberg-marquardt',...'trust-region-reflective',...
      'DerivativeCheck','off',...
-     'MaxIter',100,'Display','iter-detailed',...%'FinDiffRelStep',[1e-4,1e-2],...%,
-     'TolFun',1e-10,'TolX',1e-10);
+     'MaxIter',75,'Display','iter-detailed',...'FinDiffRelStep',FD,...%,
+     'TolFun',1e-6,'TolX',1e-6);
 
 [x,~,~,~,OUTPUT] = lsqcurvefit(@forward,x0,[],data(:),lb,ub,opts);x_lsqr = x;
 %[x] = fmincon(@forwardfmincon,x0); OUTPUT = 0; 
@@ -103,10 +108,11 @@ elseif MUA_ONLY
     display(['mua_IN = ',num2str(x(1))]);
     display(['mua_BK = ',num2str(x(2))]);
 else
-    display(['mua_BK = ',num2str(x(3))]);
-    display(['musp_BK = ',num2str(x(4))]);
     display(['mua_IN = ',num2str(x(1))]);
     display(['musp_IN = ',num2str(x(2))]);
+    display(['mua_BK = ',num2str(x(3))]);
+    display(['musp_BK = ',num2str(x(4))]);
+
 end
 
 
@@ -191,9 +197,9 @@ function [proj] = forward(x, ~)
             semilogy(t,proj(:),'-',t,data(:),'.'),ylim([1e-3 1])
             title(['||proj-data||=',num2str(norm(proj-data(:)))])
             drawnow,
-            x
+            
         end
-        
+        x
         
 end
 

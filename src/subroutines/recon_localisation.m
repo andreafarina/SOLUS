@@ -16,11 +16,11 @@ function [displ, brd, brdRMS] = recon_localisation(mu_recon, bin_target, grid,di
 % of the considered inclusion along each axis as its characteristic dimension
 
   
-    if nargin < 6
+    if nargin < 5
         idx = identify_inclusion(mu_recon);
     end
 
-    if nargin < 5
+    if nargin < 4
         dim = size(mu_recon);
     end
     

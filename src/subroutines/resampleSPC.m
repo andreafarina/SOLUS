@@ -17,7 +17,7 @@ dty = t(2)-t(1);
 bin_ratio = round(dt./dty,6);       
 %% Better to first oversample if bin_ratio is not integer
 if floor(bin_ratio)>(bin_ratio+1e-6) || floor(bin_ratio)<(bin_ratio-1e-6)
-    dt_ov = 1e-3;    % 1 fs
+    dt_ov = 100e-3;    % 100 fs
     tii = t(1):dt_ov:t(end);
     yii = interp1(t,y,tii);
     area = sum(y);
@@ -49,6 +49,13 @@ end
 area = sum(yi);
 
 %% normalize data
+if sum(yi(:))==0
+    data = yi;
+    area = 0; 
+    peak =[];
+    baric =[];
+    return
+end
 if nargin==4
     data = yi./sum(yi);
 else

@@ -93,8 +93,8 @@ J(mask,:) = [];
 disp('Calculating singolar values');
 %if ~strcmpi((BACKSOLVER),'simon')
 [U,s,V]=csvd(J);     % compact SVD (Regu toolbox)
-        figure(402);
-        picard(U,s,dphi);    % Picard plot (Regu toolbox)    
+        %figure(402);
+        %picard(U,s,dphi);    % Picard plot (Regu toolbox)    
 %end
 if (~strcmpi(REGU,'lcurve')&&(~strcmpi(REGU,'gcv')))
     alpha = solver.tau * s(1);
