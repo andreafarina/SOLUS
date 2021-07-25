@@ -28,22 +28,34 @@ switch lower(kind)
             error('Set the number of windows!')
         end
         while rem(diff(roi),param)~=0
-            if diff(roi) > param
+            if rem(diff(roi),param) < floor(0.01*param) && diff(roi) > param
                 if mod(rem(diff(roi),param),2) == 1 
                     roi(2) = roi(2) - 1;
                 else
-                    roi(2) = roi(2) - 1;
                     roi(1) = roi(1) + 1;
                 end
-            elseif diff(roi) < param
+            elseif rem(diff(roi),param) >= floor(0.01*param) || diff(roi) <= param
                 if mod(rem(diff(roi),param),2) == 1 
                     roi(2) = roi(2) + 1;
                 else
-                    roi(2) = roi(2) + 1;
                     roi(1) = roi(1) - 1;
                 end
+            else
+                roi(2) = roi(2) + 1;
             end           
         end
+        if roi(1) <= 0 %translate roi(1) if its negative or roi(2) bigger than nstep            
+            roi(2) = roi(2)-roi(1)+1;
+            roi(1) = 1;
+        end
+        if roi(2) > nstep
+            roi(1) = roi(1) - (roi(2)-nstep);
+            roi(2) = nstep;
+        end
+        if roi(1)<=0 && roi(2)>nstep
+            error('Decrease number of time windows or relax roi conditions!')
+        end
+        
         fprintf(['<strong>Actual roi: ', num2str(roi),'</strong>\n'])
         nt_win = round(diff(roi)/param);
         a = roi(1):nt_win:roi(2);

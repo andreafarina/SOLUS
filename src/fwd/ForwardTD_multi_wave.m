@@ -1,6 +1,7 @@
 function [phi,Area]=ForwardTD_multi_wave(grid,SourcePos,DetectorPos, dmask,...
         muaB,muspB,nB,Mua,Musp,A, dt, nstep, self_norm, geom, TYPE_FWD, radiometry,irf)
 %dmask= reshape(dmask, [size(dmask,1)*size(dmask,2),size(dmask,3)] );
+global mesh
 nQM = sum(dmask(:));   
 phi = zeros(nstep,nQM);
 Area = zeros(nQM,1);

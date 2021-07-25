@@ -37,7 +37,7 @@ outdimx = numel( infx: delta : supx)-1;
 outdimy = numel( infy: delta : supy)-1;
 outdimz = numel( infz: delta : supz)-1;
 
-out_grid = zeros(outdimx, outdimy, outdimz);
+out_grid = false(outdimx, outdimy, outdimz);
 
 % Defining middle indexes
 mx = round(outdimx/2);
@@ -54,9 +54,10 @@ smaskz = min( smaskz, outdimz);
 out_grid(mx - ceil(smaskx/2) + (1:smaskx),...
          my - ceil(smasky/2) + (1:smasky),... 
                                    1:smaskz) = ...
-                mask(midmaskx - ceil(smaskx/2) + (1:smaskx),...
+                logical(mask(midmaskx - ceil(smaskx/2) + (1:smaskx),...
                         midmasky - ceil(smasky/2) + (1:smasky),...
-                        1:smaskz);
+                        1:smaskz));
+                    
 
 if (DISPLAY == 1)
 

@@ -1,6 +1,11 @@
 function [Mua,Musp,Conc,A,B] = applyGrid(grid,muaB,muspB,solv_type,concB,aB,bB)
 %nL = numel(muaB(ndims));
-nL = size(muaB, ndims(muaB)); % get last dimension to know the number of wavelengths
+if ndims(muaB) >3
+    nL = size(muaB, 4); % get last dimension to know the number of wavelengths
+else
+    nL = size(muaB, 2);
+end
+
 if iscolumn(muaB), muaB = muaB'; end
 if iscolumn(muspB), muspB = muspB'; end
 

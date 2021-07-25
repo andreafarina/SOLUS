@@ -23,11 +23,11 @@ param = param(:,1:end-1);
 param0 = param;
 
 order = 1;
-dStep = 0.03; 
+dStep = 0.09; 
 %drawfitting(param, npoints, im);
 nsigma = 10;
-minsigma = 0.3;%0.15;
-maxsigma =0.8;%0.7
+minsigma = 0.1;%0.15;
+maxsigma =0.7;%0.7
 sigma_p = linspace(maxsigma,minsigma,nsigma);
 i_s = 1;
 % calculate image features
@@ -75,13 +75,34 @@ while k <= max_k
         k = 0;
     end
     k = k+1;
-    drawfitting(param, npoints, dstruct.dist);
+    %drawfitting(param, npoints, dstruct.dist);
 end
 
 
 drawfitting(param, npoints, im);
 points=forward(param, npoints)';
 sgm=roipoly(im,points(:,1),points(:,2));
+
+
+% points0 = points0';
+% a = cat(3, im, im.*(1+9*sgm.*(1-roipoly(im, points0(:,1), points0(:,2) ))),...
+%     im.*(1+6*roipoly(im, points0(:,1), points0(:,2) )));
+% cornerx = 0:(size(a,1)/10);
+% cornery = 0:(size(a,2)/10);
+% h = figure(2);imagesc(cornery, cornerx,a);axis image; colormap gray;
+% xlabel('x (mm)')
+% ylabel('z (mm)')
+
+% set(gcf, 'Units','Inches');
+% pos = get(h,'Position');
+% set(h,'PaperPositionMode','Auto','PaperUnits','Inches','PaperSize',[pos(3), pos(4)])
+% drawnow
+% pause(0.1)
+% print(h,['VICTRE7_multisgm','.pdf'], '-dpdf')
+% pause(0.1)
+% print(h,['VICTRE7_multisgm','.png'], '-dpng')
+% pause(0.1)
+
 
 end
 function drawfitting(param, npoints, im)

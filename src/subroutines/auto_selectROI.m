@@ -4,8 +4,8 @@ function out = auto_selectROI(x, p1,p2)
 if nargin < 2
 %    p1 = 0.50;
 %    p2 = 0.0005;
-   p1 = 0.90;
-   p2 = 0.05;%005;
+   p1 = 0.1;
+   p2 = 0.01;%005;
 
 end
     peak = max(x(:));

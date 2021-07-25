@@ -7,7 +7,7 @@
 
 function [bmua,bmus, OUTPUT] = Fit2Mua2Mus_TD(solver,grid,mua0,mus0, n, ~,...
     Qpos,Mpos,dmask, dt, nstep, twin, self_norm, data, irf, ref, sd,verbosity)
-verbosity = 0;
+verbosity =0;
 self_norm = true;
 INCL_ONLY = false;
 MUA_ONLY = false; musIN = 1.5;%real value of scattering to be used for MUA_ONLY
@@ -38,7 +38,7 @@ priorM(inter_DW) = 0;
 % create Q/M
 
 Qds = 1; % width of Sources 
-Mds = 1.5; % width of Detectors
+Mds = 2; % width of Detectors
 hmesh.SetQM(Qpos,Mpos);
 qvec = hmesh.Qvec('Neumann','Gaussian',Qds);
 mvec = hmesh.Mvec('Gaussian',Mds, n);
@@ -67,29 +67,28 @@ sd(mask) = [];
 
 %% fitting procedure
 if INCL_ONLY
-    x0 = [mua0,mus0]; lb=[]; ub=[];%lb = [0,0]; ub = [1, 10];
-    FD=[1e-4,1e-2]
+    x0 = [mua0,mus0]; lb = [0,0]; ub = [1, 10];
+    FD=[];
 %    fitfun = @forward2;
 elseif MUA_ONLY
     x0 = [mua0, mua0];lb=[]; ub=[];%lb = [0,0]; ub = [1, 10];
-    FD = [1e-4,1e-4];
+    FD = [];
 else
-   x0 =[mua0 + 0.01*mua0,mus0 + 0.01*mus0,mua0,mus0];  % [muaIN, musIN, muaOUT, musOUT]
+   x0 =[mua0*(1+0.00),mus0*(1+0.00) ,mua0*(1-0.00) ,mus0*(1-0.00) ];  % [muaIN, musIN, muaOUT, musOUT]
    %x0 = [0.001,1,0.001,1]; %start from homogeneous combination
-   lb =[0,0,0,0]; ub = [1, 5, 1, 5 ]; 
-   FD = [];%[1e-3,1e-5,1e-3,1e-5];
-   ub =[]; 
-   lb = [];%
+   lb =[0,0,0,0]; ub = [1, 10, 1, 10 ]; 
+   FD = [10^(-9),10^(-14),10^(-9),10^(-14)];%[1e-3,1e-5,1e-3,1e-5];
+    %lb =[]; ub = [];
    %    fitfun = @forward;
 end
 
 % setting optimization
 opts = optimoptions('lsqcurvefit',...
      'Jacobian','off',...
-     'Algorithm','levenberg-marquardt',...'trust-region-reflective',...
+     'Algorithm','trust-region-reflective',...levenberg-marquardt',...
      'DerivativeCheck','off',...
-     'MaxIter',75,'Display','iter-detailed',...'FinDiffRelStep',FD,...%,
-     'TolFun',1e-6,'TolX',1e-6);
+     'MaxIter',75,'Display','iter-detailed','FinDiffRelStep',FD,...%,
+     'TolFun',1e-7,'TolX',1e-7);
 
 [x,~,~,~,OUTPUT] = lsqcurvefit(@forward,x0,[],data(:),lb,ub,opts);x_lsqr = x;
 %[x] = fmincon(@forwardfmincon,x0); OUTPUT = 0; 
@@ -174,9 +173,8 @@ function [proj] = forward(x, ~)
         proj = proj * spdiags(1./sum(proj)',0,nQM,nQM);
         
         if numel(irf)>1
-            z = convn(proj,irf);
-            nmax = max(nstep,numel(irf));
-            proj = z(1:nmax,:);
+            proj = ConvIRF(proj,irf);
+
             clear nmax
             if self_norm == true
                 proj = proj * spdiags(1./sum(proj,'omitnan')',0,nQM,nQM);

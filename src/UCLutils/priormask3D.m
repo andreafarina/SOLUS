@@ -1,5 +1,5 @@
 
-function mask = priormask3D(path,grid, type)
+function mask = priormask3D(path,grid, type,delta)
 
 Nx = grid.Nx;
 Ny = grid.Ny;
@@ -9,11 +9,18 @@ DOT_GRID = 1;FACT = [1,1,1];
 
 
 
+
 %% here!
-smask = load(path);
-fn = fieldnames(smask);
-mask = smask.(fn{1});
-delta = smask.(fn{2});
+if ischar(path)
+    smask = load(path);
+    fn = fieldnames(smask);
+    mask = smask.(fn{1});
+    delta = smask.(fn{2});
+elseif ~isstring(path) && nargin>3
+    mask =path;
+else
+    error('give delta')
+end
 
 
 %% swap fields... in case
@@ -38,15 +45,15 @@ else
     if exist('type', 'var') == 1
          if strcmpi(type,'fit4param') == 1 % when considering TOAST is better not to resize it, proportions are already handled  
 
-            mask = logical(imresizen(single(mask_oversampled),...
-            FACT,'nearest'));
+            mask = full(double(imresizen(single(mask_oversampled),...
+            FACT,'nearest')));
             return;
 
          end
      else
 
-        mask = logical(imresizen(single(mask_oversampled),...
-            [Nx,Ny,Nz]./size(mask_oversampled),'nearest'));
+        mask = full(double(imresizen(single(mask_oversampled),...
+            [Nx,Ny,Nz]./size(mask_oversampled),'nearest')));
         return;
     end
 

@@ -324,8 +324,9 @@ if FORWARD == 1
         DOT.time.time = (1:DOT.time.nstep) * DOT.time.dt;
         if LOAD_FWD_TEO == 0
                 DataTD = ForwardTD_multi_wave(DOT.grid,DOT.Source.Pos, DOT.Detector.Pos, DOT.dmask,...
-                    DOT.opt.muaB, DOT.opt.muspB,DOT.opt.nB, DOT.opt.Mua,...
-                    DOT.opt.Musp, DOT.A, DOT.time.dt,...
+                    DOT.opt.muaB, DOT.opt.muspB,DOT.opt.nB,...
+                    DOT.opt.Mua,DOT.opt.Musp,...
+                    DOT.A, DOT.time.dt,...
                     length(DOT.time.time), DOT.time.self_norm, geom, TYPE_FWD,DOT.radiometry);
                 save([rdir,filename,'_', 'FwdTeo'],'DataTD');
             if REF == 1
@@ -567,7 +568,7 @@ if RECONSTRUCTION == 1
         end
     end
     %% delete Toast files
-    if isfield(DOT.grid,'hBasis')
+    if isfield(DOT.grid,'hBasis') && RECONSTRUCTION == 0
         DOT.grid.hBasis.delete();
         DOT.grid.hBasis = [];
         DOT.grid = rmfield(REC.grid,'hBasis');
@@ -676,8 +677,12 @@ if RECONSTRUCTION == 1
         elseif strcmpi(REC.time.roi, 'auto_by_wave')
             % write routing for selecting one ROI automaticaly per wavelength 
             REC.time.roi = zeros(2, size(DataTD,2));
+            if ~isfield(REC.time, 'roiRange1') || ~isfield(REC.time, 'roiRange2') 
+                REC.time.roiRange1 = [];
+                REC.time.roiRange2 = [];
+            end
             for i = 1:size(DataTD,2)
-                REC.time.roi(:,i) = auto_selectROI(DataTD(:,i));
+                REC.time.roi(:,i) = auto_selectROI(DataTD(:,i),REC.time.roiRange1,REC.time.roiRange2);
             end
             idxmeas = findMeasIndex(REC.dmask);
             for inl = 1:REC.radiometry.nL
@@ -728,7 +733,7 @@ if RECONSTRUCTION == 1
         if (EXP_DATA == 1)
             REC.sd = sqrt(WindowTPSF(sdTD.^2,REC.time.twin));
         end        
-        
+        REC.sd(REC.sd<0 ) = 0;
         if SHOWPLOTS
             idxmeas = findMeasIndex(REC.dmask);
             nsub = numSubplots(REC.radiometry.nL);
@@ -919,7 +924,7 @@ if RECONSTRUCTION == 1
                     REC.Source.Pos,REC.Detector.Pos,fit_dmaskMAT(:,:,inl),...
                     REC.time.dt,REC.time.nstep,fittwin,...
                     REC.time.self_norm,fitref,...
-                    fitirf,fitref,fitsd,REC.type_fwd);
+                    fitirf,fitref,fitsd,REC.solver.fit_reference_fwd);
                 if SHOWPLOTS
                     dh=gcf;dh.Name = ['Wavelength ',num2str(REC.radiometry.lambda(inl))];
                     fh(inl)=copyobj(dh,0); delete(dh);
@@ -928,15 +933,27 @@ if RECONSTRUCTION == 1
             REC.opt.mua0 = tmp_mua0(1,:);
             REC.opt.musp0 = tmp_musp0(1,:);
              
-            [~,~,REC.opt.conc0,REC.opt.a0,REC.opt.b0]=FitVoxel(REC.opt.mua0,REC.opt.musp0,REC.spe);
-            REC.opt.concB = REC.opt.conc0;
-            REC.opt.aB = REC.opt.a0;
-            REC.opt.bB = REC.opt.b0;
-            REC.spe.opt.conc0=REC.opt.conc0;
-            REC.spe.opt.a0=REC.opt.a0;
-            REC.spe.opt.b0=REC.opt.b0;
-            clear tmp_mua0
-            clear tmp_musp0
+
+                [~,~,REC.opt.conc0,REC.opt.a0,REC.opt.b0]=FitVoxel(REC.opt.mua0,REC.opt.musp0,REC.spe);
+                REC.opt.concB = REC.opt.conc0;
+                REC.opt.aB = REC.opt.a0;
+                REC.opt.bB = REC.opt.b0;
+                REC.spe.opt.conc0=REC.opt.conc0;
+                REC.spe.opt.a0=REC.opt.a0;
+                REC.spe.opt.b0=REC.opt.b0;
+                clear tmp_mua0
+                clear tmp_musp0
+%             if 0==1
+%                 [REC.opt.bmua,REC.opt.bmusp] = SpectralFitMuaMus_TD(REC.solver,...
+%                 REC.grid,...
+%                 REC.opt.mua0,REC.opt.musp0,REC.opt.nB,REC.A,...
+%                 REC.Source.Pos,REC.Detector.Pos,REC.dmask,...
+%                 REC.time.dt,REC.time.nstep,REC.time.twin,...
+%                 REC.time.self_norm,REC.Data,...
+%                 REC.time.irf.data,REC.ref,REC.sd,1,REC.radiometry,REC.spe);
+%             end
+            
+            
         end
     end
     % =========================================================================
@@ -1050,7 +1067,7 @@ if RECONSTRUCTION == 1
                         REC.opt.mua0,REC.opt.musp0,REC.opt.nB,REC.A,...
                         REC.Source.Pos,REC.Detector.Pos,REC.dmask,REC.time.dt,REC.time.nstep,...
                         REC.time.twin,REC.time.self_norm,REC.Data,...
-                        REC.time.irf.data,REC.ref,REC.sd,REC.type_fwd,REC.radiometry,REC.spe,REC.opt.conc0,REC.opt.a0,REC.opt.b0);
+                        REC.time.irf.data_mask,REC.ref,REC.sd,REC.type_fwd,REC.radiometry,REC.spe,REC.opt.conc0,REC.opt.a0,REC.opt.b0);
                     
                     
                     
@@ -1151,14 +1168,13 @@ if RECONSTRUCTION == 1
                         disp('No prior is provided in RECSettings_DOT. Reference mua will be used');
                         REC.solver.prior.refimage = REC.opt.Mua;
                     end
-                    figure(3333);PlotHeteQM(REC,squeeze(REC.solver.prior.refimage(:,:,:)),0),title('Inclusion in Fit'); drawnow;
-                    [REC.opt.bmua,REC.opt.bmusp, REC.opt.bConc,REC.opt.bA,REC.opt.bbB] = SpectralFitConcAB_TD( ... RecSolverTK0_spectra_TD(...
+                     [REC.opt.bmua,REC.opt.bmusp, REC.opt.bConc,REC.opt.bA,REC.opt.bbB] = FitConcAB_2reg_TD( ... RecSolverTK0_spectra_TD(...
                         REC.solver,...
                         REC.grid,...
                         REC.opt.conc0,REC.opt.b0, REC.opt.a0, REC.opt.nB,REC.A,...
                         REC.Source.Pos,REC.Detector.Pos,REC.dmask,REC.time.dt,REC.time.nstep,...
                         REC.time.twin,REC.time.self_norm,REC.Data,...
-                        REC.time.irf.data,REC.ref,REC.sd,REC.type_fwd,REC.radiometry,REC.spe, REC.opt.hete1.geometry);
+                        REC.time.irf.data_mask,REC.ref,REC.sd,REC.type_fwd,REC.radiometry,REC.spe, REC.opt.hete1.geometry);
                 case 'cg'
                     
                 case 'l1'
@@ -1192,7 +1208,7 @@ if RECONSTRUCTION == 1
                             REC.Source.Pos,REC.Detector.Pos,REC.dmask(:,:,inl),...
                             REC.time.dt,REC.time.nstep,REC.time.twin(:,:,meas_set),...
                             REC.time.self_norm,REC.Data(:,meas_set),...
-                            REC.time.irf.data(:,inl),REC.ref(:,meas_set),REC.sd(:,meas_set),1);
+                            REC.time.irf.data_mask(:,meas_set),REC.ref(:,meas_set),REC.sd(:,meas_set),1);
                         dh=gcf;dh.Name = ['Wavelength ',num2str(REC.radiometry.lambda(inl))];
                         fh(inl)=copyobj(dh,0); delete(dh);
                     end
@@ -1295,25 +1311,24 @@ if RECONSTRUCTION == 1
     % =========================================================================
     %%                            Quantify DOT
     % =========================================================================
-    if ~contains(REC.solver.type,'fit')
-        if ~contains(REC.opt.hete1.geometry,'LOAD_BKG')
-            Q = QuantifyDOT(REC,~EXP_DATA);
-        else
-            REC.opt.muaBB = REC.opt.muaB; REC.opt.mua0;
-            REC.opt.muaB = REC.opt.mua0;
-            REC.opt.muspBB = REC.opt.muspB; 
-            REC.opt.muspB = REC.opt.musp0;
-         
-            Q = QuantifyDOT(REC,~EXP_DATA);
-        end
+
+    if ~contains(REC.opt.hete1.geometry,'LOAD_BKG')
+        Q = QuantifyDOT(REC,[],0);
+    else
+        REC.opt.muaBB = REC.opt.muaB; REC.opt.mua0;
+        REC.opt.muaB = REC.opt.mua0;
+        REC.opt.muspBB = REC.opt.muspB; 
+        REC.opt.muspB = REC.opt.musp0;
+        Q = QuantifyDOT(REC,[],0);
     end
+
     Quantification_MultiSim
     % =========================================================================
     %%                            Save quantification
     % =========================================================================
-    if ~contains(REC.solver.type,'fit')
-        disp(['Quantification will be stored in: ', rdir,filename,'_', 'REC.mat']);
-        save([rdir,filename,'_', 'REC'],'Q','-append')
-    end
+    %if ~contains(REC.solver.type,'fit')
+    disp(['Quantification will be stored in: ', rdir,filename,'_', 'REC.mat']);
+    save([rdir,filename,'_', 'REC'],'Q','-append')
+    %end
 
 end

@@ -1,8 +1,11 @@
-function Q = QuantifyDOT(REC,ref_true)
+function Q = QuantifyDOT(REC,EXPDATA,REFIMAGE)
 % =========================================================================
 %                            Quantify DOT
 % =========================================================================
-REFIMAGE = 1;
+%REFIMAGE = 1;
+if ~isempty(EXPDATA)
+    REC.opt.hete1.val = [EXPDATA.optp.hete.abs,EXPDATA.optp.hete.sca];    
+end
 SOLUS_ONLY=1;
 FullPrint = false;
 REC.opt.muaB = REC.opt.mua0; % temporary
@@ -87,7 +90,7 @@ for nlambda = 1:REC.radiometry.nL
             coeff = 'musp';
         end
         % get region
-        if mean(target_mu(:)) >= mu0
+        if sum(target_mu(:)>= (mean(target_mu(:)))) <numel(target_mu(:))
             char_target = logical(target_mu > (0.5*(max(target_mu(:)) + min(target_mu(:))) ));
         else
             char_target = logical(target_mu < (0.5*(max(target_mu(:)) + min(target_mu(:))) ));
@@ -115,12 +118,14 @@ for nlambda = 1:REC.radiometry.nL
         acc_vol = recon_accuracy(mu, muin0, idx_incl, 'volume', sum(char_target(:)), mu0);
         tmp_mu = mu(idx_incl);
         
-        ValIn = mean(tmp_mu(tmp_mu>prctile(tmp_mu,5)&tmp_mu<prctile(tmp_mu,95)));
-        if ValIn >= mu0
-            ValIn= mu0+(max(tmp_mu(:))- mu0);%*(numel(idx_incl)*8);
-        else
-            ValIn= mu0+(min(tmp_mu(:))-mu0);%*(numel(idx_incl)*8);
-        end
+        %ValIn = mean(tmp_mu(tmp_mu>prctile(tmp_mu,5)&tmp_mu<prctile(tmp_mu,95)));
+         ValIn = mean(tmp_mu(:));
+%         if ValIn >= mu0
+%             ValIn= mu0+(max(tmp_mu(:))- mu0);%*(numel(idx_incl)*8);
+%         else
+%             ValIn= mu0+(min(tmp_mu(:))-mu0);%*(numel(idx_incl)*8);
+%         end
+        
         cmd = sprintf('Q.SOLUS_FigMerit.%s', coeff);
         cmd_end = sprintf('(:,%g)',nlambda);
         for i_field = {'C','C_vol', 'CNR','CNR_vol', 'displ',...

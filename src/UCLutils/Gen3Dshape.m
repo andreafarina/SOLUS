@@ -6,16 +6,16 @@ CROP = 1;   % enables autocropping of the 2D image to get a better approximation
             % of the position of the inclusion with respect to the US
             % probe. Preferably set to 1 with dicoms
 SAVE_3D = 1;   % saves 3D image
-SAVE_2D = 0;     % save segmented image
+SAVE_2D = 1;     % save segmented image
 SAVE_JPG = 0; % save images for display
 FORMAT = 'DICOM'; % or ELSE for other formats (jpg, png)
-SNAKE = 0;
-LOADSNAKE = 0;
+SNAKE = 1;
+LOADSNAKE = 1;
 
 
-loadname = 'DT_turkey.dcm';
+loadname = 'VICTRE/TEST_VICRE7VICTRE.dcm';
 savenameSNAKE = [loadname(1: end - 4), '_cor.mat'];
-savename3D = [loadname(1: end - 4), '_3D.mat'];
+savename3D = 'DTPrior_VICTRE_7.mat'%[loadname(1: end - 4), '_3D.mat'];
 savename2D = [loadname(1: end - 4), '_SEGMENTED.mat'];
 savenameJPG = [loadname(1: end - 4), '.jpg'];
 %% segmentation
@@ -81,12 +81,13 @@ if SNAKE
         save(savenameSNAKE,'cor')
     end
 [sgm, cor_updated ] = snake_fitting(im, cor);
+
 else
     sgm = segmented;
 end
 %% Extrusion
 disp('Extrusion...');
-mask3D = retrieve_ellipsoid(segmented);
+mask3D = retrieve_ellipsoid(sgm);
 
 
 %% SAVE

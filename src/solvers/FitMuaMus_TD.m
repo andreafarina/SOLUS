@@ -88,8 +88,8 @@ opts = optimoptions('lsqcurvefit',...
     'Jacobian','off',...
     'Algorithm','levenberg-marquardt',...
     'DerivativeCheck','off',...
-    'MaxIter',100,'Display','final-detailed','FinDiffRelStep',[1e-3,1e-2,0.0001*dt*nstep/size(twin,1)],...
-    'TolFun',1e-10,'TolX',1e-10);
+    'MaxIter',100,'Display','final-detailed','FinDiffRelStep',[1e-3,1e-2,0.01*dt*nstep/size(twin,1)],...
+    'TolFun',1e-6,'TolX',1e-6);
 %% Setup optimization for lsqnonlin
 % opts = optimoptions('lsqnonlin',...
 %     'Jacobian','off',...
@@ -130,7 +130,7 @@ bmus = x(2)*ones(grid.N,1);
 fprintf(['<strong>mua = ',num2str(bmua(1)),'</strong>\n']);
 fprintf(['<strong>musp = ',num2str(bmus(1)),'</strong>\n']);
 fprintf(['<strong>t0 = ',num2str(x(3)),'</strong>\n']);
-forward(x); % display fit result graphics
+%forward(x); % display fit result graphics
 % display(['MuaErr= ',num2str(bmua(1)-mua0)])
 % display(['MusErr= ',num2str(bmus(1)-mus0)])
 % display(['MuaErr%= ',num2str(((bmua(1)-mua0)./mua0).*100)])
@@ -146,7 +146,7 @@ mask = true(nwin*nQM,1);
 %proj_fit = WindowTPSF(proj_fit,twin);
 A_data = sum(data2);
 factor = Aproj_fit./A_data;
-save('factor_ref.mat','factor');
+%save('factor_ref.mat','factor');
 
 %% ===================== OBJECTIVE FUNCTIONS=============================
 
@@ -167,11 +167,8 @@ save('factor_ref.mat','factor');
         [proj,Aproj] = ProjectFieldTD(hMesh,qvec,mvec,dmask,...
             mua,mus,conc,tau,n,dt,nstep, 0,self_norm,'diff',0);
         if numel(irf)>1
-            for i = 1:nQM
-                z(:,i) = conv(full(proj(:,i)),irf);
-            end
-            nmax = max(nstep,numel(irf));
-            proj = z(1:nmax,:);
+                proj = convIRF(full(proj),irf);
+
             clear nmax
             if self_norm == true
                 proj = proj * spdiags(1./sum(proj,'omitnan')',0,nQM,nQM);
@@ -252,7 +249,7 @@ function [proj,J] = forward(x,~)
     t0 = x(3);
     [proj, Aproj] = ForwardTD(grid,Spos, Dpos, dmask, x(1), x(2), n, ...
                 [],[], A, dt, nstep, self_norm,...
-                geom, 'linear',irf);
+                geom, type_fwd,irf);
    %t0/dt
     proj = circshift(proj,round(t0/dt));
     proj = WindowTPSF(proj,twin);
