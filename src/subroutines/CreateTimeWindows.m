@@ -28,17 +28,17 @@ switch lower(kind)
             error('Set the number of windows!')
         end
         while rem(diff(roi),param)~=0
-            if rem(diff(roi),param) < floor(0.01*param) && diff(roi) > param
-                if mod(rem(diff(roi),param),2) == 1 
-                    roi(2) = roi(2) - 1;
+            if rem(diff(roi),param) < floor(0.2*param) && diff(roi) > param
+                if mod(rem(diff(roi),param),17) == 1 
+                    roi(2) = roi(1) + 1;
                 else
-                    roi(1) = roi(1) + 1;
+                    roi(1) = roi(2) - 1;
                 end
-            elseif rem(diff(roi),param) >= floor(0.01*param) || diff(roi) <= param
-                if mod(rem(diff(roi),param),2) == 1 
-                    roi(2) = roi(2) + 1;
-                else
+            elseif rem(diff(roi),param) >= floor(0.2*param) || diff(roi) <= param
+                if mod(rem(diff(roi),param),29) == 1 
                     roi(1) = roi(1) - 1;
+                else
+                    roi(2) = roi(2) + 1;
                 end
             else
                 roi(2) = roi(2) + 1;

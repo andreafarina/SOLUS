@@ -4,6 +4,7 @@ global mesh
 DEBUG = 0;
 v = 0.2999/refind;
 nQM = sum(dmask(:));
+nwin = size(twin,1);
 switch lower(type_fwd)
     case 'linear'
         Ns = size(Spos,1);
@@ -57,27 +58,28 @@ switch lower(type_fwd)
         %textprogressbar('done');
     case 'fem'
         N = mesh.hMesh.NodeCount;
-        if ((abs(max(muaB(:))-min(muaB(:)))<eps)&&((abs(max(muspB(:))-min(muspB(:)))<eps)))
+        if ((abs(max(muaB(:))-min(muaB(:)))<eps)&&((abs(max(muspB(:))-min(muspB(:)))<eps))) && isscalar(muaB) && isscalar(muspB) 
                 mua = ones(N,1) .* muaB;
                 musp = ones(N,1) .* muspB;
         else
             mua = muaB;
             musp = muspB;
         end
-         if strcmpi(type,'muad')
+         if contains(lower(type),'mua') || contains(lower(type),'d')
              GRADIENT = 'operator';%'matlab';%'toast';%'operator';
          else
              GRADIENT = 'none';
          end
-         BB = mesh.hMesh.BoundingBox();
+        BB = mesh.hMesh.BoundingBox();
         bmin = BB(1,:); bmax = BB(2,:);
         bdim = grid.hBasis.Dims();bdim = bdim';
         vscale = prod((bmax(:)-bmin(:))./(bdim(:)-1));%1;%2.3;
 
-
+        
         J = toastJacobianTimedomain_INPROGRESS(mesh.hMesh,grid.hBasis,...
             mesh.qvec, mesh.mvec, dmask, mua, musp, refind*ones(N,1),dt,...
             nstep,twin,irf, GRADIENT) * vscale * dt;
+        
         if DEBUG == 1
             Ns = size(Spos,1);
             %Nd = size(Dpos,1);

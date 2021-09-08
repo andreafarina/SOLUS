@@ -106,7 +106,7 @@ else
         for iq = 1:nQ
             qg = gpuArray(q(:,iq));
             %[phi(:,iq),~] = bicgstab(K1,qg,tol,1000);%,L);%,U);%,PP',PP);
-            [phi(:,iq),~] = pcg(K1,qg,tol,100);
+            [phi(:,iq),~] = pcg(K1,qg,tol,1000);
             %[phi(:,iq),flag] = gmres(K1,q(:,iq),30,1e-12,100);
         end
         

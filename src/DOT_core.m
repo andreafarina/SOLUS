@@ -57,7 +57,7 @@ if RECONSTRUCTION == 1
     RecSettings_DOT;
 end
 %% correct missing flags for compatibility with older examples
-if ~exist('SHOWPLOTS','var'), SHOWPLOTS = 1; end
+if ~exist('SHOWPLOTS','var'), SHOWPLOTS = 0; end
 if ~exist('REMOVE_VOXELS','var'), REMOVE_VOXELS = 0; end
 if ~exist('SHOWIMAGEMEAS','var'), SHOWIMAGEMEAS = 0; end
 if ~exist('RECFILE_APPEND','var'), RECFILE_APPEND = '';end
@@ -604,29 +604,31 @@ if RECONSTRUCTION == 1
         clear DataCW sdCW
     end
     
-    %% resample DT data
-    if strcmpi(REC.domain,'td') && (nstep ~= REC.time.nstep || dt ~= REC.time.dt )
-        taxis = 0:dt:(dt*(nstep-1));
-        
-        tmpspc = DataTD;
-        tmpspc(isnan(tmpspc)) = 0;
-        tmpref = RefTD;
-        tmpref(isnan(tmpref)) = 0;
-        tmpsd = sdTD;
-        tmpsd(isnan(sdTD)) = 0;
+    %% resample DT data if time step or nstep are different
+    if exist(nstep,'var') && exist(nstep,'var') %% This ill need to change in a future version
+        if strcmpi(REC.domain,'td') && (nstep ~= REC.time.nstep || dt ~= REC.time.dt )
+            taxis = 0:dt:(dt*(nstep-1));
 
-        disp('Resampling Data')
-        tic
-        for i = 1:size(DataTD,2)
-            tmpspc_(:,i) = resampleSPC(tmpspc(:,i),taxis,REC.time.dt);
-            tmpref_(:,i) = resampleSPC(tmpref(:,i),taxis,REC.time.dt);
-            tmpsd_(:,i) = resampleSPC(tmpsd(:,i),taxis,REC.time.dt);
+            tmpspc = DataTD;
+            tmpspc(isnan(tmpspc)) = 0;
+            tmpref = RefTD;
+            tmpref(isnan(tmpref)) = 0;
+            tmpsd = sdTD;
+            tmpsd(isnan(sdTD)) = 0;
+
+            disp('Resampling Data')
+            tic
+            for i = 1:size(DataTD,2)
+                tmpspc_(:,i) = resampleSPC(tmpspc(:,i),taxis,REC.time.dt);
+                tmpref_(:,i) = resampleSPC(tmpref(:,i),taxis,REC.time.dt);
+                tmpsd_(:,i) = resampleSPC(tmpsd(:,i),taxis,REC.time.dt);
+            end
+            toc
+            DataTD = tmpspc_;
+            RefTD = tmpref_;
+            sdTD = tmpsd_;
+            clear tmpspc_ tmpref_ tmpsd_ tmpspc tmpref tmpsd
         end
-        toc
-        DataTD = tmpspc_;
-        RefTD = tmpref_;
-        sdTD = tmpsd_;
-        clear tmpspc_ tmpref_ tmpsd_ tmpspc tmpref tmpsd
     end
     
     %==========================================================================
@@ -1204,7 +1206,7 @@ if RECONSTRUCTION == 1
                         fprintf(['<strong>------- Wavelength ',num2str(REC.radiometry.lambda(inl)),'-------</strong>\n'])
                         [REC.opt.bmua(:,inl),REC.opt.bmusp(:,inl), REC.opt.fitOUTPUT] = Fit2Mua2Mus_TD(REC.solver,...
                             REC.grid,...
-                            REC.opt.mua0(inl),REC.opt.musp0(inl),REC.opt.nB,[],...
+                            REC.opt.mua0(inl),REC.opt.musp0(inl),REC.opt.nB,REC.A,...
                             REC.Source.Pos,REC.Detector.Pos,REC.dmask(:,:,inl),...
                             REC.time.dt,REC.time.nstep,REC.time.twin(:,:,meas_set),...
                             REC.time.self_norm,REC.Data(:,meas_set),...

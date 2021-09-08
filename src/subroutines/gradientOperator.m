@@ -31,11 +31,12 @@ function [Dy, Dx, Dz, Lap] = gradientOperator(volume, h, c, BC, mask)
 % substituted LinIndex with the buit-in sub2ind A. Farina 2020
 % Corrected bug on nargin
 
-if strcmpi('BC','1st')
-    FLAG_FD = 2;
-else
+if strcmpi(BC,'1st')
     FLAG_FD = 1;
     BC = 'none';
+else
+    FLAG_FD = 2;
+    
 end
 if nargin < 5
   mask = ones(volume);

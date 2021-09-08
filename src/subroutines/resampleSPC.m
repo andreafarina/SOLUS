@@ -49,7 +49,8 @@ end
 area = sum(yi);
 
 %% normalize data
-if sum(yi(:))==0
+if sum(yi(:))==0 || isnan(sum(yi(:))) 
+    yi(isnan(yi))=0;
     data = yi;
     area = 0; 
     peak =[];

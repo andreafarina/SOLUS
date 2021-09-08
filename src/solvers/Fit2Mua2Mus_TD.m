@@ -5,7 +5,7 @@
 % Andrea Farina 02/18
 %==========================================================================
 
-function [bmua,bmus, OUTPUT] = Fit2Mua2Mus_TD(solver,grid,mua0,mus0, n, ~,...
+function [bmua,bmus, OUTPUT] = Fit2Mua2Mus_TD(solver,grid,mua0,mus0, n, A,...
     Qpos,Mpos,dmask, dt, nstep, twin, self_norm, data, irf, ref, sd,verbosity)
 verbosity =0;
 self_norm = true;
@@ -14,16 +14,18 @@ MUA_ONLY = false; musIN = 1.5;%real value of scattering to be used for MUA_ONLY
 
 %% initial setting the FEM problem
 % create the mesh
-mdim = [grid.Nx,grid.Ny,grid.Nz] ;
-[vtx,idx,eltp] = mkslab([grid.x1,grid.y1,grid.z1;...
-                    grid.x2,grid.y2,grid.z2],mdim);
-hmesh = toastMesh(vtx,idx,eltp);
+mdim = round(([grid.x2,grid.y2,grid.z2]- [grid.x1,grid.y1,grid.z1])./[grid.dx,grid.dy,grid.dz]) ;
+% [vtx,idx,eltp] = mkslab([grid.x1,grid.y1,grid.z1;...
+%                     grid.x2,grid.y2,grid.z2],mdim);
+% hmesh = toastMesh(vtx,idx,eltp);
+global mesh
+hmesh = mesh.hMesh;
 refind = n * ones(hmesh.NodeCount,1);
 % create basis
-bdim = mdim;
+%bdim = mdim;
 
 % if priormask does not retunr back the same number of elemets as the DOT grid
-%bdim = size(solver.prior.refimage);
+bdim = size(solver.prior.refimage);
 
 hbasis = toastBasis(hmesh,bdim, 'LINEAR');
 
@@ -37,11 +39,11 @@ priorM(inter_UP) = 1;
 priorM(inter_DW) = 0;
 % create Q/M
 
-Qds = 1; % width of Sources 
+Qds = 2; % width of Sources 
 Mds = 2; % width of Detectors
-hmesh.SetQM(Qpos,Mpos);
+hmesh.SetQM(Qpos-[0,0,0],Mpos);
 qvec = hmesh.Qvec('Neumann','Gaussian',Qds);
-mvec = hmesh.Mvec('Gaussian',Mds, n);
+mvec = (1./(2*A))*hmesh.Mvec('Gaussian',Mds, n);
 
 %     mtot = mvec(:,1) + mvec(:,2) + mvec(:,3) + mvec(:,4) + mvec(:,5) + mvec(:,6) + mvec(:,7) + mvec(:,8); % FOR DISPLAY
 %     qtot = qvec(:,1) + qvec(:,2) + qvec(:,3) + qvec(:,4) + qvec(:,5) + qvec(:,6) + qvec(:,7) + qvec(:,8);
@@ -53,7 +55,7 @@ nQM = sum(dmask(:));
 if self_norm == true
         data = data * spdiags(1./sum(data,'omitnan')',0,nQM,nQM);
         ref = ref * spdiags(1./sum(ref,'omitnan')',0,nQM,nQM);
-        sd = sqrt(data) * spdiags(1./sum(data,'omitnan')',0,nQM,nQM); 
+        sd = sqrt(data) * spdiags(1./sum(sqrt(data),'omitnan')',0,nQM,nQM); 
 end
 %% mask for excluding zeros
 mask = (data(:) == 0) | (isnan(data(:)));
@@ -61,36 +63,42 @@ mask = (data(:) == 0) | (isnan(data(:)));
 %sd = ones(size(data));%;%%ones(size(proj));%proj(:);
 sd = ones(size(data));
 data = data./sd;
-data(mask) = [];
-sd(mask) = [];
+data(mask) = 0;%[];
+sd(mask) = 1;%;[];
+ref(mask) = 0;[];
 %data2 (mask) = [];
 
 %% fitting procedure
 if INCL_ONLY
-    x0 = [mua0,mus0]; lb = [0,0]; ub = [1, 10];
+    x0 = [mua0,(1/(3*mus0))]; lb = [0,0]; ub = [1, 10];
     FD=[];
 %    fitfun = @forward2;
 elseif MUA_ONLY
     x0 = [mua0, mua0];lb=[]; ub=[];%lb = [0,0]; ub = [1, 10];
     FD = [];
 else
-   x0 =[mua0*(1+0.00),mus0*(1+0.00) ,mua0*(1-0.00) ,mus0*(1-0.00) ];  % [muaIN, musIN, muaOUT, musOUT]
+   x0 =[mua0*(1+0.00),(1/(3*mus0))*(1+0.00) ,mua0*(1-0.00) ,(1/(3*mus0))*(1-0.00) ];  % [muaIN, musIN, muaOUT, musOUT]
    %x0 = [0.001,1,0.001,1]; %start from homogeneous combination
-   lb =[0,0,0,0]; ub = [1, 10, 1, 10 ]; 
-   FD = [10^(-9),10^(-14),10^(-9),10^(-14)];%[1e-3,1e-5,1e-3,1e-5];
-    %lb =[]; ub = [];
+   %lb =[0,0,0,0]; ub = [1, 10, 1, 10 ]; 
+   %FD = [10^(-9),10^(-9),10^(-9),10^(-9)];%[1e-3,1e-5,1e-3,1e-5];
+   %FD = [1e-4,1e-2,1e-4,1e-2];
+   FD = [10^(-16),10^(-16),10^(-16),10^(-16)]; 
+   lb =[]; ub = [];
    %    fitfun = @forward;
 end
 
 % setting optimization
 opts = optimoptions('lsqcurvefit',...
      'Jacobian','off',...
-     'Algorithm','trust-region-reflective',...levenberg-marquardt',...
+     'Algorithm','levenberg-marquardt',...'trust-region-reflective',...
      'DerivativeCheck','off',...
-     'MaxIter',75,'Display','iter-detailed','FinDiffRelStep',FD,...%,
-     'TolFun',1e-7,'TolX',1e-7);
+     'MaxIter',50,'Display','iter-detailed','FinDiffRelStep',FD,...%,
+     'TolFun',1e-10,'TolX',1e-10,'SpecifyObjectiveGradient',false);
 
-[x,~,~,~,OUTPUT] = lsqcurvefit(@forward,x0,[],data(:),lb,ub,opts);x_lsqr = x;
+[x,~,~,~,OUTPUT] = lsqcurvefit(@forward,x0,[],data(:),lb,ub,opts);
+x_lsqr = [x(1),1/(3*x(2)),x(3),1/(3*x(4))];
+x(2) = 1/(3*x(2));
+x(4) = 1/(3*x(4));
 %[x] = fmincon(@forwardfmincon,x0); OUTPUT = 0; 
 %x_fmin = x 
 x_lsqr
@@ -116,20 +124,21 @@ end
 
 
 %% Map parameters back to basis
+pM = round(hbasis.Map('M->B',priorM(:)));
 if INCL_ONLY
-    optmua = x(1) * priorM;
-    optmus = x(2) * priorM;
-    optmua = optmua + (1-priorM)*x0(1);
-    optmus = optmus + (1-priorM)*x0(2);
+    optmua = x(1) * pM;
+    optmus = x(2) * pM;
+    optmua = optmua + (1-pM)*x0(1);
+    optmus = optmus + (1-pM)*x0(2);
 elseif MUA_ONLY
-    optmua = x(1) * priorM;
-    optmua = optmua +(1-priorM)*x(2);
-    optmus = priorM*musIN + (1-priorM)*mus0;
+    optmua = x(1) * pM;
+    optmua = optmua +(1-pM)*x(2);
+    optmus = pM*musIN + (1-pM)*mus0;
 else
-    optmua = x(1) * priorM;
-    optmus = x(2) * priorM;
-    optmua = optmua + (1-priorM)*x(3);
-    optmus = optmus + (1-priorM)*x(4);
+    optmua = x(1) * pM;
+    optmus = x(2) * pM;
+    optmua = optmua + (1-pM)*x(3);
+    optmus = optmus + (1-pM)*x(4);
 end
 
 % if priorMask does not return back the same number of elements 
@@ -137,31 +146,31 @@ end
 % bmua = hbasis_out.Map('M->B',optmua(:));
 % bmus = hbasis_out.Map('M->B',optmus(:));
 
-bmua = hbasis.Map('M->B',optmua(:));
-bmus = hbasis.Map('M->B',optmus(:));
+bmua =optmua(:);%,bdim);
+bmus = optmus(:);%,bdim);
 
 %bmua = optmua(:);
 %bmus = optmus(:);
 
 %% Delete Mesh and Basis
 % hbasis_out.delete;
-hbasis.delete;
-hmesh.delete;
-clearvars -except bmua bmus OUTPUT
+% hbasis.delete;
+% hmesh.delete;
+% clearvars -except bmua bmus OUTPUT
 return;
 
 %% forward solvers
-function [proj] = forward(x, ~)
+function [proj,J] = forward(x, ~)
         
         if INCL_ONLY
             mua = x(1) * priorM + mua0 * ( 1-priorM);
-            mus = x(2) * priorM + mus0 * ( 1-priorM);
+            mus = (1/(3*x(2))) * priorM + mus0 * ( 1-priorM);
         elseif MUA_ONLY
             mua = x(1) * priorM + x(2) * ( 1-priorM);
             mus = musIN * priorM + mus0 * ( 1-priorM);
         else
             mua = x(1) * priorM + x(3) * ( 1-priorM);
-            mus = x(2) * priorM + x(4) * ( 1-priorM);
+            mus = (1/(3*x(2))) * priorM + (1/(3*x(4))) * ( 1-priorM);
         end
             
         
@@ -170,25 +179,38 @@ function [proj] = forward(x, ~)
 %         Mua = basis.Map('B->M',mua);
         
         [proj,~] = ProjectFieldTD(hmesh,qvec,mvec,dmask, mua,mus,0,0,refind,dt,nstep,0,0,'diff',0);
-        proj = proj * spdiags(1./sum(proj)',0,nQM,nQM);
+        %proj = proj * spdiags(1./sum(proj)',0,nQM,nQM);
         
         if numel(irf)>1
             proj = ConvIRF(proj,irf);
 
-            clear nmax
-            if self_norm == true
-                proj = proj * spdiags(1./sum(proj,'omitnan')',0,nQM,nQM);
-            end
-            clear z
+%             if self_norm == true
+%                 proj = proj * spdiags(1./sum(proj,'omitnan')',0,nQM,nQM);
+%             end
+
         end
         %proj = circshift(proj,round(t0/dt));
-        proj = WindowTPSF(proj,twin);
+        
+
         if self_norm == true
             proj = proj * spdiags(1./sum(proj,'omitnan')',0,nQM,nQM);
         end
-        proj(mask) = [];
+        proj = WindowTPSF(proj,twin);
+        %proj(mask) = [];
         proj = proj(:)./sd(:);
-        if verbosity
+        if nargout > 1
+            pM = round(hbasis.Map('M->B',priorM));
+%              P = [pM/sum(pM(:)),(1-pM)/sum(1-pM(:)),0*pM,0*pM;...
+%                   0*pM,0*pM,pM/sum(pM(:)),(1-pM)/sum(1-pM(:))];
+             P = [pM,(1-pM),0*pM,0*pM;...
+                 0*pM,0*pM,pM,(1-pM)];
+            J = JacobianTD (grid, Qpos, Mpos, dmask, mua, mus, n, A, ...
+                            dt, nstep, twin, irf, 'semi-inf','muaD','fem',self_norm,0); 
+            %J(:,(end/2+1):end)= 1./(3*J(:,(end/2+1):end));
+           J = J*P; 
+           J(mask,:) = [];
+        end
+         if verbosity
             % plot forward
             t = (1:numel(data)) * dt;
             figure(1003);
@@ -197,7 +219,7 @@ function [proj] = forward(x, ~)
             drawnow,
             
         end
-        x
+        [x(1),1/(3*x(2)),x(3),1/(3*x(4))]
         
 end
 

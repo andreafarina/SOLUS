@@ -42,7 +42,7 @@ switch mode
 
     % initial condition
     %tPhi(1,:,:) = phi;
-    phi = phi/timeSolver.dt * 1000;
+    phi = (phi/timeSolver.dt) * 1e5;
     tPhi(:,:,1) = phi;
     
     % AF initial conditions
@@ -95,7 +95,7 @@ switch mode
         end
         %tPhi(:,:,1) = [];
     end
-    tPhi = permute(tPhi, [3 1 2])/1000;
+    tPhi = permute(tPhi, [3 1 2])/1e5;
     if (sum(tPhi(:)<0) > 0)
         warning([mfilename,spacer,num2str(sum(tPhi(:)<0)),' elements < 0 set to 0']);
         tPhi(tPhi<0) = 0;

@@ -39,7 +39,7 @@ dstruct.points0 = points0;
 
 % initialise cycle
 k = 1;
-max_k = 8;
+max_k = 30;
 max_ik = 100;
 alpha0 = 30*dStep;
 % compute initial loss
@@ -54,14 +54,21 @@ while k <= max_k
     alpha = alpha0;
     ik = 1;
     % compute loss
-    Ln = Loss(forward((param - alpha*(dUp)),npoints), dstruct,param, param0);
-    while Ln > L && ik <= max_ik 
-        alpha = alpha * 0.9;
+    %Ln = Loss(forward((param - alpha*(dUp)),npoints), dstruct,param, param0);
+    tmp_points = forward((param - alpha*(dUp)),npoints);
+    while (Ln > L || ik == 1 || any(tmp_points(1,:)>=size(im,1)) || any(tmp_points(2,:)>=size(im,2))||...
+            any(tmp_points(1,:)<=0) || any(tmp_points(2,:)<=0))&& ik <= (max_ik+1)
+        if ik >1
+            alpha = (alpha) * 0.9;
+        end
         %dUp = dUp;% .* (abs(dUp/L) > 0 );
+        tmp_points = forward((param - alpha*(dUp)),npoints);
         Ln = Loss(forward((param - alpha*(dUp)),npoints), dstruct,param, param0);
         ik = ik + 1;
     end
-    if Ln < L % check if line search went well
+    tmp_points = forward((param - alpha*(dUp)),npoints);
+    if Ln < L && all(tmp_points(1,:)<=size(im',1)) || all(tmp_points(2,:)<=size(im',2))||...
+            all(tmp_points(1,:)>0) || any(tmp_points(2,:)>0) % check if line search went well
         param = param - alpha*(dUp); 
     else % end minimisation for current smoothing
         k = max_k +1;
@@ -79,9 +86,9 @@ while k <= max_k
 end
 
 
-drawfitting(param, npoints, im);
-points=forward(param, npoints)';
-sgm=roipoly(im,points(:,1),points(:,2));
+% drawfitting(param, npoints, im);
+ points=forward(param, npoints)';
+ sgm=roipoly(im,points(:,1),points(:,2));
 
 
 % points0 = points0';
@@ -108,7 +115,7 @@ end
 function drawfitting(param, npoints, im)
     % draws 
     points = forward(param, npoints);
-    figure(1), imagesc(im);colormap('gray'),hold on
+    figure(1002), imagesc(im);colormap('gray'),hold on
     plot(points(1,:),points(2,:),'r','LineWidth',2);
     plot(cat(2,param(1,:), param(1,1)),cat(2,param(2,:), param(2,1)),'y.');
     drawnow;
@@ -260,7 +267,7 @@ function L = Loss(points, d,~,~)%param, cor0)
 %     regu = param - cor0;
 %     Regu = sum(regu(1,:).^2 + regu(2,:).^2 );
     
-    a = 0;
+    a = 1;
     b = 3;
     ab = a + b;
     a = a / ab;
@@ -276,7 +283,7 @@ function L = Loss(points, d,~,~)%param, cor0)
 %     centre = mean(cor0(:,:),2);
 %     dist2 = sqrt((cor0(1,:)  - centre(1)).^2 + (cor0(2,:)  - centre(2)).^2);
 %     Eext = 1/sum(dist2);    
-    L = 0.05*Eint + Eim ;% 0 * Eext +0 * Regu;
+    L = 0.01*Eint + Eim ;% 0 * Eext +0 * Regu;
   
 end
 

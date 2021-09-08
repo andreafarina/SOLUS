@@ -6,7 +6,7 @@
 % Andrea Farina 10/15
 %==========================================================================
 
-function [bMua, bMusp, bConc,bB, bA] = FitConcAB_2reg_TD(solver,grid, conc0,a0,b0, n, A,...
+function [bMua, bMusp, bConc,bA, bB] = FitConcAB_2reg_TD(solver,grid, conc0,a0,b0, n, A,...
     Spos,Dpos,dmask, dt, nstep, twin, self_norm, data, irf, ref, sd,TYPE_FWD,radiometry,spe,geometry)
 BULK = 1;% set to 1 if wanting to fit the bulk.
 INCL = 1;% set to 1 if wanting to fit the inclusion defined by refimage
@@ -28,6 +28,10 @@ ForceConstitSolution = spe.ForceConstitSolution;
 nQM = sum(dmask(:));
 nwin = size(twin,1);
 
+
+
+bdim = size(solver.prior.refimage);
+hbasis = toastBasis(mesh.hMesh,bdim, 'LINEAR');
 %% Inverse solver
 mua0 = (spe.ext_coeff0*conc0')';          
 mus0 = (a0 .* (spe.lambda./spe.lambda0).^(-b0));
@@ -158,7 +162,7 @@ if strcmpi(min_func,'lsqrfit')
     'Algorithm','trust-region-reflective',...
     'DerivativeCheck','off',...
     'MaxIter',200*radiometry.nL,'Display','iter-detailed',...
-    'FinDiffRelStep', FinDiffRelStep,'TolFun',1e-10,'TolX',1e-10);
+    'FinDiffRelStep', FinDiffRelStep,'TolFun',1e-10,'TolX',1e-10,'SpecifyObjectiveGradient',true);
    
      [x,res] = lsqcurvefit(@comp_forward,x0,[],data,low_bound,[],opts);
 elseif strcmpi(min_func,'fminunc')
@@ -300,6 +304,25 @@ save('factor_ref.mat','factor');
         proj(mask) = [];
         proj = proj(:)./sd;
         % plot forward
+        if nargout > 1
+            pM = refimage(:);%round(hbasis.Map('M->B',priorM));
+            Mus = zeros(mesh.hMesh.NodeCount,radiometry.nL);
+            Mua = zeros(mesh.hMesh.NodeCount,radiometry.nL);
+            for inl = 1:radiometry.nL
+                Mus(:,inl) = hbasis.Map('B->M',mus(:,:,:,inl));
+                Mua(:,inl) = hbasis.Map('B->M',mua(:,:,:,inl));
+                %nf = 
+            end
+            P = kron(diag(ones(numel(x)/2,1)),[pM,(1-pM)]);
+            J = JacobianTD_multiwave_spectral(grid, Spos, Dpos, dmask,...
+                                Mua,...
+                                Mus, n, A, ...
+                            dt, nstep, twin, irf, 'semi-inf','muaD','fem',radiometry,spe,self_norm,0); 
+            %J(:,(end/2+1):end)= 1./(3*J(:,(end/2+1):end));
+
+            J = J*P; 
+            J(mask,:) = [];       
+        end
         if PLOT
             t = (1:numel(data)) * dt;
             figure(1003);

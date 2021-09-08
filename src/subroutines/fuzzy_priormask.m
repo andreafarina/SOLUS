@@ -10,7 +10,7 @@ DOT_GRID = 1;FACT = [1,1,1];
 
 final_dims = [grid.x1,grid.y1,grid.z1;...
     grid.x2,grid.y2,grid.z2];
-mask_oversampled =  segment2grid(mu, delta, final_dims);
+mask_oversampled =  segment2grid(mu, delta, final_dims, 'fuzzy');
 
  
 if DOT_GRID == 1 %if manual mapping of prior of DOT grid 

@@ -1,4 +1,4 @@
-function out_grid =  segment2grid(mask, delta, final_dims)
+function out_grid =  segment2grid(mask, delta, final_dims, type)
 %-
 %-
 %-
@@ -18,6 +18,9 @@ function out_grid =  segment2grid(mask, delta, final_dims)
 % FINAL_DIMS: [x1,y1,z1; x2,y2,z2] (mm)
 % OUT GRID:  3d array
 
+if nargin < 4
+    type = 'binary';
+end
 DISPLAY = 0;
 
 
@@ -51,13 +54,23 @@ smasky = min( smasky, outdimy);
 smaskz = min( smaskz, outdimz);
 
 % insert slab in out grid
+if strcmpi(type,'binary')
 out_grid(mx - ceil(smaskx/2) + (1:smaskx),...
          my - ceil(smasky/2) + (1:smasky),... 
                                    1:smaskz) = ...
                 logical(mask(midmaskx - ceil(smaskx/2) + (1:smaskx),...
                         midmasky - ceil(smasky/2) + (1:smasky),...
                         1:smaskz));
-                    
+else
+    
+out_grid = double(out_grid);    
+out_grid(mx - ceil(smaskx/2) + (1:smaskx),...
+         my - ceil(smasky/2) + (1:smasky),... 
+                                   1:smaskz) = ...
+                (mask(midmaskx - ceil(smaskx/2) + (1:smaskx),...
+                        midmasky - ceil(smasky/2) + (1:smasky),...
+                        1:smaskz));   
+end
 
 if (DISPLAY == 1)
 
