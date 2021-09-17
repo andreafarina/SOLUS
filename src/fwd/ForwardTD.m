@@ -2,6 +2,7 @@ function [phi, Area] = ForwardTD(grid,Spos, Dpos, dmask, muaB, muspB, refind, ..
     Mua, Musp, A, dt, nstep, self_norm, geom, FWD_TYPE,irf)
 global mesh
 DEBUG = 0;
+APROJ = 'sum';%'fwdcw';
 v = 0.2999/refind;
 
 Ns = size(Spos,1);
@@ -29,7 +30,7 @@ switch lower(FWD_TYPE)
         else
             type = 'homo';
         end
-        disp(['calculating Forward(',type,', ',geom,')']);
+        %disp(['calculating Forward(',type,', ',geom,')']);
         
         switch lower(type)
             case 'homo'
@@ -128,8 +129,17 @@ if nargout > 1
 end
 phi = ConvIRF(phi,irf);
 
+
 if self_norm == true
-    Area = sum(phi,'omitnan');
+    switch lower(APROJ)
+        case 'sum'
+            Area = sum(phi,'omitnan');
+        case 'fwdcw'
+            Area = ForwardCW(grid,Spos, Dpos, dmask, muaB, muspB,...
+                    Mua, Musp, A, geom, type)./dt;
+    end
+                
+                
     phi = NormalizeTPSF(phi);
     %phi = bsxfun(@times,phi,1./Area);
 end

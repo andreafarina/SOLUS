@@ -1,4 +1,4 @@
-filename = 'Test_StandardMuaMus_selfnorm';% Filename  prefix 
+filename = 'Test_StandardMuaMus';% Filename  prefix 
 session = '201710';
 exp_path = './';%['../data/',session,'/'];
 res_path = './';%['../results/',session,'/'];

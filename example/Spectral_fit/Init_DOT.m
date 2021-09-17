@@ -2,7 +2,7 @@
 %%                              OPTIONS 
 %==========================================================================
 % ----------------------------- FORWARD -----------------------------------
-FORWARD = 1;            % Simulated forward data and save into _Data file
+FORWARD = 0;            % Simulated forward data and save into _Data file
 REF = 1;                % 1: create also the homogeneous data
 TYPE_FWD = 'linear';    % fwd model computation: 'linear','fem'
 geom = 'semi-inf';      % geometry

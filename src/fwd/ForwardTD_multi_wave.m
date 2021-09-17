@@ -8,7 +8,7 @@ if nargin<17
 end
     lambda = radiometry.lambda;
     for inl = 1:radiometry.nL
-        fprintf(['<strong>------- Wavelength ',num2str(lambda(inl)),'-------</strong>\n'])
+        %fprintf(['<strong>------- Wavelength ',num2str(lambda(inl)),'-------</strong>\n'])
         if isempty(Mua)||isempty(Musp)
             MuaData = []; MusData = [];
         else

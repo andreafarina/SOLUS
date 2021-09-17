@@ -5,7 +5,7 @@ REC.domain = 'td';          % CW or TD: data type to be inverted
 REC.type_fwd = 'linear';    % 'linear' or 'fem'.
 % -------------------------------------------------------------------------
 % REC.time.roi = [];
-REC.time.roi = [259 919];%;243 790;220 661;225 446;224 420;225 462;226 468;236 538];
+REC.time.roi = [1,1025];
                         % ROI in time-step unit. 
                         % If omitted, the ROI will be
                         % selected dinamically by the user.
@@ -15,22 +15,16 @@ NUM_TW = 64;            % Number of Time Windows within ROI
 % =========================================================================
 % In this section all the parameter for the inverse solver are setted.
 % --------------------------- Optical properties --------------------------
-REC.solver.variables = {'mua'}; % variables mua,mus.
+REC.solver.variables = {'mua','mus'}; % variables mua,mus.
 REC.opt.mua0 = 0.01;    % absorption [mm-1]
-REC.opt.musp0 = 1.0;      % reduced scattering [mm-1]
+REC.opt.musp0 = 1.0;    % reduced scattering [mm-1]
 REC.opt.nB = 1.4;
-%if SPECTRA == 0
-    mua_ = 0.01;
-    musp_ = 1.0;
-    Xr = {mua_,musp_};
-% else
-%     a_ = 1.234; b_ = 0.50;
-%     conc_ = [1.45 9.38 0.8186*10*100*0.91 0.1172*10*100 0.0453*10*100*0.196];
-%     Xr = {conc_,[a_ b_]};
-% end
+mua_ = 0.01;
+musp_ = 1.0;
+Xr = {mua_,musp_}; 
 
 % ---------------------- Solver and regularization ------------------------
-REC.solver.tau = 0.005;%logspace(-5,0,30);            % regularisation parameter
+REC.solver.tau = 0.002;            % regularisation parameter
 REC.solver.type = 'tk1';          % 'tk0','GN': gauss-newton, 
                                   % 'tk1': first order Tichonov regul
                                   % 'USprior': tk1+structural prior

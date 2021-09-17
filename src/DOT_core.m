@@ -239,14 +239,14 @@ if LOAD_FWD_TEO == 0
                 DataTD = ForwardTD_multi_wave(DOT.grid,DOT.Source.Pos, DOT.Detector.Pos, DOT.dmask,...
                     DOT.opt.muaB, DOT.opt.muspB,DOT.opt.nB, DOT.opt.Mua,...
                     DOT.opt.Musp, DOT.A, DOT.time.dt,...
-                    length(DOT.time.time), DOT.time.self_norm, geom, TYPE_FWD,DOT.radiometry);
+                    length(DOT.time.time), 0, geom, TYPE_FWD,DOT.radiometry);
                 save([rdir,filename,'_', 'FwdTeo'],'DataTD');
             if REF == 1
                 [MuaB,MuspB] = applyGrid(DOT.grid,DOT.opt.muaB,DOT.opt.muspB,REC.solver.type,DOT.opt.concB,DOT.opt.aB,DOT.opt.bB);
                 RefTD = ForwardTD_multi_wave(DOT.grid,DOT.Source.Pos, DOT.Detector.Pos, DOT.dmask,...
                     DOT.opt.muaB, DOT.opt.muspB,DOT.opt.nB, ...
                     MuaB,MuspB, ...
-                    DOT.A, DOT.time.dt,length(DOT.time.time), DOT.time.self_norm,...
+                    DOT.A, DOT.time.dt,length(DOT.time.time), 0,...
                     geom, TYPE_FWD,DOT.radiometry);
                 save([rdir,filename,'_', 'FwdTeo'],'RefTD','-append');
                 clear MuaB MuspB
@@ -255,7 +255,7 @@ if LOAD_FWD_TEO == 0
             load([rdir,filename,'_', 'FwdTeo']);
             CheckZerosPhi(DataTD,DOT.radiometry,'DataTD');
             CheckZerosPhi(RefTD,DOT.radiometry,'RefTD');
-        end
+end
         
         % Convolution with IRF
         % AF: to optimize memory assign directly DataTD
@@ -338,16 +338,16 @@ if LOAD_FWD_TEO == 0
                 end
             end
             % self normalized data
-            if DOT.time.self_norm == true
-                Area = sum(DataTD_single_wave,'omitnan');
-                DataTD_single_wave = DataTD_single_wave * spdiags(1./Area',0,nmeas,nmeas);
-                sdTD_single_wave = sqrt(DataTD_single_wave * spdiags(1./Area',0,nmeas,nmeas));  % Standard deviation
-                if REF == 1
-                    Area = sum(RefTD_single_wave,'omitnan');
-                    RefTD_single_wave = RefTD_single_wave * spdiags(1./Area',0,nmeas,nmeas);
-                    sdTD_single_wave = sqrt(DataTD_single_wave * spdiags(1./Area',0,nmeas,nmeas));  % Standard deviation
-                end
-            end
+%             if DOT.time.self_norm == true
+%                 Area = sum(DataTD_single_wave,'omitnan');
+%                 DataTD_single_wave = DataTD_single_wave * spdiags(1./Area',0,nmeas,nmeas);
+%                 sdTD_single_wave = sqrt(DataTD_single_wave * spdiags(1./Area',0,nmeas,nmeas));  % Standard deviation
+%                 if REF == 1
+%                     Area = sum(RefTD_single_wave,'omitnan');
+%                     RefTD_single_wave = RefTD_single_wave * spdiags(1./Area',0,nmeas,nmeas);
+%                     sdTD_single_wave = sqrt(DataTD_single_wave * spdiags(1./Area',0,nmeas,nmeas));  % Standard deviation
+%                 end
+%             end
             DataTD(:,meas_set) = DataTD_single_wave;
             RefTD(:,meas_set) = RefTD_single_wave;
             sdTD(:,meas_set) = sdTD_single_wave;
@@ -567,11 +567,20 @@ if RECONSTRUCTION == 1
             if (EXP_DATA == 1)
                 REC.sd(:,meas_set) = sqrt(WindowTPSF(sdTD(:,meas_set).^2,REC.time.twin(:,twin_set)));
             end
+            
             if inl == REC.radiometry.nL
                 clear DataTD sdTD
                 tilefigs;
             end
         end
+        if REC.time.self_norm
+            REC.Data = NormalizeTPSF(REC.Data);
+            [REC.ref,Aref] = NormalizeTPSF(REC.ref);
+            REC.sd = 1./Aref .* REC.sd;
+        end
+            
+            
+        
     end
     clear inl shift meas_set
     % % =========================================================================

@@ -33,10 +33,13 @@ Jacobian = @(mua, mus) JacobianTD (grid, Spos, Dpos, dmask, mua, mus, n, A, ...
 
 % homogeneous forward model
 [proj, ~] = ForwardTD(grid,Spos, Dpos, dmask, mua0, mus0, n, ...
-    [],[], A, dt, nstep, self_norm, geom, 'linear', irf);
+    [],[], A, dt, nstep, 0, geom, 'linear', irf);
     
 proj = WindowTPSF(proj,twin);
-
+if self_norm
+    proj = NormalizeTPSF(proj);
+end
+% ref = proj;
 [dphi,sd] = PrepareDataFitting(data,ref,sd,type_ratio,type_ref,proj);
 
 % creat mask for nan, ising

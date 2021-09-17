@@ -131,8 +131,9 @@ end
 %% self-norm and logdata
 if selfnorm||logdata
     [proj, Aproj] = ForwardTD(grid,Spos, Dpos, dmask, muaB, muspB, refind, ...
-    [],[], A, dt, nstep, selfnorm, geom, type_fwd, irf);
+    [],[], A, dt, nstep, 0, geom, type_fwd, irf);
     proj = WindowTPSF(proj,twin);
+    [proj,Aproj] = NormalizeTPSF(proj);
 end
 
 %% case self-normalized

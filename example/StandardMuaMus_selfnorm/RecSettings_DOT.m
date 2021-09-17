@@ -18,7 +18,7 @@ REC.opt.nB = 1.4;
 % ---------------------- Solver and regularization ------------------------
 REC.solver.variables = {'mua','mus'}; % variables mua,mus.
 REC.solver.tau = 1e-2;            % regularisation parameter
-REC.solver.type = 'born';         % 'born','GN': gauss-newton, 
+REC.solver.type = 'tk1';         % 'born','GN': gauss-newton, 
                                   % 'USprior': Simon's strutural prior
                                   % 'LM': Levenberg-Marquardt,
                                   % 'l1': L1-based minimization
@@ -33,4 +33,4 @@ REC.solver.prior.path = [];% '../../3DMasks/benign_3.mat';
 % Pay attention! The jacobian depends on source-detectors configuration,
 % optical properties of the background and number of time-windows.
 REC.solver.prejacobian.load = false;
-REC.solver.prejacobian.path = '../results/precomputed_jacobians/J';
+REC.solver.prejacobian.path = '../results/precomputed_jacobians/Je';

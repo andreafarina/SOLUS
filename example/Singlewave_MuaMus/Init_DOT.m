@@ -110,8 +110,8 @@ DOT.time.noise = 'Poisson';      % 'Poisson','Gaussian','none'
                                  % Gaussian noise is added before
                                  % Poisson noise.
 DOT.time.sigma = 1e-3;              % variance for gaussian noise
-DOT.time.self_norm = false;         % true for self-normalized TPSF
-DOT.time.TotCounts = 1e6;%*ones(1,8);  % total counts for the maximum-energy
+DOT.time.self_norm = true;         % true for self-normalized TPSF
+DOT.time.TotCounts = 1e10;%*ones(1,8);  % total counts for the maximum-energy
                                       % TPSF. The other are consequently
                                       % rescaled
 %==========================================================================
@@ -153,4 +153,4 @@ end
 %                   RADIOMETRY==0, the count-rate for each delay is cut to 
 %                         DOT.time.TotCounts in any case.  
 CUT_COUNTS = 1;         
-NumDelays = 3;      % number of delays  
+NumDelays = 1;      % number of delays  

@@ -9,7 +9,7 @@
 function [bmua,bmus] = FitMuaMus_TD(~,grid,mua0,mus0, n, A,...
     Spos,Dpos,dmask, dt, nstep, twin, self_norm, data, irf, ref, sd, type_fwd)
 geom = 'semi-inf';
-weight_type = 'rect';%'none'; % 'none','rect'
+weight_type = 'none';%rect';%'none'; % 'none','rect'
 fract_first = 0.5; fract_last = 0.01;
 data = data;%ref;%data;%ref;
 data2 = data;
@@ -63,8 +63,9 @@ ref(mask) = [];
 data(mask) = [];
 proj(mask) = [];
 figure(1002);semilogy([proj,data]),legend('proj','ref')
-sd = sqrt(ref);
+%sd = sqrt(ref);
 
+data = ref(:);
 data = data./sd;
 
 

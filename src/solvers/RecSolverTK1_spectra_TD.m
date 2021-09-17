@@ -29,7 +29,7 @@ Jacobian = @(mua, mus) JacobianTD_multiwave_spectral (grid, Spos, Dpos, dmask, m
 
 % homogeneous forward model
 [proj, ~] = ForwardTD_multi_wave(grid,Spos, Dpos, dmask, mua0, mus0, n, ...
-    [],[], A, dt, nstep, self_norm,...
+    [],[], A, dt, nstep, 0,...
     geom, fwd_type,radiometry,irf);
 
 %% Window TPSF for each wavelength
@@ -42,7 +42,9 @@ for inl = 1:radiometry.nL
 end
 proj = dummy_proj;
 clear dummy_proj
-
+if self_norm
+    proj = NormalizeTPSF(proj);
+end
 [dphi,sd] = PrepareDataFitting(data,ref,sd,type_ratio,type_ref,proj);
 
 % creat mask for nan, isinf
