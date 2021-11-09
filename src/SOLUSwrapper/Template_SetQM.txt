@@ -1,0 +1,36 @@
+ys = %s; 
+xs = %s; 
+zs = %s; 
+DOT.Source.Area = %s; 
+
+yd = %s; 
+xd = %s; 
+zd = %s; 
+DOT.Detector.Area = %s; 
+
+
+
+[xxs,yys,zzs] = ndgrid(xs,ys,zs); 
+[xxd,yyd,zzd] = ndgrid(xd,yd,zd); 
+DOT.Source.Pos = [xxs(:),yys(:),zzs(:)];
+DOT.Detector.Pos = [xxd(:),yyd(:),zzd(:)]; 
+DOT.Source.Ns=size(DOT.Source.Pos,1); 
+DOT.Detector.Nd=size(DOT.Detector.Pos,1); 
+DOT.dmask = logical(ones(DOT.Detector.Nd,DOT.Source.Ns) - ... 
+    diag(diag(ones(DOT.Detector.Nd,DOT.Source.Ns)))); 
+
+DOT.dmask(%s,:) = 0;
+DOT.dmask(:,%s) =0;
+           
+if EXP_DATA  
+   load(['EXP_' exp_file]) 
+   DOT.dmask = logical(DOT.dmask.*EXP.grid.dmask); 
+   xs = EXP.grid.xs; 
+   ys = EXP.grid.ys;  
+   zs = EXP.grid.zs; 
+   [xxs,yys,zzs] = ndgrid(xs,ys,zs); 
+   DOT.Source.Pos = EXP.grid.Source.Pos; 
+   DOT.Detector.Pos = EXP.grid.Detector.Pos; 
+   DOT.Source.Ns=size(DOT.Source.Pos,1); 
+   DOT.Detector.Nd=size(DOT.Detector.Pos,1); 
+end 

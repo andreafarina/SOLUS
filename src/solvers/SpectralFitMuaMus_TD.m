@@ -5,15 +5,19 @@
 % Andrea Farina 10/15
 %==========================================================================
 
-function [bMua,bMus,bmua,bmus] = SpectralFitMuaMus_TD(~,grid,mua0,mus0, n, A,...
+function [bMua,bMus,out_conc,out_a,out_b] = SpectralFitMuaMus_TD(~,grid,mua0,mus0, n, A,...
     Spos,Dpos,dmask, dt, nstep, twin, self_norm, data, irf, ref, sd,~,radiometry,spe)
 geom = 'semi-inf';
 weight_type = 'none'; %'rect';
-first_lim = 0.1; last_lim = 0.1;
+first_lim = 0.0; last_lim = 0.0;
 ForceConstitSolution = spe.ForceConstitSolution;
-
+PLOT = 0;
 % mua0 = 0.01;
 % mus0 = 1.0;
+
+%spe.ext_coeff0(:,5) = 0.001;
+%spe.ext_coeffB = spe.ext_coeff0;
+
 nQM = sum(dmask(:));
 nwin = size(twin,1);
 %% Inverse solver
@@ -22,25 +26,25 @@ nwin = size(twin,1);
     geom,'linear',radiometry,irf);
 
 if self_norm == true
+    tmpA = sum(data,1);
     data = NormalizeTPSF(data);
     ref = NormalizeTPSF(ref);
+    sd = sqrt(data).*sqrt(1./tmpA);
 end
 
 dummy_proj = zeros(size(twin,1),nQM*radiometry.nL);
-for inl = 1:radiometry.nL
-    meas_set =(1:nQM)+(inl-1)*nQM; twin_set = (1:2)+(inl-1)*2;
-    proj_single = proj(:,meas_set);
-    proj_single = WindowTPSF(proj_single,twin(:,twin_set));
-    if self_norm == true
-        proj_single = NormalizeTPSF(proj_single);
-    end
-    dummy_proj(:,meas_set) = proj_single;
+
+proj_single = WindowTPSF(proj,twin);
+if self_norm == true
+    proj_single = NormalizeTPSF(proj_single);
 end
-weight = ones(nwin,nQM*radiometry.nL);
+
+dummy_proj = proj_single;
+weight = ones(nwin,nQM);
 if ~strcmpi(weight_type,'none')
-    weight = zeros(nwin,nQM*radiometry.nL);
-    interval = zeros(2,nQM*radiometry.nL);
-    for im = 1:nQM*radiometry.nL
+    weight = zeros(nwin,nQM);
+    interval = zeros(2,nQM);
+    for im = 1:nQM
         idx1 = find(ref(:,im)>max(ref(:,im)*first_lim),1,'first');
         idx2 = find(ref(:,im)>max(ref(:,im)*last_lim),1,'last');
         weight(idx1:idx2,im) = 1;
@@ -48,13 +52,16 @@ if ~strcmpi(weight_type,'none')
         interval(2,im) = idx2+(im-1)*nwin;
     end
     weight = weight(:);
-    figure, semilogy(ref(:)), vline(interval(:),'r');
+    if PLOT
+        figure, semilogy(ref(:)), vline(interval(:),'r');
+    end
     ref =ref(:).*weight;
 end
 proj = dummy_proj;
 proj = proj(:);
 data = data(:);
 ref = ref(:);
+sd = sd(:);
 %factor = proj./ref;
 
 %data = data .* factor;
@@ -73,12 +80,18 @@ end
 
 ref(mask) = [];
 data(mask) = [];
+sd(mask) = [];
 proj(mask) = [];
 %weight(mask) = [];
-figure(1002);semilogy([proj,data]),legend('proj','ref')
-sd = sqrt(ref);%%ones(size(proj));%proj(:);
+if PLOT
+    figure(1002);semilogy([proj,data]),legend('proj','ref')
+end
+
+if self_norm
+end
+%sd = sqrt(ref);%%ones(size(proj));%proj(:);
 %sd = ones(size(data));
-data = ref./sd;
+data = data./sd;
 
 
 %% solution vector
@@ -89,13 +102,14 @@ data = ref./sd;
 if spe.SPECTRA == 0 && ForceConstitSolution == false
     FinDiffRelStep = [2; repmat(1e-3,spe.nLambda*2,1)];
 else
-    FinDiffRelStep = [2; repmat(1e-3,spe.nCromo+2,1)];
+    FinDiffRelStep = [1e-16; repmat(1e-5,spe.nCromo+2,1)];
 end
 opts = optimoptions('lsqcurvefit',...
     'Jacobian','off',...
     ...'Algorithm','levenberg-marquardt',...
     'DerivativeCheck','off',...
-    'MaxIter',200,'Display','iter-detailed','FinDiffRelStep',FinDiffRelStep);%,'TolFun',1e-10,'TolX',1e-10)
+    'MaxIter',3200,'Display','iter-detailed','FinDiffRelStep',FinDiffRelStep,'MaxFunctionEvaluation',15000,...
+    'TolFun',1e-6,'TolX',1e-6)
 %% Setup optimization for lsqnonlin
 % opts = optimoptions('lsqnonlin',...
 %     'Jacobian','off',...
@@ -117,17 +131,19 @@ opts = optimoptions('lsqcurvefit',...
 %x = fminsearch(@objective,x0);
 if spe.SPECTRA == 0 && ForceConstitSolution == false
     x0 = {mua0 mus0};
-    low_bound = [-100 zeros(1,numel([x0{:}]))];
+    low_bound = [-20 zeros(1,numel([x0{:}]))];
 else
     if ForceConstitSolution
-        spe.opt.conc0 = ones(spe.nCromo,1).*spe.active_cromo';
+        spe.opt.conc0 = [1,1,100,100,100]'.*ones(spe.nCromo,1).*spe.active_cromo';
         spe.opt.a0 = 1; spe.opt.b0 = 1;
     end
-    x0 = {spe.opt.conc0',[spe.opt.a0 spe.opt.b0]};
+    x0 = {spe.opt.conc0,[spe.opt.a0 spe.opt.b0]};
     low_bound = [-100 zeros(1,spe.nCromo+2)];
 end
 t0 = 0;
-x0 = [t0 x0{:}];
+if ~isrow(x0{1}), x0{1} = x0{1}';end
+    
+x0 = [t0 [x0{1} x0{2} ]];
 [x,res] = lsqcurvefit(@forward,x0,[],data,low_bound,[],opts);
 
 %x = lsqnonlin(@objective2,x0,[],[],opts);
@@ -137,12 +153,18 @@ disp(['Residual: ' num2str(res)])
 if spe.SPECTRA == 0 && ForceConstitSolution == false
     bmua = x(2:spe.nLambda+1);
     bmus = x(spe.nLambda+2:end);
+    out_conc = 0;
+    out_a = 0;
+    out_b = 0;
 else
     if isrow(x), x = x'; end
     bmua = spe.ext_coeffB*x(2:end-2);
     bmus = x(end-1).*(spe.lambda/spe.lambda0).^(-x(end));
     if iscolumn(bmua), bmua = bmua'; end
     if iscolumn(bmus), bmus = bmus'; end
+    out_conc= (x(2:end-2));
+    out_a=(x(end-1));
+    out_b=(x(end));
     display(['a = '  num2str(x(end-1))]); display(['b =' num2str(x(end))]);
     display([char(spe.cromo_label) repmat('=',spe.nCromo,1) num2str(x(2:end-2))]);
     disp([char(spe.cromo_label) repmat('=',spe.nCromo,1) num2str(x(2:end-2)) repmat(' ',spe.nCromo,1) char(spe.cromo_units)]);
@@ -159,6 +181,9 @@ display(['t0 = ',num2str(x(1))]);
 
 bMua = bmua.*ones(grid.N,1);
 bMus = bmus.*ones(grid.N,1);
+out_conc = out_conc'.*ones(grid.N,numel(out_conc));
+out_a = out_a.*ones(grid.N,1);
+out_b = out_b.*ones(grid.N,1);
 return
 
 %% extract the amplitude area
@@ -168,16 +193,13 @@ mask = true(nwin*nQM,1);
     [],[], A, dt, nstep, self_norm,...
     geom, 'linear',radiometry);
 % proj_fit = circshift(proj_fit,round(x(3)/dt));
-if numel(irf)>1
-    z = convn(proj_fit,irf);
-    nmax = max(nstep,numel(irf));
-    proj_fit = z(1:nmax,:);
-    clear nmax
-end
+
+proj_fit = ConvIRF(proj_fit, irf);
 proj_fit = WindowTPSF(proj_fit,twin);
 Aproj_fit = sum(proj_fit);
 A_data = sum(data2);
 factor = Aproj_fit./A_data;
+self_norm = 1;
 save('factor_ref.mat','factor');
 
 %% Callback function for forward problem
@@ -207,31 +229,28 @@ save('factor_ref.mat','factor');
         
 
         clear meas_set_
-        dummy_proj_ = zeros(size(twin,1),sum(dmask(:))*radiometry.nL);
-        for inl_ = 1:radiometry.nL
-            meas_set_ = (1:nQM)+(inl_-1)*nQM;twin_set_ = (1:2)+(inl_-1)*2;
-            proj_single_ = proj(:,meas_set_);
-            proj_single_ = circshift(proj_single_,round(t0_/dt));
-            proj_single_ = WindowTPSF(proj_single_,twin(:,twin_set_));
-            if self_norm == true
-                proj_single_ = NormalizeTPSF(proj_single_);
-            end
-            dummy_proj_(:,meas_set_) = proj_single_;
+        proj_single_ = WindowTPSF(proj,twin);
+        if self_norm == true
+            proj_single_ = NormalizeTPSF(proj_single_);
         end
+        dummy_proj_ = proj_single_;
         proj = dummy_proj_(:);
         if ~strcmpi(weight_type,'none')
             proj = proj.*weight;
         end
         proj(mask) = [];
-        proj = proj(:)./sd;
+        proj = proj(:)./sd(:);
         
-        % plot forward
-        t = (1:numel(data)) * dt;
-        figure(1003);
-        semilogy(t,proj,'-',t,data,'.'),ylim([1e-3 1])
-        %         semilogy([proj data]),ylim([1e-3 1])
-        %         vline(sum(dmask(:))*size(twin,1)*(1:radiometry.nL),repmat({'r'},radiometry.nL,1))
-        drawnow;
+        if PLOT
+            % plot forward
+            t = (1:numel(data)) * dt;
+            figure(1003);
+            semilogy(t,proj,'-',t,data,'.'),ylim([1e-3 1])
+            %         semilogy([proj data]),ylim([1e-3 1])
+            %         vline(sum(dmask(:))*size(twin,1)*(1:radiometry.nL),repmat({'r'},radiometry.nL,1))
+            drawnow;
+            
+        end
         nwin = size(twin,1);
         if nargout>1
             JJ = Jacobian (mua, mus, qvec, mvec);

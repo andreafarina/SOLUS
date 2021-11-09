@@ -1,0 +1,6 @@
+exp_file = '%s' ;
+filename = '%s';
+session = '%s';
+exp_path = '%s';
+res_path = '%s';
+spectra_file = '%s';

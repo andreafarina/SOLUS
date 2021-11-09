@@ -26,8 +26,8 @@ switch lower(type_fwd)
         [XX,YY,ZZ]= ndgrid(x,y,z);
         clear x y z
         
-        if irf == 0
-            irf = 1;
+        if all(irf == 0)
+            irf = ones(nstep,sum(dmask(:)));
         end
         disp(['calculating Jacobian (',geom,')']);
         %textprogressbar('progress: ');
@@ -44,7 +44,7 @@ switch lower(type_fwd)
                     
                     for j=1:numel(ind_d)
                         m = ind_d(j);
-                        dm = findIndexfromSQ(dmask,m,i);                        
+                        dm = findIndexfromSQ(dmask,m,i);   % dmask ,detector, source                     
                         J(row_off + (1:nwin),:) = WindowTPSF(...
                             ConvIRF(...
                             J_Semi_Inf_PCBC_TR_3D_muaD(t, muaB,muspB,v,A,Spos(i,:),Dpos(m,:),XX,YY,ZZ,...
@@ -146,7 +146,11 @@ if selfnorm == true
     for i=1:nQM
         sJ = sum(J((1:nwin)+(i-1)*nwin,:),'omitnan');
         sJ = repmat(sJ,nwin,1);
-        sJ = spdiags(proj((1:nwin)+(i-1)*nwin)',0,nwin,nwin) * sJ;
+        tmpproj = proj((1:nwin)+(i-1)*nwin);
+        if isrow(tmpproj)
+           tmpproj = tmpproj';
+        end
+        sJ = spdiags(tmpproj,0,nwin,nwin) * sJ;
         J((1:nwin)+(i-1)*nwin,:) = (J((1:nwin)+(i-1)*nwin,:) - sJ)./Aproj(i);
     end
 end

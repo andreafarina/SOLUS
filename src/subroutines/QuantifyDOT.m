@@ -122,7 +122,7 @@ for nlambda = 1:REC.radiometry.nL
         %ValIn = mean(tmp_mu(tmp_mu>prctile(tmp_mu,5)&tmp_mu<prctile(tmp_mu,95)));
          ValIn = mean(tmp_mu(:));
          
-         ValOut = mean(mu(tmp_bin_idx==0));
+         ValOut = mean(mu(tmp_bin_idx(:)==0));
 %         if ValIn >= mu0
 %             ValIn= mu0+(max(tmp_mu(:))- mu0);%*(numel(idx_incl)*8);
 %         else

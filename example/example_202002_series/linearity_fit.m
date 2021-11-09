@@ -35,7 +35,7 @@ iii = 1;
 i_fig = 1001;
 for i = 1:numel(direc)
     %['dtprior/',direc{i},'/Test_Standard_REC.mat']
-    load( ['./dtprior/',direc{i},'/Test_Standard_REC.mat'])
+    load( ['./dtprior_nonLinFit/',direc{i},'/Test_Standard_REC.mat'])
     for lambda = 1:8
         [bx, by, bz] = ndgrid(REC.grid.x, REC.grid.y, REC.grid.z);
         if lambda >0 %== 3  
@@ -43,9 +43,11 @@ for i = 1:numel(direc)
         mua_recon = REC.opt.bmua(:,lambda);
         if numel(size(REC.solver.prior.refimage)) > 3
             REC.solver.prior.refimage = REC.solver.prior.refimage(:,:,:,1); 
+            
         end
-        
+        refim = REC.solver.prior.refimage;
         abs_recon(iii) = mean(REC.opt.bmua(abs(bx(:)) <= 1 & abs(by(:)) <= 1 & abs(bz(:)) >= 9 & abs(bz(:)) <= 11, lambda));%mean(mua_recon(REC.solver.prior.refimage(:) >  mean(REC.solver.prior.refimage(:)))); %mean(REC.opt.bmua(abs(bx(:)) <= 1 & abs(by(:)) <= 1 & abs(bz(:)) > 6 & abs(bz(:)) < 10, lambda));
+        abs_recon(iii) = mean(REC.opt.bmua(refim(:), lambda)); 
         %mean(mua_recon > 0.5*mean(mua_recon)); %
         abs_bulk(iii) = REC.opt.mua0(lambda);
         sca_real(iii) = REC.opt.hete1.val(lambda+ 8);

@@ -1,0 +1,47 @@
+REC.domain = '%s';  
+REC.type_fwd = '%s';  
+REC.time.roi = '%s';
+
+REC.time.roiRange1 = %g;
+REC.time.roiRange2 = %g;
+
+NUM_TW = %g;
+REC.solver.variables = %s;
+REC.opt.mua0 = %g;
+REC.opt.musp0 = %g;
+REC.opt.nB = %g;
+if SPECTRA == 0
+mua_=%s;
+musp_=%s;
+mua_ = mua_(lamda_id); musp_ = musp_(lamda_id);
+Xr = {mua_,musp_};
+else
+a_ = %g;	b_ =%g;
+conc_ = %s;
+Xr = {conc_,[a_ b_]};
+end
+
+REC.solver.tau = %g;        
+REC.solver.fit_reference = %s;
+REC.solver.fit_reference_far = %s;
+REC.solver.fit_reference_fwd ='%s';
+REC.solver.fit_reference_tw = 0; 
+
+REC.solver.type = '%s';        
+if strcmpi(REC.solver.type,'spectral_born')&&SPECTRA == 0
+MEx = MException('spectral_born:SpectralDataInput','Set SPECTRA = 1 to use spectra_born');
+throwAsCaller(MEx);    
+end
+REC.solver.prior.path = ['%s'];
+
+REC.solver.prejacobian.load = %s;
+REC.solver.prejacobian.path = '%s';
+
+
+if REC.solver.fit_reference
+    FIT_STR = 'SOLUSFitted';
+else
+    FIT_STR = 'HomoFitted';
+end
+RECFILE_APPEND = ['_type',REC.solver.type,'_tau',num2str(REC.solver.tau,'%%10.0e'),'_mu0',FIT_STR];
+REC.solver.fit_type ='%s';

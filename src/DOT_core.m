@@ -223,7 +223,7 @@ if DOT.TD == 1
                 EXP.irf.data = zeros(size(EXP.irf.data));
                 peak_pos = reshape([EXP.irf.peak.pos], size(EXP.irf.peak));
                 [I,J]  = ind2sub(size(peak_pos),[1:numel(peak_pos)]);
-                idx = sub2ind(size(EXP.irf.data),peak_pos(:)' ,I,J);
+                idx = sub2ind(size(EXP.irf.data),peak_pos(:)' ,J,I);
                 EXP.irf.data(idx) = 1;
             case 'baric'                
                 EXP.irf.data = zeros(size(EXP.irf.data));
@@ -231,6 +231,9 @@ if DOT.TD == 1
                 [I,J]  = ind2sub(size(baric_pos),[1:numel(baric_pos)]);
                 idx = sub2ind(size(EXP.irf.data),baric_pos(:)' ,I,J);
                 EXP.irf.data(idx) = 1; 
+            case 'peak0'
+                EXP.irf.data = zeros(1,size(EXP.irf.data,2));
+                EXP.irf.data(1,:) = 1;
         end
         
         tmp = EXP.irf.data;
@@ -384,66 +387,64 @@ if FORWARD == 1
         else
             RealFactor = ones(1,DOT.radiometry.nL);
         end
-        %-------------------- Add noise to TD data
-        %------------------------
-        sdTD = zeros(size(DataTD));
-        idx = findMeasIndex(DOT.dmask);
-        for inl = 1:DOT.radiometry.nL
-            meas_set = idx{inl};
-            nmeas = numel(meas_set);
-            DataTD_single_wave = DataTD(:,meas_set);
-            if REF == 1
-            RefTD_single_wave = RefTD(:,meas_set);
-            end
-            sdTD_single_wave = ones(size(DataTD_single_wave));
-            if ~strcmpi(DOT.time.noise,'none')
-                [DataTD_single_wave,~] = AddNoise(DataTD_single_wave,'gaussian',DOT.time.sigma);
-                if REF == 1
-                    RefTD_single_wave = AddNoise(RefTD_single_wave,'gaussian',DOT.time.sigma);
-                end
-            end
-            
-            if strcmpi(DOT.time.noise,'poisson')
-                
-                if (REF == 1) %&& (DOT.time.self_norm == 0))
-                    [factor,RefTD_single_wave,sdTD_single_wave] = CutCounts(1:size(RefTD_single_wave,1),DOT.time.dt,...
-                        RealFactor(inl)*RefTD_single_wave,DOT.time.TotCounts(inl)*DOT.radiometry.acqtime,RADIOMETRY,CUT_COUNTS,...
-                        NumDelays);
-                    switch CUT_COUNTS
-                        case 0  %
-                            DataTD_single_wave = poissrnd(round(...
-                                DataTD_single_wave * factor * RealFactor(inl)));
-                        case 1
-                            %idz = find(factor>0, 1, 'last' );
-                            DataTD_single_wave = poissrnd(round(DataTD_single_wave * RealFactor(inl) .* factor));
-                            %DataTD = bsxfun(@times,DataTD,factor(idz)./factor');
-                    end
-                                      
-                else
-                    [factor,DataTD_single_wave,sdTD_single_wave] = CutCounts(1:size(RefTD_single_wave,1),DOT.time.dt,...
-                        RealFactor(inl)*DataTD_single_wave,DOT.time.TotCounts(inl),RADIOMETRY,CUT_COUNTS,...
-                        NumDelays);
-                end
-            end
-            % self normalized data
-            if DOT.time.self_norm == true
-                Area = sum(DataTD_single_wave,'omitnan');
-                DataTD_single_wave = DataTD_single_wave * spdiags(1./Area',0,nmeas,nmeas);
-                sdTD_single_wave = sqrt(DataTD_single_wave * spdiags(1./Area',0,nmeas,nmeas));  % Standard deviation
-                if REF == 1
-                    Area = sum(RefTD_single_wave,'omitnan');
-                    RefTD_single_wave = RefTD_single_wave * spdiags(1./Area',0,nmeas,nmeas);
-                    sdTD_single_wave = sqrt(DataTD_single_wave * spdiags(1./Area',0,nmeas,nmeas));  % Standard deviation
-                end
-            end
-            DataTD(:,meas_set) = DataTD_single_wave;
-            RefTD(:,meas_set) = RefTD_single_wave;
-            sdTD(:,meas_set) = sdTD_single_wave;
-        end
     end
-    
-    
-end
+   %-------------------- Add noise to TD data
+    %------------------------
+    sdTD = zeros(size(DataTD));
+    idx = findMeasIndex(DOT.dmask);
+    for inl = 1:DOT.radiometry.nL
+        meas_set = idx{inl};
+        nmeas = numel(meas_set);
+        DataTD_single_wave = DataTD(:,meas_set);
+        if REF == 1
+        RefTD_single_wave = RefTD(:,meas_set);
+        end
+        sdTD_single_wave = ones(size(DataTD_single_wave));
+        if ~strcmpi(DOT.time.noise,'none')
+            [DataTD_single_wave,~] = AddNoise(DataTD_single_wave,'gaussian',DOT.time.sigma);
+            if REF == 1
+                RefTD_single_wave = AddNoise(RefTD_single_wave,'gaussian',DOT.time.sigma);
+            end
+        end
+
+        if strcmpi(DOT.time.noise,'poisson') && FORWARD==1
+
+            if (REF == 1) %&& (DOT.time.self_norm == 0))
+                [factor,RefTD_single_wave,sdTD_single_wave] = CutCounts(1:size(RefTD_single_wave,1),DOT.time.dt,...
+                    RealFactor(inl)*RefTD_single_wave,DOT.time.TotCounts(inl)*DOT.radiometry.acqtime,RADIOMETRY,CUT_COUNTS,...
+                    NumDelays);
+                switch CUT_COUNTS
+                    case 0  %
+                        DataTD_single_wave = poissrnd(round(...
+                            DataTD_single_wave * factor * RealFactor(inl)));
+                    case 1
+                        %idz = find(factor>0, 1, 'last' );
+                        DataTD_single_wave = poissrnd(round(DataTD_single_wave * RealFactor(inl) .* factor));
+                        %DataTD = bsxfun(@times,DataTD,factor(idz)./factor');
+                end
+
+            else
+                [factor,DataTD_single_wave,sdTD_single_wave] = CutCounts(1:size(RefTD_single_wave,1),DOT.time.dt,...
+                    RealFactor(inl)*DataTD_single_wave,DOT.time.TotCounts(inl),RADIOMETRY,CUT_COUNTS,...
+                    NumDelays);
+            end
+        end
+        % self normalized data
+        if DOT.time.self_norm == true
+            Area = sum(DataTD_single_wave,'omitnan');
+            DataTD_single_wave = DataTD_single_wave * spdiags(1./Area',0,nmeas,nmeas);
+            sdTD_single_wave = sqrt(DataTD_single_wave * spdiags(1./Area',0,nmeas,nmeas));  % Standard deviation
+            if REF == 1
+                Area = sum(RefTD_single_wave,'omitnan');
+                RefTD_single_wave = RefTD_single_wave * spdiags(1./Area',0,nmeas,nmeas);
+                sdTD_single_wave = sqrt(DataTD_single_wave * spdiags(1./Area',0,nmeas,nmeas));  % Standard deviation
+            end
+        end
+        DataTD(:,meas_set) = DataTD_single_wave;
+        RefTD(:,meas_set) = RefTD_single_wave;
+        sdTD(:,meas_set) = sdTD_single_wave;
+    end
+end  
 clear inl sh meas_set
 %==========================================================================
 t_end_fwd = cputime - t_start;
@@ -605,7 +606,7 @@ if RECONSTRUCTION == 1
     end
     
     %% resample DT data if time step or nstep are different
-    if exist(nstep,'var') && exist(nstep,'var') %% This ill need to change in a future version
+    if exist('nstep','var') && exist('nstep','var') %% This will need to change in a future version
         if strcmpi(REC.domain,'td') && (nstep ~= REC.time.nstep || dt ~= REC.time.dt )
             taxis = 0:dt:(dt*(nstep-1));
 
@@ -654,10 +655,8 @@ if RECONSTRUCTION == 1
             else
                 load([REC.solver.prejacobian.path '.mat'],'ROI','NW');
             end
-            if exist('ROI','var')
-                REC.time.roi = ROI;
-                NUM_TW = NW;
-            else
+            if ~exist('ROI','var')
+
                 warning('Loading of ROI and NW FAILED. Not present in J');
             end
             warning('on','verbose')
@@ -674,7 +673,7 @@ if RECONSTRUCTION == 1
             % selects the ROI automatically for each curve
             REC.time.roi = zeros(2, size(DataTD,2));
             for i = 1:size(DataTD,2)
-                REC.time.roi(:,i) = auto_selectROI(DataTD(:,i));
+                REC.time.roi(:,i) = auto_selectROI(DataTD(:,i),REC.time.roiRange1,REC.time.roiRange2);
             end
         elseif strcmpi(REC.time.roi, 'auto_by_wave')
             % write routing for selecting one ROI automaticaly per wavelength 
@@ -724,18 +723,36 @@ if RECONSTRUCTION == 1
             REC.ref = WindowTPSF(RefTD,REC.time.twin);
             %clear RefTD
         end
+        
         REC.Data = WindowTPSF(DataTD,REC.time.twin);
+        
+        
+        
         if (EXP_DATA == 0)
             if ~strcmpi(REC.time.noise,'none')
                 REC.sd = sqrt(WindowTPSF(sdTD.^2,REC.time.twin));     % ATTENTION NOT TO SUM SD
             else
                 REC.sd = ones(size(REC.Data));
             end
-        end
-        if (EXP_DATA == 1)
-            REC.sd = sqrt(WindowTPSF(sdTD.^2,REC.time.twin));
+%         elseif (EXP_DATA == 1)
+%             REC.sd = sqrt(WindowTPSF(sdTD.^2,REC.time.twin));
         end        
         REC.sd(REC.sd<0 ) = 0;
+        
+        
+        % normalise data after windowing
+        if REC.time.self_norm 
+            Area = sum(REC.Data,'omitnan');
+            REC.Data = NormalizeTPSF(REC.Data);
+            
+            REC.sd = sqrt(REC.Data * spdiags(1./Area',0,sum(REC.dmask(:)),sum(REC.dmask(:))));
+           if REF
+               REC.ref = NormalizeTPSF(REC.ref);
+           end
+        end
+        
+        
+        
         if SHOWPLOTS
             idxmeas = findMeasIndex(REC.dmask);
             nsub = numSubplots(REC.radiometry.nL);
@@ -877,7 +894,7 @@ if RECONSTRUCTION == 1
 % % end
 % end
 % 
-    
+%cleclose all;for i = 1:size(DataTD,2);figure(2000);dsl=findSQcouple(REC.dmask, i, 'sub'),dsl, semilogy(DataTD(:,i),'r'),hold on;semilogy(RefTD(:,i),'k'),hold off;pause();end    
     
     %% fit reference to get starting values for Jacobian based solvers
     if isfield(REC.solver,'fit_reference') 
@@ -898,53 +915,80 @@ if RECONSTRUCTION == 1
                 fit_dmask = REC.dmask;
                 fit_dmaskMAT = fit_dmask;
             end
-            idxmeas = findMeasIndex(REC.dmask);
-            for inl = 1:REC.radiometry.nL
-                meas_set = idxmeas{inl};
-                fitref = REC.ref(:,meas_set);
-                fitsd = REC.sd(:,meas_set);
-                fittwin = REC.time.twin(:,:,meas_set);
-                fitirf = REC.time.irf.data_mask(:,meas_set);
+            if ~isfield(REC.solver,'fit_type') || strcmpi(REC.solver.fit_type,'spectral')==0
+                idxmeas = findMeasIndex(REC.dmask);
+                for inl = 1:REC.radiometry.nL
+                    meas_set = idxmeas{inl};
+                    fitref = REC.ref(:,meas_set);
+                    fitsd = REC.sd(:,meas_set);
+                    fittwin = REC.time.twin(:,:,meas_set);
+                    fitirf = REC.time.irf.data_mask(:,meas_set);
+                    if REC.solver.fit_reference_far == true
+                        % delete unselected
+                        fitref(:,~fit_dmask(meas_set)) = [];
+                        fitsd(:,~fit_dmask(meas_set)) = [];
+                        fitirf(:,~fit_dmask(meas_set)) = [];
+                        fittwin(:,:,~fit_dmask(meas_set)) = [];
+                    end
+                    if REC.solver.fit_reference_tw == 1 && REC.solver.fit_reference_far == 1
+                        fitref = RefTD(:,meas_set);
+                        fitsd = sdTD(:,meas_set);
+                        fitref(:,~fit_dmask(meas_set)) = [];
+                        fitsd(:,~fit_dmask(meas_set)) = [];
+                        fittwin = repmat(CreateTimeWindows(REC.time.nstep,[1,REC.time.nstep],'even',REC.time.nstep), [1,1,size(fittwin,3)]); 
+                    end
+                    fprintf(['<strong>------- Wavelength ',num2str(REC.radiometry.lambda(inl)),'-------</strong>\n'])
+                       [tmp_mua0(:,inl),tmp_musp0(:,inl)] = FitMuaMus_TD(REC.solver,...
+                        REC.grid,...
+                        REC.opt.mua0(inl),REC.opt.musp0(inl),REC.opt.nB,REC.A,...
+                        REC.Source.Pos,REC.Detector.Pos,fit_dmaskMAT(:,:,inl),...
+                        REC.time.dt,REC.time.nstep,fittwin,...
+                        REC.time.self_norm,fitref,...
+                        fitirf,fitref,fitsd,REC.solver.fit_reference_fwd);
+                    if SHOWPLOTS
+                        dh=gcf;dh.Name = ['Wavelength ',num2str(REC.radiometry.lambda(inl))];
+                        fh(inl)=copyobj(dh,0); delete(dh);
+                    end
+                end
+                [~,~,REC.opt.conc0,REC.opt.a0,REC.opt.b0]=FitVoxel(tmp_mua0(1,:),tmp_musp0(1,:),REC.spe);
+            elseif  strcmpi(REC.solver.fit_type, 'spectral')
+                    fitref = REC.ref;
+                    fitsd = REC.sd;
+                    fittwin = REC.time.twin;
+                    fitirf = REC.time.irf.data_mask;
+                
                 if REC.solver.fit_reference_far == true
                     % delete unselected
-                    fitref(:,~fit_dmask(meas_set)) = [];
-                    fitsd(:,~fit_dmask(meas_set)) = [];
-                    fitirf(:,~fit_dmask(meas_set)) = [];
-                    fittwin(:,:,~fit_dmask(meas_set)) = [];
+                    fitref(:,~fit_dmask(:)) = [];
+                    fitsd(:,~fit_dmask(:)) = [];
+                    fitirf(:,~fit_dmask(:)) = [];
+                    fittwin(:,:,~fit_dmask(:)) = [];
                 end
-                if REC.solver.fit_reference_tw == 1 && REC.solver.fit_reference_far == 1
-                    fitref = RefTD(:,meas_set);
-                    fitsd = sdTD(:,meas_set);
-                    fitref(:,~fit_dmask(meas_set)) = [];
-                    fitsd(:,~fit_dmask(meas_set)) = [];
-                    fittwin = repmat(CreateTimeWindows(REC.time.nstep,[1,REC.time.nstep],'even',REC.time.nstep), [1,1,size(fittwin,3)]); 
-                end
-                fprintf(['<strong>------- Wavelength ',num2str(REC.radiometry.lambda(inl)),'-------</strong>\n'])
-                [tmp_mua0(:,inl),tmp_musp0(:,inl)] = FitMuaMus_TD(REC.solver,...
-                    REC.grid,...
-                    REC.opt.mua0(inl),REC.opt.musp0(inl),REC.opt.nB,REC.A,...
-                    REC.Source.Pos,REC.Detector.Pos,fit_dmaskMAT(:,:,inl),...
-                    REC.time.dt,REC.time.nstep,fittwin,...
-                    REC.time.self_norm,fitref,...
-                    fitirf,fitref,fitsd,REC.solver.fit_reference_fwd);
-                if SHOWPLOTS
-                    dh=gcf;dh.Name = ['Wavelength ',num2str(REC.radiometry.lambda(inl))];
-                    fh(inl)=copyobj(dh,0); delete(dh);
-                end
+                [tmp_mua0,tmp_musp0,tmp_conc,tmp_a,tmp_b] = SpectralFitMuaMus_TD(REC.solver,...
+                REC.grid,...
+                REC.opt.mua0,REC.opt.musp0,REC.opt.nB,REC.A,...
+                REC.Source.Pos,REC.Detector.Pos,fit_dmask,...
+                REC.time.dt,REC.time.nstep,REC.time.twin,...
+                REC.time.self_norm,fitref,...
+                fitirf,fitref,fitsd,1,REC.radiometry,REC.spe);
+                REC.opt.conc0 = tmp_conc(1,:)';
+                REC.opt.a0 = tmp_a(1,:);
+                REC.opt.b0 = tmp_b(1,:);
             end
             REC.opt.mua0 = tmp_mua0(1,:);
             REC.opt.musp0 = tmp_musp0(1,:);
-             
-
-                [~,~,REC.opt.conc0,REC.opt.a0,REC.opt.b0]=FitVoxel(REC.opt.mua0,REC.opt.musp0,REC.spe);
-                REC.opt.concB = REC.opt.conc0;
-                REC.opt.aB = REC.opt.a0;
-                REC.opt.bB = REC.opt.b0;
-                REC.spe.opt.conc0=REC.opt.conc0;
-                REC.spe.opt.a0=REC.opt.a0;
-                REC.spe.opt.b0=REC.opt.b0;
-                clear tmp_mua0
-                clear tmp_musp0
+            
+            REC.opt.muaB = REC.opt.mua0;
+            REC.opt.muspB = REC.opt.musp0;
+            
+            REC.opt.concB = REC.opt.conc0;
+            REC.opt.aB = REC.opt.a0;
+            REC.opt.bB = REC.opt.b0;
+            REC.spe.opt.conc0=REC.opt.conc0;
+            REC.spe.opt.a0=REC.opt.a0;
+            REC.spe.opt.b0=REC.opt.b0;
+            clear tmp_mua0
+            clear tmp_musp0
 %             if 0==1
 %                 [REC.opt.bmua,REC.opt.bmusp] = SpectralFitMuaMus_TD(REC.solver,...
 %                 REC.grid,...
@@ -1070,8 +1114,7 @@ if RECONSTRUCTION == 1
                         REC.Source.Pos,REC.Detector.Pos,REC.dmask,REC.time.dt,REC.time.nstep,...
                         REC.time.twin,REC.time.self_norm,REC.Data,...
                         REC.time.irf.data_mask,REC.ref,REC.sd,REC.type_fwd,REC.radiometry,REC.spe,REC.opt.conc0,REC.opt.a0,REC.opt.b0);
-                    
-                    
+    
                     
                     %% @Simon: US prior inversion
                 case {'usprior','tk1'}
@@ -1155,13 +1198,14 @@ if RECONSTRUCTION == 1
                         fh(inl)=copyobj(dh,0); delete(dh);
                     end
                 case 'spectral_fit'
-                    [REC.opt.bmua,REC.opt.bmusp] = SpectralFitMuaMus_TD(REC.solver,...
+                    [REC.opt.bmua,REC.opt.bmusp, REC.opt.bConc,REC.opt.bA,REC.opt.bbB] = SpectralFitMuaMus_TD(REC.solver,...
                         REC.grid,...
                         REC.opt.mua0,REC.opt.musp0,REC.opt.nB,REC.A,...
                         REC.Source.Pos,REC.Detector.Pos,REC.dmask,...
                         REC.time.dt,REC.time.nstep,REC.time.twin,...
                         REC.time.self_norm,REC.Data,...
-                        REC.time.irf.data,REC.ref,REC.sd,1,REC.radiometry,REC.spe);
+                        REC.time.irf.data_mask,REC.ref,REC.sd,1,REC.radiometry,REC.spe);
+
                 case 'components_fit'
                     if ~isempty(REC.solver.prior.path)
                         REC.solver.prior.refimage = ...

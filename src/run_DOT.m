@@ -1,2 +1,4 @@
-clearvars;
-DOT_core
+function run_DOT()
+    clearvars;
+    DOT_core
+end

@@ -4,6 +4,7 @@ function clim = ShowRecResults(grid,Data,zmin,zmax,dz,step,scale,cmin,cmax)
 %           'auto':     fixed scale between min(Data) and max(Data)
 %           (default if no argument is provided)
 %           'user':     cmin, cmax defined by the user
+
 %% preset the subplot grid
 %BB = hMesh.BoundingBox();
 %[bmin bmax] = toastMeshBB(hMesh);

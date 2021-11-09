@@ -22,20 +22,22 @@ end
 if param == 1
     kind = 'integral';
 end   
+
 switch lower(kind)
     case ('even')
         if nargin < 3
             error('Set the number of windows!')
         end
         while rem(diff(roi),param)~=0
-            if rem(diff(roi),param) < floor(0.2*param) && diff(roi) > param
-                if mod(rem(diff(roi),param),17) == 1 
-                    roi(2) = roi(1) + 1;
+            if (rem(diff(roi),param) < floor(0.5*param) && diff(roi) > param) ||...
+                    (diff(roi) > (nstep-1) )
+                if  mod(diff(roi),20) == 0
+                    roi(1) = roi(1) + 1;
                 else
-                    roi(1) = roi(2) - 1;
+                    roi(2) = roi(2) - 1;
                 end
-            elseif rem(diff(roi),param) >= floor(0.2*param) || diff(roi) <= param
-                if mod(rem(diff(roi),param),29) == 1 
+            elseif rem(diff(roi),param) >= floor(0.5*param) || diff(roi) < param
+                if mod(diff(roi),20) == 0
                     roi(1) = roi(1) - 1;
                 else
                     roi(2) = roi(2) + 1;
@@ -45,11 +47,11 @@ switch lower(kind)
             end           
         end
         if roi(1) <= 0 %translate roi(1) if its negative or roi(2) bigger than nstep            
-            roi(2) = roi(2)-roi(1)+1;
+            roi(2) = roi(2)+roi(1)+1;
             roi(1) = 1;
         end
         if roi(2) > nstep
-            roi(1) = roi(1) - (roi(2)-nstep);
+            roi(1) = roi(1) - (roi(2)-nstep)+1;
             roi(2) = nstep;
         end
         if roi(1)<=0 && roi(2)>nstep
