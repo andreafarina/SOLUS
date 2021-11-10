@@ -673,6 +673,10 @@ if RECONSTRUCTION == 1
             % selects the ROI automatically for each curve
             REC.time.roi = zeros(2, size(DataTD,2));
             for i = 1:size(DataTD,2)
+                if ~isfield(REC.time,'roiRange1')
+                    REC.time.roiRange1 = 0.9;
+                    REC.time.roiRange2 = 0.01;                   
+                end
                 REC.time.roi(:,i) = auto_selectROI(DataTD(:,i),REC.time.roiRange1,REC.time.roiRange2);
             end
         elseif strcmpi(REC.time.roi, 'auto_by_wave')
@@ -765,26 +769,31 @@ if RECONSTRUCTION == 1
                 subplot(nsub(1),nsub(2),inl)
                 ShowTimeWindows(DataTD(:,meas_set),REC.time.twin(:,:,twin_set(1)),REC.time.dt);
                 title(['Wavelength: ' num2str(REC.radiometry.lambda(inl))]);
-                %save_figure('time_ROI');
-                if exist('RefTD','var')
-                    REC.ref(:,meas_set) = WindowTPSF(RefTD(:,meas_set),REC.time.twin(:,:,twin_set));
-                end
-                REC.Data(:,meas_set) = WindowTPSF(DataTD(:,meas_set),REC.time.twin(:,:,twin_set));
-                if (EXP_DATA == 0)
-                    if ~strcmpi(REC.time.noise,'none')
-                        REC.sd(:,meas_set) = sqrt(WindowTPSF(sdTD(:,meas_set).^2,REC.time.twin(:,:,twin_set)));     % ATTENTION NOT TO SUM SD
-                    else
-                        REC.sd(:,meas_set) = ones(size(REC.Data(:,meas_set)));
-                    end
-                end
-                if (EXP_DATA == 1)
-                    REC.sd(:,meas_set) = sqrt(WindowTPSF(sdTD(:,meas_set).^2,REC.time.twin(:,:,twin_set)));
-                end
                 if inl == REC.radiometry.nL
                     %clear DataTD sdTD
                     tilefigs;
                 end
                 end
+            end
+        end
+        idxmeas = findMeasIndex(REC.dmask);
+        nsub = numSubplots(REC.radiometry.nL);
+        for inl = 1:REC.radiometry.nL
+            meas_set = idxmeas{inl};
+            twin_set = meas_set;
+            %save_figure('time_ROI');
+            if exist('RefTD','var')
+                REC.ref(:,meas_set) = WindowTPSF(RefTD(:,meas_set),REC.time.twin(:,:,twin_set));
+            end
+            REC.Data(:,meas_set) = WindowTPSF(DataTD(:,meas_set),REC.time.twin(:,:,twin_set));
+            if (EXP_DATA == 0)
+                if ~strcmpi(REC.time.noise,'none')
+                    REC.sd(:,meas_set) = sqrt(WindowTPSF(sdTD(:,meas_set).^2,REC.time.twin(:,:,twin_set)));     % ATTENTION NOT TO SUM SD
+                else
+                    REC.sd(:,meas_set) = ones(size(REC.Data(:,meas_set)));
+                end
+            elseif (EXP_DATA == 1)
+                REC.sd(:,meas_set) = sqrt(WindowTPSF(sdTD(:,meas_set).^2,REC.time.twin(:,:,twin_set)));
             end
         end
     end
@@ -899,7 +908,7 @@ if RECONSTRUCTION == 1
     %% fit reference to get starting values for Jacobian based solvers
     if isfield(REC.solver,'fit_reference') 
         if REC.solver.fit_reference == true
-            
+
             if REC.solver.fit_reference_far == true
                 fit_dmask = logical(zeros(size(REC.dmask)));                         
                 dist = sqrt((REC.Detector.Pos(:,1) - REC.Source.Pos(:,1)' ).^2 + ...
