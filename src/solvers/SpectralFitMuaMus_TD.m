@@ -8,10 +8,11 @@
 function [bMua,bMus,out_conc,out_a,out_b] = SpectralFitMuaMus_TD(~,grid,mua0,mus0, n, A,...
     Spos,Dpos,dmask, dt, nstep, twin, self_norm, data, irf, ref, sd,~,radiometry,spe)
 geom = 'semi-inf';
+self_norm = 1;
 weight_type = 'none'; %'rect';
 first_lim = 0.0; last_lim = 0.0;
 ForceConstitSolution = spe.ForceConstitSolution;
-PLOT = 0;
+PLOT = 1;
 % mua0 = 0.01;
 % mus0 = 1.0;
 

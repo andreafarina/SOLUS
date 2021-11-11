@@ -15,10 +15,12 @@ PLOT = 0;
 data = data;%NormalizeTPSF(data);%ref;%data;%ref;
 
 self_norm = true;
+sd = sqrt(data);
 if self_norm==true
-    data = NormalizeTPSF(data);
+    
+    [data,Atmp] = NormalizeTPSF(data);
     ref = NormalizeTPSF(ref);
-    sd  = sqrt(ref);
+    sd  = sqrt(data)*sqrt(Atmp);
 end
 data2 = data;
 nQM = sum(dmask(:));
@@ -67,14 +69,15 @@ mask = ((ref(:).*data(:)) == 0) | ...
 if ref == 0
     ref = proj(:);
 end
-
+sd = sd(:);
+sd(mask) = [];
 ref(mask) = []; 
 data(mask) = [];
 proj(mask) = [];
 if PLOT
 figure(1002);semilogy([proj,data]),legend('proj','ref')
 end
-sd = sqrt(ref)+1;
+%sd = sqrt(data);
 
 data = data./sd;
 
