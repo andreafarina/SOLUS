@@ -28,7 +28,7 @@ switch lower(kind)
         if nargin < 3
             error('Set the number of windows!')
         end
-        while rem(diff(roi),param)~=0
+        while rem(diff(roi),param)~=0 || diff(roi) == 0
             if (rem(diff(roi),param) < floor(0.5*param) && diff(roi) > param) ||...
                     (diff(roi) > (nstep-1) )
                 if  mod(diff(roi),20) == 0
