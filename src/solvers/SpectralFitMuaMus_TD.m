@@ -12,7 +12,7 @@ self_norm = 1;
 weight_type = 'none'; %'rect';
 first_lim = 0.0; last_lim = 0.0;
 ForceConstitSolution = spe.ForceConstitSolution;
-PLOT = 1;
+PLOT = 0;
 % mua0 = 0.01;
 % mus0 = 1.0;
 
@@ -30,7 +30,7 @@ if self_norm == true
     tmpA = sum(data,1);
     data = NormalizeTPSF(data);
     ref = NormalizeTPSF(ref);
-    sd = sqrt(data).*sqrt(1./tmpA);
+    sd = 1+0*sqrt(data).*sqrt(1./tmpA);
 end
 
 dummy_proj = zeros(size(twin,1),nQM*radiometry.nL);
@@ -103,14 +103,15 @@ data = data./sd;
 if spe.SPECTRA == 0 && ForceConstitSolution == false
     FinDiffRelStep = [2; repmat(1e-3,spe.nLambda*2,1)];
 else
-    FinDiffRelStep = [1e-16; repmat(1e-5,spe.nCromo+2,1)];
+    FinDiffRelStep = [1,1e-1,1e-1,1e3,1e3,1e3,1e-1,1e-1 ]*0.00005;%repmat(1e-1,spe.nCromo+2,1)];
+    TypX = [1e-2,1e0,1e0,1e3,1e3,1e2,1e0,1e0];
 end
 opts = optimoptions('lsqcurvefit',...
     'Jacobian','off',...
-    ...'Algorithm','levenberg-marquardt',...
-    'DerivativeCheck','off',...
+    'Algorithm','levenberg-marquardt','InitDamping',1e-10,...%'TypicalX',TypX,...
+    'DerivativeCheck','off','FiniteDifferenceType','forward',...
     'MaxIter',3200,'Display','iter-detailed','FinDiffRelStep',FinDiffRelStep,'MaxFunctionEvaluation',15000,...
-    'TolFun',1e-6,'TolX',1e-6)
+    'TolFun',1e-14,'TolX',1e-14)
 %% Setup optimization for lsqnonlin
 % opts = optimoptions('lsqnonlin',...
 %     'Jacobian','off',...
@@ -135,7 +136,7 @@ if spe.SPECTRA == 0 && ForceConstitSolution == false
     low_bound = [-20 zeros(1,numel([x0{:}]))];
 else
     if ForceConstitSolution
-        spe.opt.conc0 = [1,1,100,100,100]'.*ones(spe.nCromo,1).*spe.active_cromo';
+        spe.opt.conc0 = [1,1,1000,1000,200]'.*ones(spe.nCromo,1).*spe.active_cromo';
         spe.opt.a0 = 1; spe.opt.b0 = 1;
     end
     x0 = {spe.opt.conc0,[spe.opt.a0 spe.opt.b0]};
@@ -206,6 +207,7 @@ save('factor_ref.mat','factor');
 %% Callback function for forward problem
     function [proj,J] = forward(x,~)
         %xx = [x(1)*ones(nsol,1);x(2)*ones(nsol,1)];
+        disp(x)
         t0_ = x(1);
         if spe.SPECTRA == 0 && ForceConstitSolution == false
             mua = x(2:spe.nLambda+1);

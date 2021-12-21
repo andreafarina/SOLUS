@@ -9,12 +9,12 @@ function idx = identify_inclusion(mu_recon)
 % which correspond to a nonzero value.
 
     mu_recon = mu_recon(:);
-    prcmax = 99.9; 
-    prcmin = 0.1;
+    prcmax = 98; 
+    prcmin = 2;
     mu_recon(mu_recon > prctile(mu_recon, prcmax)) = prctile(mu_recon, prcmax);
     mu_recon(mu_recon < prctile(mu_recon, prcmin)) = prctile(mu_recon, prcmin);
     mu_recon = mu_recon - median(mu_recon(:));
-    mu_recon = mu_recon/(1.5*std(mu_recon(:)));
+    mu_recon = mu_recon/(6*std(mu_recon(:)));
     idx = find(mu_recon > 1 | mu_recon < - 1);
     if isempty(idx)
         idx= find(mu_recon > 0 |mu_recon < 0);

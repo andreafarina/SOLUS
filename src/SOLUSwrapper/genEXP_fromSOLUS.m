@@ -6,7 +6,8 @@ function [dt,nstep] = genEXP_fromSOLUS(savename,priorname, SOLUSfile,flag_segm,n
 % - 0 : use value from structure in SOLUSfile
 % - 1 : segment and extract volume
 % - 2 : load segmentation from file in nom_vals{5}
-% - 3 : segmentatation with snake fitting and extract volume
+% - 3 : segmentation with snake fitting and extract volume
+% - []: No value provided
 % nom_vals: array of cells in the form {homo,hete,{log1,log2},{spe1,spe2}
 % where 
 % homo is the name of the field in the stucture of SOLUSfile assigned to be the reference measurement in reconstruction
@@ -202,27 +203,36 @@ end
 EXP.data.spc = double(reshape(EXP.data.spc, [size(EXP.data.spc,1), numel(EXP.data.spc)/size(EXP.data.spc,1)]));
 EXP.data.ref = double(reshape(EXP.data.ref, [size(EXP.data.ref,1), numel(EXP.data.ref)/size(EXP.data.ref,1)]));
 
+EXP.geom.homo = homo;
+EXP.geom.hete = hete;
 
 %% saving EXP
 save(savename,'EXP');
 %% handle prior flag_segm ==0 
-switch flag_segm
-    case 0 % take from file
-        Mask3D = orig.Segmentation.Mask3D;
-        delta = str2double(orig.controlateral.US.Parameters.width_mm_per_px);
-    case 1 % manual segmentation
-        disp('-- segmentation...')
-        Mask3D =  dicom_to_DT(orig.main.US.Image);
-        delta = str2double(orig.main.US.Parameters.height_mm_per_px);
-    case 2 %load
-        load(nom_vals{5})
-    case 3 % snake fitting
-        disp('-- segmentation...')
-        Mask3D =  dicom_to_DT(orig.main.US.Image,1);
-        delta = str2double(orig.main.US.Parameters.heightmm_per_px);        
+if ~isempty(flag_segm)
+    switch flag_segm
+        case 0 % take from file
+            Mask3D = orig.Segmentation.Mask3D;
+            delta = str2double(orig.controlateral.US.Parameters.width_mm_per_px);
+        case 1 % manual segmentation
+            disp('-- segmentation...')
+            Mask3D =  dicom_to_DT(orig.main.US.Image);
+            delta = str2double(orig.main.US.Parameters.height_mm_per_px);
+        case 2 %load
+            load(nom_vals{5})
+        case 3 % snake fitting
+            disp('-- segmentation...')
+            Mask3D =  dicom_to_DT(orig.main.US.Image,1);
+            delta = str2double(orig.main.US.Parameters.heightmm_per_px);        
+    end
+    save(priorname,'Mask3D','delta', '-v7.3')
+else
+    if ~(exist([priorname],'file')>0) && ~(exist([priorname,'.mat'],'file')>0)
+        warning('Variable ''priorname'' does not exist in folder, but no prior was chosen')
+    else 
+        disp('\t Using prior in folder')
+    end
 end
-save(priorname,'Mask3D','delta', '-v7.3')
-
 dt = EXP.time.axis(2)-EXP.time.axis(1);
 nstep = size(EXP.data.spc,1);
 return

@@ -37,8 +37,6 @@ disp('Generating 3D Mask')
  
  
 new_mask = cat(3, half_mask(:,:, end: -1:2), half_mask);
-ellipsoid = flip(new_mask, 2);
-ellipsoid = flip(new_mask, 1);
 ellipsoid = permute(new_mask,[2,3,1]); % x oriented towards line of optodes, x across it, z is depth
 
 disp('3D mask has been generated')

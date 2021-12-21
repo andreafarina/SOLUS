@@ -38,7 +38,7 @@ genIO([cfol,'config_file_IO'], ExampleFolder,cat(2,{'Tomoname',EXPsavename},conf
 disp('-QM')
 genQM([cfol,'config_file_QM'], ExampleFolder,config{4})
 disp('-REC')
-genRecSetts([cfol,'config_file_Rec'], ExampleFolder,cat(2,'prior_path',priorname,config{5}))
+genRecSetts([cfol,'config_file_Rec'], ExampleFolder,cat(2,{'prior_path',priorname},config{5}))
 
 disp('-Dummy Override')
 id_out = fopen([ExampleFolder,filesep,'Override_MultiSim.m'],'w');
