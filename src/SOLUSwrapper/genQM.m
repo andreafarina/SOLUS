@@ -10,6 +10,7 @@ function genQM(config_file,output_folder,to_Update)
 % to_Update: an array of cells in the form {name1,value1,name2,values2,...}
 % that is used to update the default values in config_file
 % 
+% run genQM('help',[],[]) to get help
 
 % Load template
 id_template = fopen('Template_SetQM.txt','r');
@@ -22,7 +23,8 @@ if ~isempty(config_file) &&  strcmpi(config_file,'help') == 0
 elseif strcmpi(config_file,'help') == 1
     disp('Displaying suggested parameters')
     load('config_file_QM')
-    for i = 1:numel(CONFIG),disp([ CONFIG_NAME{i},CONFIG{i}]),end 
+    for i = 1:numel(CONFIG),disp([ CONFIG_NAME{i}]),disp('      '),disp(CONFIG{i}),end 
+    return
 else
     disp('loading template configuration')
     load('config_file_QM')    

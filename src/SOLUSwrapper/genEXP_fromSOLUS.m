@@ -8,20 +8,22 @@ function [dt,nstep] = genEXP_fromSOLUS(savename,priorname, SOLUSfile,flag_segm,n
 % - 2 : load segmentation from file in nom_vals{5}
 % - 3 : segmentation with snake fitting and extract volume
 % - []: No value provided
-% nom_vals: array of cells in the form {homo,hete,{log1,log2},{spe1,spe2}
+% nom_vals: array of cells in the form {homo,hete,{log1,log2},{spe1,spe2},nom_vals{5}}
 % where 
-% homo is the name of the field in the stucture of SOLUSfile assigned to be the reference measurement in reconstruction
-% hete is the name of the field in the stucture of SOLUSfile assigned to be the heterogeneous measurement in reconstruction
-% log1 and log2, when available, specify respectively the .xlsx file and the sheet therein
+% --homo is the name of the field in the stucture of SOLUSfile assigned to be 
+% the reference measurement in reconstruction, default is 'controlateral'
+% -- hete is the name of the field in the stucture of SOLUSfile assigned to be
+% the heterogeneous measurement in reconstruction, default is 'main'
+% -- log1 and log2, when available, specify respectively the .xlsx file and the sheet therein
 % with the logbook on the experiment
-% spe1 and spe2, when available, specify respectively the .xlsx file and the sheet therein
+% -- spe1 and spe2, when available, specify respectively the .xlsx file and the sheet therein
 % with the spectra of the media in the experiment
+% -- nom_vals{5} extra parameter for the segmentation options above
 
 
 
-
-    homo = 'controlateral';
-    hete = 'main';
+homo = 'controlateral';
+hete = 'main';
 
 if exist('nom_vals','var') 
    

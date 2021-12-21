@@ -1,8 +1,37 @@
 function genExample(ExampleFolder,SOLUSfile,EXPsavename,priorname,flag_segm, varargin)
+% genExample(ExampleFolder,SOLUSfile,EXPsavename,priorname,flag_segm,I,IO,QM,R,E) 
+% generates initialisation files for the reconstruction of multimodal data
+% from SOLUS
+% - ExampleFolder: folder where to write the Initialisation files
+% - SOLUSfile: SOLUS file used for reconstruction
+% - EXPsavenane : name of output file containing the EXP structure
+% - priorname : name of output file containing the prior
+% - flag_segm: regulates the behaviour of the function with respect to the
+% prior extraction. Run "help genEXP_fromSOLUS" for details
+% - I : optional cell in form {'param1', param1,'param2', param2,...} that
+% can be used to change the default of the file Init_DOT. Run
+% "genInit('help',[],[])" for options on the default and on the possible
+% parameters
+% - IO : optional cell in form {'param1', param1,'param2', param2,...} that
+% can be used to change the default of the file SetIO_DOT. Run
+% "genIO('help',[],[])" for options on the default and on the possible
+% parameters
+% - QM : optional cell in form {'param1', param1,'param2', param2,...} that
+% can be used to change the default of the file SetQM_DOT. Run
+% "genQM('help',[],[])" for options on the default and on the possible
+% parameters
+% - R : optional cell in form {'param1', param1,'param2', param2,...} that
+% can be used to change the default of the file RecSettings_DOT. Run
+% "genRecSetts('help',[],[])" for options on the default and on the possible
+% parameters
+% - E : optional cell in form {homofile, hetefile, log1,log2, nom_vals{5}} that
+% can be used to change the default of the experimental files EXP such as which optical data to reconstruct from. Run
+% "help genEXP_fromSOLUS" for options
 
-% 
-%
-%
+
+
+
+
 
 disp(['Creation of Example from file \n', SOLUSfile, ' in Folder\n',ExampleFolder])
 % creating folder
