@@ -1,1 +1,0 @@
-In this example an absorbing and scattering spherical perturbation is placed and a linear reconstruction using zero-order Tikhonov regularization is performed.

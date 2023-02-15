@@ -5,7 +5,6 @@
 FORWARD = 1;            % Simulated forward data and save into _Data file
 REF = 1;                % 1: create also the homogeneous data
 TYPE_FWD = 'linear';    % fwd model computation: 'linear','fem'
-geom = 'semi-inf';      % geometry
 % ------------------------- RECONSTRUCTION --------------------------------
 RECONSTRUCTION = 1;     % Enable the reconstruction section.
 % ------------------------- EXPERIMENTAL ----------------------------------
@@ -26,7 +25,7 @@ DOT.sigma = 0;          % add gaussian noise to CW data
 geom = 'semi-inf';      % geometry
 type = 'Born';          % heterogeneous model  
 % -------------------------------------------------------------------------
-RADIOMETRY = 1;         % apply radiometric inputs to simulated data
+RADIOMETRY = 0;         % apply radiometric inputs to simulated data
 % -------------------------------------------------------------------------
 SAVE_FWD = 1;           % Save forward data (possibly with noise) 
                         % in a _Data.m file

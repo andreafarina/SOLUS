@@ -26,7 +26,7 @@ DOT.sigma = 0;          % add gaussian noise to CW data
 geom = 'semi-inf';      % geometry
 type = 'Born';          % heterogeneous model  
 % -------------------------------------------------------------------------
-RADIOMETRY = 1;         % apply radiometric inputs to simulated data
+RADIOMETRY = 0;         % apply radiometric inputs to simulated data
 % -------------------------------------------------------------------------
 SAVE_FWD = 1;           % Save forward data (possibly with noise) 
                         % in a _Data.m file
@@ -110,7 +110,7 @@ DOT.time.noise = 'Poisson';      % 'Poisson','Gaussian','none'
                                  % Gaussian noise is added before
                                  % Poisson noise.
 DOT.time.sigma = 1e-3;              % variance for gaussian noise
-DOT.time.self_norm = true;         % true for self-normalized TPSF
+DOT.time.self_norm = false;         % true for self-normalized TPSF
 DOT.time.TotCounts = 1e10;%*ones(1,8);  % total counts for the maximum-energy
                                       % TPSF. The other are consequently
                                       % rescaled

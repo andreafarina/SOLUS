@@ -7,7 +7,7 @@
 function [bmua,bmus] = RecSolverTK1_TD(solver,grid,mua0,mus0, n, A,...
     Spos,Dpos,dmask, dt, nstep, twin, self_norm, data, irf, ref, sd, type_fwd)
 %% Jacobain options
-USEGPU = 1;%gpuDeviceCount;
+USEGPU = 0;%gpuDeviceCount;
 LOAD_JACOBIAN = solver.prejacobian.load;      % Load a precomputed Jacobian
 geom = 'semi-inf';
 xtransf = '(x/x0)'; %log(x),x,log(x/x0)

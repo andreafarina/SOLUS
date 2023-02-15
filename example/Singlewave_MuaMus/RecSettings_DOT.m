@@ -4,12 +4,12 @@
 REC.domain = 'td';          % CW or TD: data type to be inverted
 REC.type_fwd = 'linear';    % 'linear' or 'fem'.
 % -------------------------------------------------------------------------
-% REC.time.roi = [];
+%REC.time.roi = [];
 REC.time.roi = [259,919];
                         % ROI in time-step unit. 
                         % If omitted, the ROI will be
                         % selected dinamically by the user.
-NUM_TW = 20;            % Number of Time Windows within ROI
+NUM_TW = 64;            % Number of Time Windows within ROI
 % =========================================================================
 %%                        Initial parameter estimates 
 % =========================================================================
@@ -24,7 +24,7 @@ musp_ = 1.0;
 Xr = {mua_,musp_}; 
 
 % ---------------------- Solver and regularization ------------------------
-REC.solver.tau = 0.003;            % regularisation parameter
+REC.solver.tau = 0.0003;            % regularisation parameter
 REC.solver.type = 'tk1';          % 'tk0','GN': gauss-newton, 
                                   % 'tk1': first order Tichonov regul
                                   % 'USprior': tk1+structural prior
